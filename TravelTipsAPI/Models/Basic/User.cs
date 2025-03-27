@@ -11,6 +11,8 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
+    public string UserId { get; set; } = null!;
+
     public virtual ICollection<Attraction> Attractions { get; set; } = new List<Attraction>();
 
     public virtual ICollection<PreferRoute> PreferRoutes { get; set; } = new List<PreferRoute>();

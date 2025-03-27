@@ -25,6 +25,8 @@ public partial class TravelTipsBasicContext : DbContext
 
     public virtual DbSet<RouteType> RouteTypes { get; set; }
 
+    public virtual DbSet<SmallTrip> SmallTrips { get; set; }
+
     public virtual DbSet<Trip> Trips { get; set; }
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
@@ -134,6 +136,25 @@ public partial class TravelTipsBasicContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<SmallTrip>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_small_trips");
+
+            entity.ToTable("SmallTrips", "db_basic");
+
+            entity.Property(e => e.Description)
+                .HasMaxLength(500)
+                .IsUnicode(false);
+            entity.Property(e => e.Name)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Trip).WithMany(p => p.SmallTrips)
+                .HasForeignKey(d => d.TripId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_trips_small_trips");
+        });
+
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
@@ -201,12 +222,17 @@ public partial class TravelTipsBasicContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.Username, "UQ__Users__536C85E44A21AE6E").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D884AB0EF").IsUnique();
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534F2FD1F61").IsUnique();
+            entity.HasIndex(e => e.Username, "UQ__Users__536C85E4F1537AA6").IsUnique();
+
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D105344FA0A24F").IsUnique();
 
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.UserId)
+                .HasMaxLength(30)
                 .IsUnicode(false);
             entity.Property(e => e.Username)
                 .HasMaxLength(20)

@@ -8,6 +8,7 @@ namespace TravelTipsAPI.Services
         public static IServiceCollection AddServices(this IServiceCollection services)
         {
             services.AddScoped<ITripsService, TripsService>();
+            services.AddScoped<IUsersService, UsersService>();
             return services;
         }
     }

@@ -14,11 +14,6 @@ namespace TravelTipsAPI.Controllers
         public ActionResult<TripViewModel> GetTripById(int id)
         {
             var tripViewModel = tripsService.GetTripById(id);
-
-            //string userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier).Value;
-            //Console.WriteLine(userId);
-            //string userName = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
-            //Console.WriteLine(userName);
             return Ok(tripViewModel);
         }
 
@@ -31,7 +26,7 @@ namespace TravelTipsAPI.Controllers
         }
 
         [HttpPatch]
-        [Route("{id}")]
+        [Route("{id}/isPublic")]
         public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(int id, [FromBody] bool isPublic)
         {
             var tripViewModel = await tripsService.UpdateIsPublicAsync(id, isPublic);

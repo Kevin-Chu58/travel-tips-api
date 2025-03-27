@@ -22,4 +22,6 @@ public partial class Trip
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
+
+    public virtual ICollection<SmallTrip> SmallTrips { get; set; } = new List<SmallTrip>();
 }

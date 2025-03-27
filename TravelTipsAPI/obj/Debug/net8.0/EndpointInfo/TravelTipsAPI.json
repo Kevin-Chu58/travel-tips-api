@@ -43,7 +43,57 @@
             }
           }
         }
-      },
+      }
+    },
+    "/api/Trips": {
+      "post": {
+        "tags": [
+          "Trips"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripPostViewModel"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripPostViewModel"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/TripPostViewModel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripViewModel"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripViewModel"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripViewModel"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/Trips/{id}/isPublic": {
       "patch": {
         "tags": [
           "Trips"
@@ -102,47 +152,28 @@
         }
       }
     },
-    "/api/Trips": {
-      "post": {
+    "/me": {
+      "get": {
         "tags": [
-          "Trips"
+          "Users"
         ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TripPostViewModel"
-              }
-            },
-            "text/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TripPostViewModel"
-              }
-            },
-            "application/*+json": {
-              "schema": {
-                "$ref": "#/components/schemas/TripPostViewModel"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/TripViewModel"
+                  "$ref": "#/components/schemas/UserViewModel"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TripViewModel"
+                  "$ref": "#/components/schemas/UserViewModel"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/TripViewModel"
+                  "$ref": "#/components/schemas/UserViewModel"
                 }
               }
             }
@@ -214,6 +245,28 @@
           },
           "isPublic": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserViewModel": {
+        "required": [
+          "email",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

@@ -9,4 +9,13 @@ namespace TravelTipsAPI.Services
         Task<TripViewModel?> PostNewTripAsync(TripPostViewModel newTrip);
         Task<TripViewModel> UpdateIsPublicAsync(int id, bool isPublic);
     }
+
+    public interface IUsersService
+    {
+        UserViewModel? GetUserById(int id);
+        UserViewModel? GetUserByUserId(string userId);
+        Task<UserViewModel?> PostNewUserAsync(string userId);
+        Task<UserViewModel?> UpdateUserAsync(UserPatchViewModel newUser);
+        bool DoesCurrentUserExist(string userId);
+    }
 }

@@ -54,7 +54,7 @@
   {
     "ContainingType": "TravelTipsAPI.Controllers.TripsController",
     "Method": "UpdateTripIsPublic",
-    "RelativePath": "api/Trips/{id}",
+    "RelativePath": "api/Trips/{id}/isPublic",
     "HttpMethod": "PATCH",
     "IsController": true,
     "Order": 0,
@@ -73,6 +73,26 @@
     "ReturnTypes": [
       {
         "Type": "TravelTipsAPI.ViewModels.TripViewModel",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "TravelTipsAPI.Controllers.UsersController",
+    "Method": "GetCurrentUserAsync",
+    "RelativePath": "me",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "TravelTipsAPI.ViewModels.UserViewModel",
         "MediaTypes": [
           "text/plain",
           "application/json",
