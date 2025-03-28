@@ -2,7 +2,6 @@
 using System.Security.Claims;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels;
-using ConfigurationManager = System.Configuration.ConfigurationManager;
 
 namespace TravelTipsAPI.Controllers
 {
@@ -38,8 +37,7 @@ namespace TravelTipsAPI.Controllers
             catch (Exception ex)
             {
                 var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
-                var actualString = ConfigurationManager.ConnectionStrings["SQLCONNSTR_AZURE_SQL_CONNECTION_STRING"].ConnectionString;
-                return BadRequest(new { ConnectionString = connectionString, ActualString=actualString, Message = ex.Message, Stacktrace = ex.StackTrace });
+                return BadRequest(new { ConnectionString = connectionString, Message = ex.Message, Stacktrace = ex.StackTrace });
             }
         }
     }

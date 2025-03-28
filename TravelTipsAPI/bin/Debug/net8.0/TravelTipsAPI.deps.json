@@ -14,7 +14,8 @@
           "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration": "3.0.0",
           "Microsoft.EntityFrameworkCore.SqlServer": "8.0.3",
           "Microsoft.EntityFrameworkCore.Tools": "8.0.3",
-          "Swashbuckle.AspNetCore": "8.0.0"
+          "Swashbuckle.AspNetCore": "8.0.0",
+          "System.Configuration.ConfigurationManager": "6.0.1"
         },
         "runtime": {
           "TravelTipsAPI.dll": {}
