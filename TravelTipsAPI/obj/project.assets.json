@@ -25,6 +25,24 @@
           }
         }
       },
+      "Azure.Data.AppConfiguration/1.1.0": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Core": "1.16.0",
+          "Microsoft.Bcl.AsyncInterfaces": "1.0.0",
+          "System.Text.Json": "4.6.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/Azure.Data.AppConfiguration.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Data.AppConfiguration.dll": {
+            "related": ".xml"
+          }
+        }
+      },
       "Azure.Identity/1.13.2": {
         "type": "package",
         "dependencies": {
@@ -41,6 +59,25 @@
         },
         "runtime": {
           "lib/net8.0/Azure.Identity.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Azure.Security.KeyVault.Secrets/4.2.0": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Core": "1.15.0",
+          "System.Memory": "4.5.4",
+          "System.Text.Json": "4.6.0",
+          "System.Threading.Tasks.Extensions": "4.5.2"
+        },
+        "compile": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Secrets.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Secrets.dll": {
             "related": ".xml"
           }
         }
@@ -352,6 +389,38 @@
           },
           "lib/netcoreapp3.1/zh-Hant/Microsoft.CodeAnalysis.Workspaces.resources.dll": {
             "locale": "zh-Hant"
+          }
+        }
+      },
+      "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration/3.0.0": {
+        "type": "package",
+        "dependencies": {
+          "Azure.Data.AppConfiguration": "1.1.0",
+          "Azure.Identity": "1.2.1",
+          "Azure.Security.KeyVault.Secrets": "4.2.0",
+          "Microsoft.Configuration.ConfigurationBuilders.Base": "3.0.0"
+        },
+        "compile": {
+          "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Microsoft.Configuration.ConfigurationBuilders.Base/3.0.0": {
+        "type": "package",
+        "compile": {
+          "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.Base.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.Base.dll": {
+            "related": ".xml"
           }
         }
       },
@@ -1594,6 +1663,22 @@
         "lib/netstandard2.0/Azure.Core.xml"
       ]
     },
+    "Azure.Data.AppConfiguration/1.1.0": {
+      "sha512": "nK3CtxS35QpYfqOoNDcsNmpgxoFKFTsZJ9yfPev5d6HUGYCjF+xwOmlKoHiZ/UnQN80tIsBT20gDNcF8k3SbVQ==",
+      "type": "package",
+      "path": "azure.data.appconfiguration/1.1.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.data.appconfiguration.1.1.0.nupkg.sha512",
+        "azure.data.appconfiguration.nuspec",
+        "lib/netstandard2.0/Azure.Data.AppConfiguration.dll",
+        "lib/netstandard2.0/Azure.Data.AppConfiguration.xml",
+        "pkgicon.png"
+      ]
+    },
     "Azure.Identity/1.13.2": {
       "sha512": "CngQVQELdzFmsGSWyGIPIUOCrII7nApMVWxVmJCKQQrWxRXcNquCsZ+njRJRnhFUfD+KMAhpjyRCaceE4EOL6A==",
       "type": "package",
@@ -1610,6 +1695,22 @@
         "lib/net8.0/Azure.Identity.xml",
         "lib/netstandard2.0/Azure.Identity.dll",
         "lib/netstandard2.0/Azure.Identity.xml"
+      ]
+    },
+    "Azure.Security.KeyVault.Secrets/4.2.0": {
+      "sha512": "ujVMKVzEtVNQom5A0iEXSDovNGoSidV0RO5QlOBFfcIZlXwFnBmO5OhOfS4D/F1gbMNCCFS3re39qd/Bgh6+QQ==",
+      "type": "package",
+      "path": "azure.security.keyvault.secrets/4.2.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "CHANGELOG.md",
+        "README.md",
+        "azure.security.keyvault.secrets.4.2.0.nupkg.sha512",
+        "azure.security.keyvault.secrets.nuspec",
+        "lib/netstandard2.0/Azure.Security.KeyVault.Secrets.dll",
+        "lib/netstandard2.0/Azure.Security.KeyVault.Secrets.xml",
+        "pkgicon.png"
       ]
     },
     "Humanizer.Core/2.14.1": {
@@ -2110,6 +2211,48 @@
         "lib/netstandard2.0/zh-Hant/Microsoft.CodeAnalysis.Workspaces.resources.dll",
         "microsoft.codeanalysis.workspaces.common.4.5.0.nupkg.sha512",
         "microsoft.codeanalysis.workspaces.common.nuspec"
+      ]
+    },
+    "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration/3.0.0": {
+      "sha512": "I4i/wDHVB1yS1ZlHp7nBBAmyXQtzhcyzv8ErbWhTzSfMAWzUneV+0OYiRahWCtquCObTDHB8hxfE0juwZOIZgw==",
+      "type": "package",
+      "path": "microsoft.configuration.configurationbuilders.azureappconfiguration/3.0.0",
+      "hasTools": true,
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "content/Net471/app.config.install.xdt",
+        "content/Net471/app.config.uninstall.xdt",
+        "content/Net471/web.config.install.xdt",
+        "content/Net471/web.config.uninstall.xdt",
+        "docs/Readme.md",
+        "images/dotnet-icon.png",
+        "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration.dll",
+        "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration.xml",
+        "microsoft.configuration.configurationbuilders.azureappconfiguration.3.0.0.nupkg.sha512",
+        "microsoft.configuration.configurationbuilders.azureappconfiguration.nuspec",
+        "tools/Net471/Install.ps1",
+        "tools/Net471/KeyValueConfigBuildersCommon.ps1",
+        "tools/Net471/Uninstall.ps1"
+      ]
+    },
+    "Microsoft.Configuration.ConfigurationBuilders.Base/3.0.0": {
+      "sha512": "0+5ACMOxpx/XRowlxzdzjYqGG9Q0kEh0VKnVFzeF1nkSu98W64jVa5UDcxSPGDbqAvkv14/W6sMWP43TkZAX5w==",
+      "type": "package",
+      "path": "microsoft.configuration.configurationbuilders.base/3.0.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "content/Net471/app.config.install.xdt",
+        "content/Net471/app.config.uninstall.xdt",
+        "content/Net471/web.config.install.xdt",
+        "content/Net471/web.config.uninstall.xdt",
+        "docs/Readme.md",
+        "images/dotnet-icon.png",
+        "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.Base.dll",
+        "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.Base.xml",
+        "microsoft.configuration.configurationbuilders.base.3.0.0.nupkg.sha512",
+        "microsoft.configuration.configurationbuilders.base.nuspec"
       ]
     },
     "Microsoft.Data.SqlClient/5.1.5": {
@@ -4233,6 +4376,7 @@
       "Azure.Identity >= 1.13.2",
       "Microsoft.AspNetCore.Authentication.JwtBearer >= 8.0.3",
       "Microsoft.AspNetCore.Authentication.OpenIdConnect >= 8.0.3",
+      "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration >= 3.0.0",
       "Microsoft.EntityFrameworkCore.SqlServer >= 8.0.3",
       "Microsoft.EntityFrameworkCore.Tools >= 8.0.3",
       "Swashbuckle.AspNetCore >= 8.0.0"
@@ -4300,6 +4444,10 @@
             "target": "Package",
             "version": "[8.0.3, )"
           },
+          "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration": {
+            "target": "Package",
+            "version": "[3.0.0, )"
+          },
           "Microsoft.EntityFrameworkCore.SqlServer": {
             "target": "Package",
             "version": "[8.0.3, )"
@@ -4337,5 +4485,27 @@
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.200/PortableRuntimeIdentifierGraph.json"
       }
     }
-  }
+  },
+  "logs": [
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration 3.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.",
+      "libraryId": "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    },
+    {
+      "code": "NU1701",
+      "level": "Warning",
+      "warningLevel": 1,
+      "message": "Package 'Microsoft.Configuration.ConfigurationBuilders.Base 3.0.0' was restored using '.NETFramework,Version=v4.6.1, .NETFramework,Version=v4.6.2, .NETFramework,Version=v4.7, .NETFramework,Version=v4.7.1, .NETFramework,Version=v4.7.2, .NETFramework,Version=v4.8, .NETFramework,Version=v4.8.1' instead of the project target framework 'net8.0'. This package may not be fully compatible with your project.",
+      "libraryId": "Microsoft.Configuration.ConfigurationBuilders.Base",
+      "targetGraphs": [
+        "net8.0"
+      ]
+    }
+  ]
 }
