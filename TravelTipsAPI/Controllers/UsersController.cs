@@ -36,7 +36,7 @@ namespace TravelTipsAPI.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { ex.StackTrace });
             }
         }
     }
