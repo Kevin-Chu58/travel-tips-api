@@ -9,7 +9,7 @@ using TravelTipsAPI.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Log to console
-var logger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
+//var logger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
 
 builder.Configuration.AddEnvironmentVariables();
 
@@ -23,7 +23,8 @@ if (string.IsNullOrEmpty(connectionString))
 }
 
 // Debug
-logger.LogInformation($"Connection String: {connectionString}");
+//logger.LogInformation($"Connection String: {connectionString}");
+Console.WriteLine($"Connection String: {connectionString}");
 
 builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
     options.UseSqlServer(connectionString)
