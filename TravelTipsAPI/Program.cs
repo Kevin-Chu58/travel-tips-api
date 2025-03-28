@@ -24,7 +24,7 @@ var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_
 
 // Debug
 //logger.LogInformation($"Connection String: {connectionString}");
-System.Diagnostics.Trace.WriteLine($"Connection String: {connectionString}");
+//System.Diagnostics.Trace.WriteLine($"Connection String: {connectionString}");
 
 builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
     options.UseSqlServer(connectionString)
