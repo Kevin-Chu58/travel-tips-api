@@ -285,3 +285,7 @@ C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\TravelTipsAPI.pdb
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\TravelTipsAPI.genruntimeconfig.cache
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\ref\TravelTipsAPI.dll
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
+C:\GitRepos\travel-tips-api\TravelTipsAPI\bin\Debug\net8.0\Azure.Data.AppConfiguration.dll
+C:\GitRepos\travel-tips-api\TravelTipsAPI\bin\Debug\net8.0\Azure.Security.KeyVault.Secrets.dll
+C:\GitRepos\travel-tips-api\TravelTipsAPI\bin\Debug\net8.0\Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration.dll
+C:\GitRepos\travel-tips-api\TravelTipsAPI\bin\Debug\net8.0\Microsoft.Configuration.ConfigurationBuilders.Base.dll

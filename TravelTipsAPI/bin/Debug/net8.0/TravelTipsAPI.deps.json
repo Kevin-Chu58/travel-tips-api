@@ -11,6 +11,7 @@
           "Azure.Identity": "1.13.2",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.3",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "8.0.3",
+          "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration": "3.0.0",
           "Microsoft.EntityFrameworkCore.SqlServer": "8.0.3",
           "Microsoft.EntityFrameworkCore.Tools": "8.0.3",
           "Swashbuckle.AspNetCore": "8.0.0"
@@ -37,6 +38,19 @@
           }
         }
       },
+      "Azure.Data.AppConfiguration/1.1.0": {
+        "dependencies": {
+          "Azure.Core": "1.44.1",
+          "Microsoft.Bcl.AsyncInterfaces": "6.0.0",
+          "System.Text.Json": "8.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Data.AppConfiguration.dll": {
+            "assemblyVersion": "1.1.0.0",
+            "fileVersion": "1.100.21.35706"
+          }
+        }
+      },
       "Azure.Identity/1.13.2": {
         "dependencies": {
           "Azure.Core": "1.44.1",
@@ -49,6 +63,20 @@
           "lib/net8.0/Azure.Identity.dll": {
             "assemblyVersion": "1.13.2.0",
             "fileVersion": "1.1300.225.6404"
+          }
+        }
+      },
+      "Azure.Security.KeyVault.Secrets/4.2.0": {
+        "dependencies": {
+          "Azure.Core": "1.44.1",
+          "System.Memory": "4.5.5",
+          "System.Text.Json": "8.0.0",
+          "System.Threading.Tasks.Extensions": "4.5.4"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Azure.Security.KeyVault.Secrets.dll": {
+            "assemblyVersion": "4.2.0.0",
+            "fileVersion": "4.200.21.31503"
           }
         }
       },
@@ -308,6 +336,28 @@
           },
           "lib/netcoreapp3.1/zh-Hant/Microsoft.CodeAnalysis.Workspaces.resources.dll": {
             "locale": "zh-Hant"
+          }
+        }
+      },
+      "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration/3.0.0": {
+        "dependencies": {
+          "Azure.Data.AppConfiguration": "1.1.0",
+          "Azure.Identity": "1.13.2",
+          "Azure.Security.KeyVault.Secrets": "4.2.0",
+          "Microsoft.Configuration.ConfigurationBuilders.Base": "3.0.0"
+        },
+        "runtime": {
+          "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration.dll": {
+            "assemblyVersion": "3.0.0.0",
+            "fileVersion": "3.0.20321.0"
+          }
+        }
+      },
+      "Microsoft.Configuration.ConfigurationBuilders.Base/3.0.0": {
+        "runtime": {
+          "lib/Net471/Microsoft.Configuration.ConfigurationBuilders.Base.dll": {
+            "assemblyVersion": "3.0.0.0",
+            "fileVersion": "3.0.20321.0"
           }
         }
       },
@@ -927,12 +977,26 @@
       "path": "azure.core/1.44.1",
       "hashPath": "azure.core.1.44.1.nupkg.sha512"
     },
+    "Azure.Data.AppConfiguration/1.1.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-nK3CtxS35QpYfqOoNDcsNmpgxoFKFTsZJ9yfPev5d6HUGYCjF+xwOmlKoHiZ/UnQN80tIsBT20gDNcF8k3SbVQ==",
+      "path": "azure.data.appconfiguration/1.1.0",
+      "hashPath": "azure.data.appconfiguration.1.1.0.nupkg.sha512"
+    },
     "Azure.Identity/1.13.2": {
       "type": "package",
       "serviceable": true,
       "sha512": "sha512-CngQVQELdzFmsGSWyGIPIUOCrII7nApMVWxVmJCKQQrWxRXcNquCsZ+njRJRnhFUfD+KMAhpjyRCaceE4EOL6A==",
       "path": "azure.identity/1.13.2",
       "hashPath": "azure.identity.1.13.2.nupkg.sha512"
+    },
+    "Azure.Security.KeyVault.Secrets/4.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ujVMKVzEtVNQom5A0iEXSDovNGoSidV0RO5QlOBFfcIZlXwFnBmO5OhOfS4D/F1gbMNCCFS3re39qd/Bgh6+QQ==",
+      "path": "azure.security.keyvault.secrets/4.2.0",
+      "hashPath": "azure.security.keyvault.secrets.4.2.0.nupkg.sha512"
     },
     "Humanizer.Core/2.14.1": {
       "type": "package",
@@ -996,6 +1060,20 @@
       "sha512": "sha512-l4dDRmGELXG72XZaonnOeORyD/T5RpEu5LGHOUIhnv+MmUWDY/m1kWXGwtcgQ5CJ5ynkFiRnIYzTKXYjUs7rbw==",
       "path": "microsoft.codeanalysis.workspaces.common/4.5.0",
       "hashPath": "microsoft.codeanalysis.workspaces.common.4.5.0.nupkg.sha512"
+    },
+    "Microsoft.Configuration.ConfigurationBuilders.AzureAppConfiguration/3.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-I4i/wDHVB1yS1ZlHp7nBBAmyXQtzhcyzv8ErbWhTzSfMAWzUneV+0OYiRahWCtquCObTDHB8hxfE0juwZOIZgw==",
+      "path": "microsoft.configuration.configurationbuilders.azureappconfiguration/3.0.0",
+      "hashPath": "microsoft.configuration.configurationbuilders.azureappconfiguration.3.0.0.nupkg.sha512"
+    },
+    "Microsoft.Configuration.ConfigurationBuilders.Base/3.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-0+5ACMOxpx/XRowlxzdzjYqGG9Q0kEh0VKnVFzeF1nkSu98W64jVa5UDcxSPGDbqAvkv14/W6sMWP43TkZAX5w==",
+      "path": "microsoft.configuration.configurationbuilders.base/3.0.0",
+      "hashPath": "microsoft.configuration.configurationbuilders.base.3.0.0.nupkg.sha512"
     },
     "Microsoft.Data.SqlClient/5.1.5": {
       "type": "package",
