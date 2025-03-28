@@ -33,9 +33,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// First, check the environment variable from GitHub Secrets is available
-var connectionString = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING");
-Console.WriteLine(connectionString);
+// First, check the connection string from Azure web service is available
+var connectionString = builder.Configuration.GetConnectionString("AZURE_SQL_CONNECTION_STRING");
 
 // If not, fallback to appsettings.json (useful for local dev)
 if (string.IsNullOrEmpty(connectionString))
