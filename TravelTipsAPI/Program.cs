@@ -14,7 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 // First, check the connection string from Azure web service is available
-var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
+//var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
 
 // If not, fallback to appsettings.json (useful for local dev)
 //if (string.IsNullOrEmpty(connectionString))
@@ -27,7 +27,7 @@ var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_
 //System.Diagnostics.Trace.WriteLine($"Connection String: {connectionString}");
 
 builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
-    options.UseSqlServer(connectionString)
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
 );
 
 // Add authentication to the container.
