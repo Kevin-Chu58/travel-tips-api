@@ -38,7 +38,7 @@ namespace TravelTipsAPI.Controllers
             catch (Exception ex)
             {
                 var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
-                var actualString = System.Configuration.ConfigurationManager.ConnectionStrings["mcn"].ConnectionString;
+                var actualString = System.Configuration.ConfigurationManager.ConnectionStrings["SQLCONNSTR_AZURE_SQL_CONNECTION_STRING"].ConnectionString;
                 return BadRequest(new { ConnectionString = connectionString, ActualString=actualString, Message = ex.Message, Stacktrace = ex.StackTrace });
             }
         }
