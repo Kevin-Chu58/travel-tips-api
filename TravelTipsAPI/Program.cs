@@ -35,6 +35,7 @@ builder.Services.AddSwaggerGen();
 
 // First, check the environment variable from GitHub Secrets is available
 var connectionString = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING");
+Console.WriteLine(connectionString);
 
 // If not, fallback to appsettings.json (useful for local dev)
 if (string.IsNullOrEmpty(connectionString))
