@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using TravelTipsAPI.Models.Basic;
@@ -30,8 +31,17 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// First, check the environment variable from GitHub Secrets is available
+var connectionString = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING");
+
+// If not, fallback to appsettings.json (useful for local dev)
+if (string.IsNullOrEmpty(connectionString))
+{
+    connectionString = builder.Configuration.GetConnectionString("TravelTips");
+}
+
 builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
+    options.UseSqlServer(connectionString)
 );
 
 builder.Services.AddServices();
