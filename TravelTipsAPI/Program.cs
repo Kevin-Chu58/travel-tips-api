@@ -34,7 +34,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // First, check the connection string from Azure web service is available
-var connectionString = builder.Configuration.GetConnectionString("MYSQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
+var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
 
 // If not, fallback to appsettings.json (useful for local dev)
 if (string.IsNullOrEmpty(connectionString))
