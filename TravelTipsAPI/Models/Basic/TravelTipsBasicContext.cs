@@ -222,17 +222,13 @@ public partial class TravelTipsBasicContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D884AB0EF").IsUnique();
-
-            entity.HasIndex(e => e.Username, "UQ__Users__536C85E4F1537AA6").IsUnique();
-
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D105344FA0A24F").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D6E5216E4").IsUnique();
 
             entity.Property(e => e.Email)
                 .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.UserId)
-                .HasMaxLength(30)
+                .HasMaxLength(50)
                 .IsUnicode(false);
             entity.Property(e => e.Username)
                 .HasMaxLength(20)

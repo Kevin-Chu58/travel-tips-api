@@ -16,7 +16,7 @@ namespace TravelTipsAPI.Services
         {
             var user = basicContext.Users.FirstOrDefault(user => user.UserId == userId);
 
-            return (UserViewModel)user;
+            return (UserViewModel) user;
         }
 
         public async Task<UserViewModel?> PostNewUserAsync(string userId)

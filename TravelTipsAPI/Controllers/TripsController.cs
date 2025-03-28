@@ -7,7 +7,7 @@ using TravelTipsAPI.ViewModels;
 namespace TravelTipsAPI.Controllers
 {
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService) : TravelTipsControllerBase
+    public class TripsController(IUsersService usersService, ITripsService tripsService) : TravelTipsControllerBase
     {
         [HttpGet]
         [Route("{id}")]
@@ -22,15 +22,25 @@ namespace TravelTipsAPI.Controllers
         public async Task<ActionResult<TripViewModel>> PostNewTrip([FromBody] TripPostViewModel newTrip)
         {
             var tripViewModel = await tripsService.PostNewTripAsync(newTrip);
-            return CreatedAtAction(nameof(PostNewTrip), tripViewModel);
+            return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
         }
 
         [HttpPatch]
         [Route("{id}/isPublic")]
         public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(int id, [FromBody] bool isPublic)
         {
-            var tripViewModel = await tripsService.UpdateIsPublicAsync(id, isPublic);
-            return Ok(tripViewModel);
+            ClaimsPrincipal user = HttpContext.User;
+            string? userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var currentUser = usersService.GetUserByUserId(userId);
+
+            var isOwner = tripsService.IsOwner(currentUser.Id, id);
+            if (isOwner)
+            {
+                var tripViewModel = await tripsService.UpdateIsPublicAsync(id, isPublic);
+                return Ok(tripViewModel);
+            }
+            else
+                return Unauthorized();
         }
     }
 }

@@ -9,7 +9,7 @@ namespace TravelTipsAPI.Controllers
     public class UsersController(IUsersService usersService) : TravelTipsControllerBase
     {
         [HttpGet]
-        [Route("/me")]
+        [Route("me")]
         public async Task<ActionResult<UserViewModel>> GetCurrentUserAsync()
         {
             ClaimsPrincipal user = HttpContext.User;
@@ -22,13 +22,14 @@ namespace TravelTipsAPI.Controllers
 
             if (!hasUser) {
                 userViewModel = await usersService.PostNewUserAsync(userId);
-                return CreatedAtAction(nameof(GetCurrentUserAsync), userViewModel);
+                //return CreatedAtAction(nameof(GetCurrentUserAsync), userViewModel);
             }
             else
             {
                 userViewModel = usersService.GetUserByUserId(userId);
-                return Ok(userViewModel);
+                //return Ok(userViewModel);
             }
+            return Ok(userViewModel);
         }
     }
 }

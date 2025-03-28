@@ -152,7 +152,7 @@
         }
       }
     },
-    "/me": {
+    "/api/Users/me": {
       "get": {
         "tags": [
           "Users"

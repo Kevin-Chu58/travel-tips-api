@@ -8,9 +8,9 @@ namespace TravelTipsAPI.ViewModels
         public required string Username { get; set; }
         public required string Email { get; set; }
 
-        public static implicit operator UserViewModel(User? user)
+        public static explicit operator UserViewModel?(User? user)
         {
-            if (user == null) return user;
+            if (user == null) return null;
 
             var userViewModel = new UserViewModel
             {

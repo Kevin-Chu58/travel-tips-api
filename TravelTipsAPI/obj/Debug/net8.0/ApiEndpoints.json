@@ -85,7 +85,7 @@
   {
     "ContainingType": "TravelTipsAPI.Controllers.UsersController",
     "Method": "GetCurrentUserAsync",
-    "RelativePath": "me",
+    "RelativePath": "api/Users/me",
     "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,

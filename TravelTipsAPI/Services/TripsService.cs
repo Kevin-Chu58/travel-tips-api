@@ -34,6 +34,12 @@ namespace TravelTipsAPI.Services
             return (TripViewModel) trip;
         }
 
+        public bool IsOwner(int id, int tripId)
+        {
+            var trip = basicContext.Trips.Find(tripId);
+            return trip?.CreatedBy == id;
+        }
+
         private static Exception TripsIdNotFoundException(int id)
         {
             return new Exception($"Trip not found with id {id}");

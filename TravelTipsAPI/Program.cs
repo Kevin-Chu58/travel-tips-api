@@ -45,6 +45,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowLocalhost3000");
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

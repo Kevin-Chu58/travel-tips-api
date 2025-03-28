@@ -12,9 +12,9 @@ namespace TravelTipsAPI.ViewModels
         public DateTime LastUpdatedAt { get; set; }
         public bool IsPublic { get; set; }
 
-        public static implicit operator TripViewModel(Trip? trip)
+        public static explicit operator TripViewModel?(Trip trip)
         {
-            if (trip == null) return trip;
+            if (trip == null) return null;
 
             var tripViewModel = new TripViewModel
             {
