@@ -17,10 +17,10 @@ builder.Configuration.AddEnvironmentVariables();
 var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
 
 // If not, fallback to appsettings.json (useful for local dev)
-if (string.IsNullOrEmpty(connectionString))
-{
-    connectionString = builder.Configuration.GetConnectionString("TravelTips");
-}
+//if (string.IsNullOrEmpty(connectionString))
+//{
+//    connectionString = builder.Configuration.GetConnectionString("TravelTips");
+//}
 
 // Debug
 //logger.LogInformation($"Connection String: {connectionString}");
