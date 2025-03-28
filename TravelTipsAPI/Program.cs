@@ -8,6 +8,8 @@ using TravelTipsAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Configuration.AddEnvironmentVariables();
+
 // Add authentication to the container.
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
