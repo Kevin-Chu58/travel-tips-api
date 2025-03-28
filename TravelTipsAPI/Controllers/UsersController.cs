@@ -12,24 +12,32 @@ namespace TravelTipsAPI.Controllers
         [Route("me")]
         public async Task<ActionResult<UserViewModel>> GetCurrentUserAsync()
         {
-            ClaimsPrincipal user = HttpContext.User;
-            string? userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
-            var hasUser = usersService.DoesCurrentUserExist(userId ?? "");
-
-            UserViewModel userViewModel;
-            if (userId == null) return NoContent();
-
-            if (!hasUser) {
-                userViewModel = await usersService.PostNewUserAsync(userId);
-                //return CreatedAtAction(nameof(GetCurrentUserAsync), userViewModel);
-            }
-            else
+            try
             {
-                userViewModel = usersService.GetUserByUserId(userId);
-                //return Ok(userViewModel);
+                ClaimsPrincipal user = HttpContext.User;
+                string? userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                var hasUser = usersService.DoesCurrentUserExist(userId ?? "");
+
+                UserViewModel userViewModel;
+                if (userId == null) return NoContent();
+
+                if (!hasUser)
+                {
+                    userViewModel = await usersService.PostNewUserAsync(userId);
+                    //return CreatedAtAction(nameof(GetCurrentUserAsync), userViewModel);
+                }
+                else
+                {
+                    userViewModel = usersService.GetUserByUserId(userId);
+                    //return Ok(userViewModel);
+                }
+                return Ok(userViewModel);
             }
-            return Ok(userViewModel);
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
