@@ -278,10 +278,10 @@ C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets\msbui
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets\msbuild.buildMultiTargeting.TravelTipsAPI.props
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets\msbuild.buildTransitive.TravelTipsAPI.props
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets.pack.json
-C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\TravelTi.6CEF0E09.Up2Date
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\TravelTipsAPI.dll
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\refint\TravelTipsAPI.dll
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\TravelTipsAPI.pdb
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\TravelTipsAPI.genruntimeconfig.cache
 C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\ref\TravelTipsAPI.dll
+C:\GitRepos\travel-tips-api\TravelTipsAPI\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
