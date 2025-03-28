@@ -8,23 +8,7 @@ using TravelTipsAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Log to console
-//var logger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("Startup");
-
 builder.Configuration.AddEnvironmentVariables();
-
-// First, check the connection string from Azure web service is available
-//var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_AZURE_SQL_CONNECTION_STRING");
-
-// If not, fallback to appsettings.json (useful for local dev)
-//if (string.IsNullOrEmpty(connectionString))
-//{
-//    connectionString = builder.Configuration.GetConnectionString("TravelTips");
-//}
-
-// Debug
-//logger.LogInformation($"Connection String: {connectionString}");
-//System.Diagnostics.Trace.WriteLine($"Connection String: {connectionString}");
 
 builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
