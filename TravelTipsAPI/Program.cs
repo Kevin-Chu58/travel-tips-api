@@ -31,7 +31,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsBasic"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
 );
 
 builder.Services.AddServices();
