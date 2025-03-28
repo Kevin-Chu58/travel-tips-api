@@ -39,7 +39,7 @@ jobs:
     runs-on: windows-latest
     needs: build
     env:
-      AZURE_SQL_CONNECTION_STRING: ${{ secrets.AZURE_SQL_CONNECTION_STRING }}
+      SQLCONNSTR_AZURE_SQL_CONNECTION_STRING: ${{ secrets.SQLCONNSTR_AZURE_SQL_CONNECTION_STRING }}
     environment:
       name: 'Production'
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
