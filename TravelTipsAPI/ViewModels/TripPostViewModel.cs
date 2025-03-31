@@ -12,8 +12,8 @@ namespace TravelTipsAPI.ViewModels
             var trip = new Trip
             {
                 Id = new int(),
-                Name = this.Name,
-                Description = this.Description,
+                Name = this.Name.Trim(),
+                Description = this.Description?.Trim(),
                 CreatedBy = CreatedBy,
                 CreatedAt = DateTime.Now,
                 LastUpdatedAt = DateTime.Now,
