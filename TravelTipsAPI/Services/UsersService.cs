@@ -1,4 +1,5 @@
-﻿using TravelTipsAPI.Models.Basic;
+﻿using System.Threading.Tasks;
+using TravelTipsAPI.Models.Basic;
 using TravelTipsAPI.ViewModels;
 
 namespace TravelTipsAPI.Services
@@ -9,29 +10,39 @@ namespace TravelTipsAPI.Services
         {
             var user = basicContext.Users.Find(id);
 
-            return (UserViewModel) user;
+            return (UserViewModel)user;
         }
 
-        public UserViewModel? GetUserByUserId(string userId)
+        public async Task<UserViewModel> GetUserByUserId(string userId)
         {
             var user = basicContext.Users.FirstOrDefault(user => user.UserId == userId);
 
-            return (UserViewModel) user;
+            UserViewModel userViewModel;
+            if (user == null) 
+            { 
+                userViewModel = await PostNewUserAsync(userId);
+            }
+            else
+            {
+                userViewModel = (UserViewModel)user;
+            }
+
+            return userViewModel;
         }
 
-        public async Task<UserViewModel?> PostNewUserAsync(string userId)
+        public async Task<UserViewModel> PostNewUserAsync(string userId)
         {
             var userPostViewModel = new UserPostViewModel { UserId = userId };
-            var userToPost = userPostViewModel.ToUser();
+            var newUser = userPostViewModel.ToUser();
 
-            await basicContext.Users.AddAsync(userToPost);
+            await basicContext.Users.AddAsync(newUser);
             await basicContext.SaveChangesAsync();
 
-            var updatedUser = GetUserById(userToPost.Id);
-            return updatedUser;
+            var newUserViewModel = GetUserById(newUser.Id);
+            return newUserViewModel;
         }
 
-        public async Task<UserViewModel?> UpdateUserAsync(UserPatchViewModel user)
+        public async Task<UserViewModel> UpdateUserAsync(UserPatchViewModel user)
         {
             var userToUpdate = basicContext.Users.Find(user.Id);
             userToUpdate.Email = user.Email;
@@ -40,12 +51,6 @@ namespace TravelTipsAPI.Services
 
             var updatedUser = GetUserById(userToUpdate.Id);
             return updatedUser;
-        }
-
-        public bool DoesCurrentUserExist(string userId)
-        {
-            var currentUser = GetUserByUserId(userId);
-            return currentUser != null;
         }
     }
 }

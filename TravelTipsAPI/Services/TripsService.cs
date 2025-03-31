@@ -11,18 +11,17 @@ namespace TravelTipsAPI.Services
         {
             var trip = basicContext.Trips.Find(id);
 
-            return (TripViewModel) trip;
+            return (TripViewModel)trip;
         }
 
-        public async Task<TripViewModel?> PostNewTripAsync(TripPostViewModel newTripViewModel)
+        public async Task<TripViewModel> PostNewTripAsync(TripPostViewModel newTripViewModel, int createBy)
         {
-            var newTrip = newTripViewModel.ToTrip();
+            var newTrip = newTripViewModel.ToTrip(createBy);
 
             await basicContext.Trips.AddAsync(newTrip);
             await basicContext.SaveChangesAsync();
 
-            var trip = GetTripById(newTrip.Id);
-            return trip;
+            return (TripViewModel)newTrip;
         }
 
         public async Task<TripViewModel> UpdateIsPublicAsync(int id, bool isPublic)
@@ -31,7 +30,15 @@ namespace TravelTipsAPI.Services
             trip.IsPublic = isPublic;
             
             await basicContext.SaveChangesAsync();
-            return (TripViewModel) trip;
+            return (TripViewModel)trip;
+        }
+        public async Task<TripViewModel> UpdateIsHiddenAsync(int id, bool isHidden)
+        {
+            var trip = basicContext.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
+            trip.IsHidden = isHidden;
+
+            await basicContext.SaveChangesAsync();
+            return (TripViewModel)trip;
         }
 
         public bool IsOwner(int id, int tripId)
