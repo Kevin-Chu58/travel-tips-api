@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TravelTipsAPI.Models.Basic;
 using TravelTipsAPI.Services;
@@ -15,6 +16,16 @@ namespace TravelTipsAPI.Controllers
         {
             var tripViewModel = tripsService.GetTripById(id);
             return Ok(tripViewModel);
+        }
+
+        [HttpGet]
+        [Route("")]
+        [AllowAnonymous]
+        public ActionResult<IEnumerable<TripViewModel>> GetTripsByName([FromQuery] string name)
+        {
+            // TODO
+            var res = new List<TripViewModel>();
+            return Ok(res);
         }
 
         [HttpPost]
