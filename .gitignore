@@ -9,6 +9,9 @@
 # Visual Studio 2015 cache/options directory
 .vs/
 
+TravelTipsAPI/bin
+TravelTipsAPI/obj
+
 # Environment Specific app settings
 appsettings.*.json
 secrets.config
