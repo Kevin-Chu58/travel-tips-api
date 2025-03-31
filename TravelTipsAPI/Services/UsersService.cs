@@ -38,19 +38,22 @@ namespace TravelTipsAPI.Services
             await basicContext.Users.AddAsync(newUser);
             await basicContext.SaveChangesAsync();
 
-            var newUserViewModel = GetUserById(newUser.Id);
-            return newUserViewModel;
+            return (UserViewModel)newUser;
         }
 
-        public async Task<UserViewModel> UpdateUserAsync(UserPatchViewModel user)
+        public async Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel userPatchViewModel)
         {
-            var userToUpdate = basicContext.Users.Find(user.Id);
-            userToUpdate.Email = user.Email;
-            userToUpdate.Username = user.Username;
+            var user = basicContext.Users.Find(id) ?? throw UserIdNotFoundException(id);
+            user.Email = userPatchViewModel.Email ?? user.Email;
+            user.Username = userPatchViewModel.Username ?? user.Username;
             await basicContext.SaveChangesAsync();
 
-            var updatedUser = GetUserById(userToUpdate.Id);
-            return updatedUser;
+            return (UserViewModel)user;
+        }
+        
+        private static Exception UserIdNotFoundException(int id)
+        {
+            return new Exception($"User not found with id {id}");
         }
     }
 }

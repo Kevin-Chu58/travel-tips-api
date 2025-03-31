@@ -1,6 +1,0 @@
-@TravelTipsAPI_HostAddress = http://localhost:5252
-
-GET {{TravelTipsAPI_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
