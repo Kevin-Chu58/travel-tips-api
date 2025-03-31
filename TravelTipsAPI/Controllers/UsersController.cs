@@ -14,24 +14,12 @@ namespace TravelTipsAPI.Controllers
         {
             try
             {
-                ClaimsPrincipal user = HttpContext.User;
-                string? userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                var hasUser = usersService.DoesCurrentUserExist(userId ?? "");
+                // Get Auth0 UserId
+                string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId == null) return NotFound();
 
                 UserViewModel userViewModel;
-                if (userId == null) return NoContent();
-
-                if (!hasUser)
-                {
-                    userViewModel = await usersService.PostNewUserAsync(userId);
-                    //return CreatedAtAction(nameof(GetCurrentUserAsync), userViewModel);
-                }
-                else
-                {
-                    userViewModel = usersService.GetUserByUserId(userId);
-                    //return Ok(userViewModel);
-                }
+                userViewModel = await usersService.GetUserByUserId(userId);
                 return Ok(userViewModel);
             }
             catch (Exception ex)

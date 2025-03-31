@@ -2,21 +2,23 @@
 using TravelTipsAPI.ViewModels;
 
 namespace TravelTipsAPI.Services
-{
-    public interface ITripsService
-    {
-        TripViewModel? GetTripById(int id);
-        Task<TripViewModel?> PostNewTripAsync(TripPostViewModel newTrip);
-        Task<TripViewModel> UpdateIsPublicAsync(int id, bool isPublic);
-        bool IsOwner(int id, int tripId);
-    }
-
+{   
     public interface IUsersService
     {
         UserViewModel? GetUserById(int id);
-        UserViewModel? GetUserByUserId(string userId);
-        Task<UserViewModel?> PostNewUserAsync(string userId);
-        Task<UserViewModel?> UpdateUserAsync(UserPatchViewModel newUser);
-        bool DoesCurrentUserExist(string userId);
+        Task<UserViewModel> GetUserByUserId(string userId);
+        Task<UserViewModel> PostNewUserAsync(string userId);
+        Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
+    }
+    public interface ITripsService
+    {
+        TripViewModel? GetTripById(int id);
+        IEnumerable<TripViewModel> GetTripByName(string name);
+        IEnumerable<TripViewModel> GetYourTrips(int id);
+        Task<TripViewModel> PostNewTripAsync(TripPostViewModel newTrip, int createdBy);
+        Task<TripViewModel> PatchTripAsync(int id, TripPatchViewModel trip);
+        Task<TripViewModel> UpdateIsPublicAsync(int id, bool isPublic);
+        Task<TripViewModel> UpdateIsHiddenAsync(int id, bool isHidden);
+        bool IsOwner(int id, int tripId);
     }
 }

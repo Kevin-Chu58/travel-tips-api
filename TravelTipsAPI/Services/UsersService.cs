@@ -1,4 +1,5 @@
-﻿using TravelTipsAPI.Models.Basic;
+﻿using System.Threading.Tasks;
+using TravelTipsAPI.Models.Basic;
 using TravelTipsAPI.ViewModels;
 
 namespace TravelTipsAPI.Services
@@ -9,43 +10,50 @@ namespace TravelTipsAPI.Services
         {
             var user = basicContext.Users.Find(id);
 
-            return (UserViewModel) user;
+            return (UserViewModel)user;
         }
 
-        public UserViewModel? GetUserByUserId(string userId)
+        public async Task<UserViewModel> GetUserByUserId(string userId)
         {
             var user = basicContext.Users.FirstOrDefault(user => user.UserId == userId);
 
-            return (UserViewModel) user;
+            UserViewModel userViewModel;
+            if (user == null) 
+            { 
+                userViewModel = await PostNewUserAsync(userId);
+            }
+            else
+            {
+                userViewModel = (UserViewModel)user;
+            }
+
+            return userViewModel;
         }
 
-        public async Task<UserViewModel?> PostNewUserAsync(string userId)
+        public async Task<UserViewModel> PostNewUserAsync(string userId)
         {
             var userPostViewModel = new UserPostViewModel { UserId = userId };
-            var userToPost = userPostViewModel.ToUser();
+            var newUser = userPostViewModel.ToUser();
 
-            await basicContext.Users.AddAsync(userToPost);
+            await basicContext.Users.AddAsync(newUser);
             await basicContext.SaveChangesAsync();
 
-            var updatedUser = GetUserById(userToPost.Id);
-            return updatedUser;
+            return (UserViewModel)newUser;
         }
 
-        public async Task<UserViewModel?> UpdateUserAsync(UserPatchViewModel user)
+        public async Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel userPatchViewModel)
         {
-            var userToUpdate = basicContext.Users.Find(user.Id);
-            userToUpdate.Email = user.Email;
-            userToUpdate.Username = user.Username;
+            var user = basicContext.Users.Find(id) ?? throw UserIdNotFoundException(id);
+            user.Email = userPatchViewModel.Email ?? user.Email;
+            user.Username = userPatchViewModel.Username ?? user.Username;
             await basicContext.SaveChangesAsync();
 
-            var updatedUser = GetUserById(userToUpdate.Id);
-            return updatedUser;
+            return (UserViewModel)user;
         }
-
-        public bool DoesCurrentUserExist(string userId)
+        
+        private static Exception UserIdNotFoundException(int id)
         {
-            var currentUser = GetUserByUserId(userId);
-            return currentUser != null;
+            return new Exception($"User not found with id {id}");
         }
     }
 }

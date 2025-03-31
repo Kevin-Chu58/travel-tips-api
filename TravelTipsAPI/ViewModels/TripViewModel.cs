@@ -10,9 +10,8 @@ namespace TravelTipsAPI.ViewModels
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
-        public bool IsPublic { get; set; }
 
-        public static explicit operator TripViewModel?(Trip trip)
+        public static explicit operator TripViewModel?(Trip? trip)
         {
             if (trip == null) return null;
 
@@ -24,7 +23,6 @@ namespace TravelTipsAPI.ViewModels
                 CreatedBy = trip.CreatedBy,
                 CreatedAt = trip.CreatedAt,
                 LastUpdatedAt = trip.LastUpdatedAt,
-                IsPublic = trip.IsPublic,
             };
 
             return tripViewModel;

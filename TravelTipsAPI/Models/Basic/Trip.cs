@@ -19,6 +19,8 @@ public partial class Trip
 
     public bool IsPublic { get; set; }
 
+    public bool IsHidden { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
