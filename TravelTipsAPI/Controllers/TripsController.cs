@@ -13,7 +13,7 @@ namespace TravelTipsAPI.Controllers
     /// <param name="usersService">users service</param>
     /// <param name="tripsService">trips service</param>
     [Route("api/[controller]")]
-    public class TripsController(IUsersService usersService, ITripsService tripsService) : TravelTipsControllerBase
+    public class TripsController(IUsersService usersService, ITripsService tripsService, ISmallTripsService smallTripsService) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get a trip by its id
@@ -22,10 +22,27 @@ namespace TravelTipsAPI.Controllers
         /// <returns>a trip with that id</returns>
         [HttpGet]
         [Route("{id}")]
-        public ActionResult<TripViewModel> GetTripById(int id)
+        [AllowAnonymous]
+        public ActionResult<TripDetailViewModel> GetTripById(int id)
         {
-            var tripViewModel = tripsService.GetTripById(id);
-            return Ok(tripViewModel);
+            var tripViewModel = tripsService.GetTripById(id, true);
+            if (tripViewModel == null)
+                return NotFound();
+
+            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+
+            var tripDetailViewModel = new TripDetailViewModel
+            {
+                Id = tripViewModel.Id,
+                Name = tripViewModel.Name,
+                Description = tripViewModel.Description,
+                CreatedBy = tripViewModel.CreatedBy,
+                CreatedAt = tripViewModel.CreatedAt,
+                LastUpdatedAt = tripViewModel.LastUpdatedAt,
+                SmallTrips = smallTripViewModels,
+            };
+
+            return Ok(tripDetailViewModel);
         }
 
         /// <summary>
@@ -93,7 +110,7 @@ namespace TravelTipsAPI.Controllers
         /// <returns>the updated trip</returns>
         [HttpPatch]
         [Route("{id}")]
-        public async Task<ActionResult<TripViewModel>> PatchTrip(int id, [FromBody] TripPatchViewModel tripPatchViewModel)
+        public async Task<ActionResult<TripViewModel>> PatchTrip(int id, [FromBody] TripPatchViewModel trip)
         {
             // Get Auth0 UserId
             string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -105,7 +122,7 @@ namespace TravelTipsAPI.Controllers
             var isOwner = tripsService.IsOwner(currentUser.Id, id);
             if (isOwner)
             {
-                var tripViewModel = await tripsService.PatchTripAsync(id, tripPatchViewModel);
+                var tripViewModel = await tripsService.PatchTripAsync(id, trip);
                 return Ok(tripViewModel);
             }
             else

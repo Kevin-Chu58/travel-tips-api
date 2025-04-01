@@ -18,8 +18,7 @@ namespace TravelTipsAPI.Controllers
                 string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userId == null) return NotFound();
 
-                UserViewModel userViewModel;
-                userViewModel = await usersService.GetUserByUserId(userId);
+                UserViewModel userViewModel = await usersService.GetUserByUserId(userId);
                 return Ok(userViewModel);
             }
             catch (Exception ex)

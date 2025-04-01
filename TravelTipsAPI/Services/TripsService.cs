@@ -9,9 +9,14 @@ namespace TravelTipsAPI.Services
 {
     public class TripsService(TravelTipsBasicContext basicContext) : ITripsService
     {
-        public TripViewModel? GetTripById(int id)
+        public TripViewModel? GetTripById(int id, bool? isPublic = null)
         {
-            var trip = basicContext.Trips.Find(id);
+            Trip? trip;
+
+            if (isPublic == null)
+                trip = basicContext.Trips.Find(id);
+            else
+                trip = basicContext.Trips.FirstOrDefault(trip => trip.Id == id && trip.IsPublic == isPublic);
 
             return (TripViewModel)trip;
         }
@@ -43,9 +48,9 @@ namespace TravelTipsAPI.Services
             return yourTripViewModels;
         }
 
-        public async Task<TripViewModel> PostNewTripAsync(TripPostViewModel newTripViewModel, int createBy)
+        public async Task<TripViewModel> PostNewTripAsync(TripPostViewModel tripPostViewModel, int createBy)
         {
-            var newTrip = newTripViewModel.ToTrip(createBy);
+            var newTrip = tripPostViewModel.ToTrip(createBy);
 
             await basicContext.Trips.AddAsync(newTrip);
             await basicContext.SaveChangesAsync();
@@ -59,6 +64,7 @@ namespace TravelTipsAPI.Services
 
             trip.Name = tripPatchViewModel.Name ?? trip.Name;
             trip.Description = tripPatchViewModel.Description ?? trip.Description;
+            trip.LastUpdatedAt = DateTime.Now;
 
             await basicContext.SaveChangesAsync();
 
@@ -71,6 +77,7 @@ namespace TravelTipsAPI.Services
             trip.IsPublic = isPublic;
             
             await basicContext.SaveChangesAsync();
+
             return (TripViewModel)trip;
         }
         public async Task<TripViewModel> UpdateIsHiddenAsync(int id, bool isHidden)
@@ -80,6 +87,17 @@ namespace TravelTipsAPI.Services
             trip.IsPublic = false; // when trashed, also make the trip private
 
             await basicContext.SaveChangesAsync();
+
+            return (TripViewModel)trip;
+        }
+
+        public async Task<TripViewModel> UpdateLastUpdatedAtAsync(int id)
+        {
+            var trip = basicContext.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
+            trip.LastUpdatedAt = DateTime.Now;
+
+            await basicContext.SaveChangesAsync();
+
             return (TripViewModel)trip;
         }
 
