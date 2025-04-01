@@ -1,6 +1,4 @@
-﻿using TravelTipsAPI.Models.Basic;
-
-namespace TravelTipsAPI.ViewModels
+﻿namespace TravelTipsAPI.ViewModels
 {
     public class UserPatchViewModel
     {
