@@ -2,23 +2,23 @@
 
 namespace TravelTipsAPI.ViewModels
 {
-    public class TripPostViewModel
+    public class SmallTripPostViewModel
     {
         public required string Name { get; set; }
         public string? Description { get; set; }
+        public int TripId { get; set; }
 
-        public Trip ToTrip(int CreatedBy)
+        public SmallTrip ToSmallTrip()
         {
-            var trip = new Trip
+            var smallTrip = new SmallTrip
             {
                 Id = new int(),
                 Name = Name.Trim(),
                 Description = Description?.Trim(),
-                CreatedBy = CreatedBy,
-                CreatedAt = DateTime.Now,
-                LastUpdatedAt = DateTime.Now,
+                TripId = TripId,
             };
-            return trip;
+
+            return smallTrip;
         }
     }
 }
