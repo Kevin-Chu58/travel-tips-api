@@ -1,6 +1,6 @@
 ﻿using TravelTipsAPI.Models.Basic;
 
-namespace TravelTipsAPI.ViewModels
+namespace TravelTipsAPI.ViewModels.db_basic
 {
     public class UserPostViewModel
     {
@@ -11,7 +11,7 @@ namespace TravelTipsAPI.ViewModels
             var user = new User
             {
                 Id = new int(),
-                UserId = this.UserId,
+                UserId = UserId,
                 Username = "",
                 Email = "",
             };

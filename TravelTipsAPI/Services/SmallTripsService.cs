@@ -1,9 +1,9 @@
 ﻿using TravelTipsAPI.Models.Basic;
-using TravelTipsAPI.ViewModels;
+using TravelTipsAPI.ViewModels.db_basic;
 
 namespace TravelTipsAPI.Services
 {
-    public class SmallTripsService(TravelTipsBasicContext basicContext, TripsService tripsService) : ISmallTripsService
+    public class SmallTripsService(TravelTipsBasicContext basicContext, ITripsService tripsService) : ISmallTripsService
     {
         public SmallTripViewModel? GetSmallTripById(int id)
         {

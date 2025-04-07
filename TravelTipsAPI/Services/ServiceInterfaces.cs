@@ -1,5 +1,5 @@
 ﻿using TravelTipsAPI.Models.Basic;
-using TravelTipsAPI.ViewModels;
+using TravelTipsAPI.ViewModels.db_basic;
 
 namespace TravelTipsAPI.Services
 {   
@@ -13,9 +13,10 @@ namespace TravelTipsAPI.Services
     public interface ITripsService
     {
         TripViewModel? GetTripById(int id, bool? isPublic = null);
-        IEnumerable<TripViewModel> GetTripByName(string name);
+        IEnumerable<TripViewModel> GetTripsByName(string name);
         IEnumerable<TripViewModel> GetYourTrips(int id);
-        Task<TripViewModel> PostNewTripAsync(TripPostViewModel newTrip, int createdBy);
+        IEnumerable<int> GetYourTripIds(int id);
+        Task<TripViewModel> PostNewTripAsync(int createdBy, TripPostViewModel newTrip);
         Task<TripViewModel> PatchTripAsync(int id, TripPatchViewModel trip);
         Task<TripViewModel> UpdateIsPublicAsync(int id, bool isPublic);
         Task<TripViewModel> UpdateIsHiddenAsync(int id, bool isHidden);
@@ -29,5 +30,21 @@ namespace TravelTipsAPI.Services
         IEnumerable<SmallTripViewModel> GetSmallTripsByTripId(int tripId);
         Task<SmallTripViewModel> PostNewSmallTripsAsync(int tripId, SmallTripPostViewModel newSmallTrip);
         Task<SmallTripViewModel> PatchSmallTripAsync(int id, TripPatchViewModel smallTrip);
+    }
+
+    public interface IDaysService
+    {
+        DayViewModel? GetDayById(int id);
+        IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
+        Task<DayViewModel> PostNewDayAsync(int tripId, DayPostViewModel newDay);
+        Task<DayViewModel> PatchDayAsync(int id, DayPatchViewModel day);
+    }
+
+    public interface ILinksService
+    {
+        LinkSearchViewModel GetLinksByName(int timeStamp, string name, int createdBy);
+        Task<LinkViewModel> PostNewLinkAsync(int createdBy, LinkPostViewModel newLink);
+        Task<LinkViewModel> PatchLinkAsync(int id, LinkPatchViewModel link);
+        bool IsOwner(int id, int linkId);
     }
 }

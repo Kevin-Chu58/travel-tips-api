@@ -1,6 +1,6 @@
 ﻿using TravelTipsAPI.Models.Basic;
 
-namespace TravelTipsAPI.ViewModels
+namespace TravelTipsAPI.ViewModels.db_basic
 {
     public class TripPostViewModel
     {
