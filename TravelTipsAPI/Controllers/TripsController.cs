@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.Basic;
 using TravelTipsAPI.Services;
-using TravelTipsAPI.ViewModels;
+using TravelTipsAPI.ViewModels.db_basic;
 
 namespace TravelTipsAPI.Controllers
 {
@@ -13,7 +17,7 @@ namespace TravelTipsAPI.Controllers
     /// <param name="usersService">users service</param>
     /// <param name="tripsService">trips service</param>
     [Route("api/[controller]")]
-    public class TripsController(IUsersService usersService, ITripsService tripsService, ISmallTripsService smallTripsService) : TravelTipsControllerBase
+    public class TripsController(ITripsService tripsService, ISmallTripsService smallTripsService) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get a trip by its id
@@ -55,7 +59,7 @@ namespace TravelTipsAPI.Controllers
         [AllowAnonymous]
         public ActionResult<IEnumerable<TripViewModel>> GetTripsByName([FromQuery] string name)
         {
-            var tripViewModels = tripsService.GetTripByName(name);
+            var tripViewModels = tripsService.GetTripsByName(name);
             return Ok(tripViewModels);
         }
 
@@ -65,16 +69,12 @@ namespace TravelTipsAPI.Controllers
         /// <returns>a list of your own trips</returns>
         [HttpGet]
         [Route("yours")]
+        [IsOwner(Resource = Resources.NONE)]
         public ActionResult<IEnumerable<TripViewModel>> GetYourTrips()
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return NotFound("User not found.");
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var currentUser = usersService.GetUserByUserId(userId);
-
-            var yourTripViewModels = tripsService.GetYourTrips(currentUser.Id);
+            var yourTripViewModels = tripsService.GetTripsByUserId(userId);
             return Ok(yourTripViewModels);
         }
 
@@ -85,20 +85,12 @@ namespace TravelTipsAPI.Controllers
         /// <returns>the new trip posted to db</returns>
         [HttpPost]
         [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
         public async Task<ActionResult<TripViewModel>> PostNewTrip([FromBody] TripPostViewModel newTrip)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            if (userId == null)
-                return NotFound("User not found.");
-
-            if (string.IsNullOrEmpty(newTrip.Name)) 
-                return BadRequest("Name cannot be null or empty.");
-
-            UserViewModel user = await usersService.GetUserByUserId(userId);
-
-            var tripViewModel = await tripsService.PostNewTripAsync(newTrip, user.Id);
+            var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip);
             return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
         }
 
@@ -110,23 +102,11 @@ namespace TravelTipsAPI.Controllers
         /// <returns>the updated trip</returns>
         [HttpPatch]
         [Route("{id}")]
+        [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<TripViewModel>> PatchTrip(int id, [FromBody] TripPatchViewModel trip)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var currentUser = usersService.GetUserByUserId(userId);
-
-            var isOwner = tripsService.IsOwner(currentUser.Id, id);
-            if (isOwner)
-            {
-                var tripViewModel = await tripsService.PatchTripAsync(id, trip);
-                return Ok(tripViewModel);
-            }
-            else
-                return Unauthorized();
+            var tripViewModel = await tripsService.PatchTripAsync(id, trip);
+            return Ok(tripViewModel);
         }
 
         /// <summary>
@@ -137,23 +117,11 @@ namespace TravelTipsAPI.Controllers
         /// <returns>a trip with updated published status</returns>
         [HttpPatch]
         [Route("{id}/isPublic")]
+        [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(int id, [FromBody] bool isPublic)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var currentUser = usersService.GetUserByUserId(userId);
-
-            var isOwner = tripsService.IsOwner(currentUser.Id, id);
-            if (isOwner)
-            {
-                var tripViewModel = await tripsService.UpdateIsPublicAsync(id, isPublic);
-                return Ok(tripViewModel);
-            }
-            else
-                return Unauthorized();
+            var tripViewModel = await tripsService.UpdateIsPublicAsync(id, isPublic);
+            return Ok(tripViewModel);
         }
 
         /// <summary>
@@ -164,23 +132,11 @@ namespace TravelTipsAPI.Controllers
         /// <returns>a trip with updated trashed status</returns>
         [HttpPatch]
         [Route("{id}/isHidden")]
+        [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<TripViewModel>> UpdateTripIsHidden(int id, [FromBody] bool isHidden)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var currentUser = usersService.GetUserByUserId(userId);
-
-            var isOwner = tripsService.IsOwner(currentUser.Id, id);
-            if (isOwner)
-            {
-                var tripViewModel = await tripsService.UpdateIsHiddenAsync(id, isHidden);
-                return Ok(tripViewModel);
-            }
-            else
-                return Unauthorized();
+            var tripViewModel = await tripsService.UpdateIsHiddenAsync(id, isHidden);
+            return Ok(tripViewModel);
         }
     }
 }

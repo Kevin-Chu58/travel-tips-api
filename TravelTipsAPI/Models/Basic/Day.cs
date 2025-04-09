@@ -17,6 +17,12 @@ public partial class Day
 
     public int TripId { get; set; }
 
+    public bool IsOverNight { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public virtual User CreatedByNavigation { get; set; } = null!;
+
     public virtual Trip Trip { get; set; } = null!;
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();

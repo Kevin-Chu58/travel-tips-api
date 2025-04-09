@@ -34,7 +34,7 @@ public partial class TravelTipsBasicContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
+        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -71,12 +71,19 @@ public partial class TravelTipsBasicContext : DbContext
 
             entity.ToTable("Days", "db_basic");
 
+            entity.HasIndex(e => e.IsOverNight, "idx_days_isOverNight");
+
             entity.Property(e => e.Description)
                 .HasMaxLength(500)
                 .IsUnicode(false);
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Days)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_days");
 
             entity.HasOne(d => d.Trip).WithMany(p => p.Days)
                 .HasForeignKey(d => d.TripId)
@@ -96,6 +103,11 @@ public partial class TravelTipsBasicContext : DbContext
             entity.Property(e => e.Url)
                 .HasMaxLength(50)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Links)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_links");
         });
 
         modelBuilder.Entity<PreferRoute>(entity =>
@@ -192,6 +204,11 @@ public partial class TravelTipsBasicContext : DbContext
                 .HasForeignKey(d => d.AttractionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trip_attraction_orders_attractions");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TripAttractionOrders)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_trip_attraction_orders");
 
             entity.HasOne(d => d.Day).WithMany(p => p.TripAttractionOrders)
                 .HasForeignKey(d => d.DayId)

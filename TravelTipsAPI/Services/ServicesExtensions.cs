@@ -16,9 +16,10 @@ namespace TravelTipsAPI.Services
                 ); 
             });
 
-            services.AddScoped<ITripsService, TripsService>();
             services.AddScoped<IUsersService, UsersService>();
+            services.AddScoped<ITripsService, TripsService>();
             services.AddScoped<ISmallTripsService, SmallTripsService>();
+            services.AddScoped<IDaysService, DaysService>();
             return services;
         }
     }
