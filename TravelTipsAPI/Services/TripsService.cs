@@ -59,7 +59,7 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="id">user id</param>
         /// <returns>trips you created</returns>
-        public IEnumerable<TripViewModel> GetYourTrips(int id)
+        public IEnumerable<TripViewModel> GetTripsByUserId(int id)
         {
             var yourTripViewModels = basicContext.Trips
                 .Where(trip => trip.CreatedBy == id)
@@ -69,6 +69,11 @@ namespace TravelTipsAPI.Services
             return yourTripViewModels;
         }
 
+        /// <summary>
+        /// Get your trips' ids
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>a list of the ids of trips you own</returns>
         public IEnumerable<int> GetYourTripIds(int id)
         {
             var yourTripIds = basicContext.Trips

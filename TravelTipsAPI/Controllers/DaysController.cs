@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.Basic;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -42,54 +44,31 @@ namespace TravelTipsAPI.Controllers
         /// <returns>the new day</returns>
         [HttpPost]
         [Route("{tripId}")]
+        [IsOwner(Resource = Resources.NONE)]
         public async Task<ActionResult<DayViewModel>> PostNewDay(int tripId, [FromBody] DayPostViewModel newDay)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var tripViewModel = tripsService.GetTripById(tripId);
-
-            if (tripViewModel == null)
-                return NotFound("Trip not found.");
-
-            var user = usersService.GetUserByUserId(userId);
-            var isOwner = tripsService.IsOwner(user.Id, tripId);
-            if (!isOwner)
+            var yourTripIds = tripsService.GetYourTripIds(userId);
+            if (!yourTripIds.Any(id => id == tripId))
                 return Unauthorized("You are not authorized.");
 
-            var dayViewModel = await daysService.PostNewDayAsync(tripId, newDay);
+            var dayViewModel = await daysService.PostNewDayAsync(tripId, userId, newDay);
 
             return Ok(dayViewModel);
         }
 
+        /// <summary>
+        /// Update a day with day details
+        /// </summary>
+        /// <param name="id">day id</param>
+        /// <param name="day">day details to be updated</param>
+        /// <returns>the updated day</returns>
         [HttpPatch]
         [Route("{id}")]
+        [IsOwner(Resource = Resources.DAYS)]
         public async Task<ActionResult<DayViewModel>> UpdateDay(int id, [FromBody] DayPatchViewModel day)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var dayViewModel = daysService.GetDayById(id);
-
-            if (dayViewModel == null)
-                return NotFound("Day not found");
-
-            var tripViewModel = tripsService.GetTripById(dayViewModel.TripId);
-
-            if (tripViewModel == null)
-                return NotFound("Trip not found.");
-
-            var user = usersService.GetUserByUserId(userId);
-            var isOwner = tripsService.IsOwner(user.Id, dayViewModel.TripId);
-            if (!isOwner)
-                return Unauthorized("You are not authorized.");
-
             var updatedDayViewModel = await daysService.PatchDayAsync(id, day);
 
             return Ok(updatedDayViewModel);

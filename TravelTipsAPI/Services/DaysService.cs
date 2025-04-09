@@ -37,13 +37,28 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
+        /// Get your days' ids
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>a list of the ids of days you own</returns>
+        public IEnumerable<int> GetYourDayIds(int id)
+        {
+            var yourDayIds = basicContext.Days
+                .Where (day => day.CreatedBy == id)
+                .Select(day => day.Id)
+                .ToList();
+
+            return yourDayIds;
+        }
+
+        /// <summary>
         /// Create a new day
         /// </summary>
         /// <param name="newDay">new day detail</param>
         /// <returns>the new day</returns>
-        public async Task<DayViewModel> PostNewDayAsync(int tripId, DayPostViewModel newDay)
+        public async Task<DayViewModel> PostNewDayAsync(int tripId, int createdBy, DayPostViewModel newDay)
         {
-            var day = newDay.ToDay(tripId);
+            var day = newDay.ToDay(tripId, createdBy);
 
             if (day.Start == day.End)
                 throw DaysStartEndOrderException();

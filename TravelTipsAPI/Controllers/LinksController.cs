@@ -51,7 +51,7 @@ namespace TravelTipsAPI.Controllers
 
             var user = usersService.GetUserByUserId(userId);
 
-            var linkViewModel = linksService.PostNewLinkAsync(user.Id, newLink);
+            var linkViewModel = await linksService.PostNewLinkAsync(user.Id, newLink);
             return Ok(linkViewModel);
         }
 

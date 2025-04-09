@@ -80,6 +80,11 @@ public partial class TravelTipsBasicContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false);
 
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Days)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_days");
+
             entity.HasOne(d => d.Trip).WithMany(p => p.Days)
                 .HasForeignKey(d => d.TripId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -199,6 +204,11 @@ public partial class TravelTipsBasicContext : DbContext
                 .HasForeignKey(d => d.AttractionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trip_attraction_orders_attractions");
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TripAttractionOrders)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_trip_attraction_orders");
 
             entity.HasOne(d => d.Day).WithMany(p => p.TripAttractionOrders)
                 .HasForeignKey(d => d.DayId)

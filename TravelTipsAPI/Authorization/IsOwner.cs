@@ -17,6 +17,7 @@ namespace TravelTipsAPI.Authorization
         private ActionExecutingContext context;
         private IUsersService _usersService;
         private ITripsService _tripsService;
+        private IDaysService _daysService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -25,10 +26,9 @@ namespace TravelTipsAPI.Authorization
         {
             context = actionContext;
 
-            ResourceId = (int)context.ActionArguments["id"];
-
             _usersService = context.HttpContext.RequestServices.GetRequiredService<IUsersService>();
             _tripsService = context.HttpContext.RequestServices.GetRequiredService<ITripsService>();
+            _daysService = context.HttpContext.RequestServices.GetRequiredService<IDaysService>();
 
             var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             UserId = (await _usersService.GetUserByUserId(auth0Id)).Id;
@@ -38,22 +38,34 @@ namespace TravelTipsAPI.Authorization
                 throw new AuthenticationFailureException("Authentication has failed for this request.");
             }
 
-            var isAuthorized = HasOwnership(Resource);
-            if (!isAuthorized)
+            // caching for easy reuse
+            context.HttpContext.Items.Add("user_id", UserId);
+
+            if (Resource != Resources.NONE)
             {
-                throw new UnauthorizedAccessException("Authorization has been denied for this request.");
-            }
+                // the id of the resource, e.g. id of a Trip, id of a Day
+                ResourceId = (int)(context.ActionArguments["id"] ?? 0);
+                var isAuthorized = HasOwnership(Resource);
+                if (!isAuthorized)
+                {
+                    throw new UnauthorizedAccessException("Authorization has been denied for this request.");
+                }
+            }            
         }
 
-        public bool HasOwnership(string resource)
+        private bool HasOwnership(string resource)
         {
             switch (resource)
             {
                 case Resources.TRIPS:
                     var yourTrips = _tripsService.GetYourTripIds(UserId);
                     return yourTrips.Any(tripId => tripId == ResourceId);
-                    // TODO - for other resources
 
+                case Resources.DAYS:
+                    var yourDays = _daysService.GetYourDayIds(UserId);
+                    return yourDays.Any(dayId => dayId == ResourceId);
+
+                // TODO - for other resources
             }
             return false;
         }

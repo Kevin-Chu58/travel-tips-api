@@ -11,6 +11,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public TimeOnly End { get; set; }
         public bool IsOverNight { get; set; }
         public int TripId { get; set; }
+        public int CreatedBy { get; set; }
 
         public static explicit operator DayViewModel?(Day? day)
         {
@@ -24,7 +25,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Start = day.Start,
                 End = day.End,
                 IsOverNight = day.IsOverNight,
-                TripId = day.TripId
+                TripId = day.TripId,
+                CreatedBy = day.CreatedBy
             };
 
             return dayViewModel;

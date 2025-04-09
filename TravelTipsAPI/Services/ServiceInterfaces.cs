@@ -14,7 +14,7 @@ namespace TravelTipsAPI.Services
     {
         TripViewModel? GetTripById(int id, bool? isPublic = null);
         IEnumerable<TripViewModel> GetTripsByName(string name);
-        IEnumerable<TripViewModel> GetYourTrips(int id);
+        IEnumerable<TripViewModel> GetTripsByUserId(int id);
         IEnumerable<int> GetYourTripIds(int id);
         Task<TripViewModel> PostNewTripAsync(int createdBy, TripPostViewModel newTrip);
         Task<TripViewModel> PatchTripAsync(int id, TripPatchViewModel trip);
@@ -36,7 +36,8 @@ namespace TravelTipsAPI.Services
     {
         DayViewModel? GetDayById(int id);
         IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
-        Task<DayViewModel> PostNewDayAsync(int tripId, DayPostViewModel newDay);
+        IEnumerable<int> GetYourDayIds(int id);
+        Task<DayViewModel> PostNewDayAsync(int tripId, int createdBy, DayPostViewModel newDay);
         Task<DayViewModel> PatchDayAsync(int id, DayPatchViewModel day);
     }
 

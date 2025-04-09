@@ -9,7 +9,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public TimeOnly Start {  get; set; }
         public TimeOnly End { get; set; }
 
-        public Day ToDay(int tripId)
+        public Day ToDay(int tripId, int createdBy)
         {
             var day = new Day
             {
@@ -19,7 +19,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Start = Start,
                 End = End,
                 IsOverNight = Start > End,
-                TripId = tripId
+                TripId = tripId,
+                CreatedBy = createdBy
             };
 
             return day;
