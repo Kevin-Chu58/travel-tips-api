@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Models.Basic;
+﻿using TravelTipsAPI.Models;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -8,8 +8,9 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public string? Description { get; set; }
         public TimeOnly Start {  get; set; }
         public TimeOnly End { get; set; }
+        public int TripId { get; set; }
 
-        public Day ToDay(int tripId, int createdBy)
+        public Day ToDay(int createdBy)
         {
             var day = new Day
             {
@@ -19,7 +20,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Start = Start,
                 End = End,
                 IsOverNight = Start > End,
-                TripId = tripId,
+                TripId = TripId,
                 CreatedBy = createdBy
             };
 

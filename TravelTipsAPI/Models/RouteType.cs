@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TravelTipsAPI.Models.Basic;
+namespace TravelTipsAPI.Models;
 
 public partial class RouteType
 {

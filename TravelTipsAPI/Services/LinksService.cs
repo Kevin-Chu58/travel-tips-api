@@ -1,35 +1,53 @@
-﻿using TravelTipsAPI.Models.Basic;
+﻿using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Services
 {
     /// <summary>
     /// The service of Links
     /// </summary>
-    /// <param name="basicContext">db_basic context</param>
-    public class LinksService(TravelTipsBasicContext basicContext) : ILinksService
+    /// <param name="context">context</param>
+    public class LinksService(TravelTipsContext context) : ILinksService
     {
         /// <summary>
         /// Get links by the name
         /// </summary>
-        /// <param name="timeStamp">the time in milliseconds when the http request created</param>
         /// <param name="name">name to search</param>
+        /// <param name="createdBy">user id</param>
         /// <returns>the search result of links</returns>
-        public LinkSearchViewModel GetLinksByName(int timeStamp, string name, int createdBy)
+        public IEnumerable<LinkViewModel> GetLinksByName(string name, int createdBy)
         {
-            var linkViewModels = basicContext.Links
-                .Where(link => link.Name.Contains(name)
-                    && link.CreatedBy == createdBy)
-                .Select(link => (LinkViewModel)link)
+            name = name.Trim().ToLower();
+
+            var linkViewModels = new List<LinkViewModel>();
+
+            if (name.Length >= SearchConstants.LINK_SEARCH_MIN_LENGTH)
+            {
+                linkViewModels = context.Links
+                    .Where(link => link.Name.ToLower().Contains(name)
+                        && link.CreatedBy == createdBy)
+                    .Select(link => (LinkViewModel)link)
+                    .ToList();
+            }
+
+            return linkViewModels;
+        }
+
+        /// <summary>
+        /// Get the links you owned
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>the link ids you own</returns>
+        public IEnumerable<int> GetYourLinkIds(int id)
+        {
+            var yourLinkIds = context.Links
+                .Where(link => link.CreatedBy == id)
+                .Select(link => link.Id)
                 .ToList();
 
-            var linkSearchViewModel = new LinkSearchViewModel
-            {
-                TimeStamp = timeStamp,
-                Links = linkViewModels
-            };
-
-            return linkSearchViewModel;
+            return yourLinkIds;
         }
 
         /// <summary>
@@ -42,8 +60,8 @@ namespace TravelTipsAPI.Services
         {
             var newLink = linkPostViewModel.ToLink(createdBy);
 
-            await basicContext.Links.AddAsync(newLink);
-            await basicContext.SaveChangesAsync();
+            await context.Links.AddAsync(newLink);
+            await context.SaveChangesAsync();
 
             return (LinkViewModel)newLink;
         }
@@ -56,21 +74,14 @@ namespace TravelTipsAPI.Services
         /// <returns>the link updated</returns>
         public async Task<LinkViewModel> PatchLinkAsync(int id, LinkPatchViewModel linkPatchViewModel)
         {
-            var link = basicContext.Links.Find(id) ?? throw new Exception("Link not found.");
+            var link = context.Links.Find(id) ?? throw new Exception("Link not found.");
 
             link.Name = linkPatchViewModel.Name ?? link.Name;
             link.Url = linkPatchViewModel?.Url ?? link.Url;
 
-            await basicContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return (LinkViewModel)link;
-        }
-
-        public bool IsOwner(int id, int linkId)
-        {
-            var link = basicContext.Links.Find(linkId);
-
-            return link?.CreatedBy == id;
         }
     }
 }

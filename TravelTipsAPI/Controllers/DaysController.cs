@@ -3,9 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Controllers
 {
@@ -16,7 +17,7 @@ namespace TravelTipsAPI.Controllers
     /// <param name="tripsService"></param>
     /// <param name="daysService"></param>
     [Route("api/[controller]")]
-    public class DaysController(IUsersService usersService, ITripsService tripsService, IDaysService daysService) : TravelTipsControllerBase
+    public class DaysController(ITripsService tripsService, IDaysService daysService) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get the days by trip id
@@ -43,17 +44,18 @@ namespace TravelTipsAPI.Controllers
         /// <param name="newDay">new day detail</param>
         /// <returns>the new day</returns>
         [HttpPost]
-        [Route("{tripId}")]
+        [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<DayViewModel>> PostNewDay(int tripId, [FromBody] DayPostViewModel newDay)
+        public async Task<ActionResult<DayViewModel>> PostNewDay([FromBody] DayPostViewModel newDay)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
+            // verify the ownership of the parent trip
             var yourTripIds = tripsService.GetYourTripIds(userId);
-            if (!yourTripIds.Any(id => id == tripId))
+            if (!yourTripIds.Any(id => id == newDay.TripId))
                 return Unauthorized("You are not authorized.");
 
-            var dayViewModel = await daysService.PostNewDayAsync(tripId, userId, newDay);
+            var dayViewModel = await daysService.PostNewDayAsync(userId, newDay);
 
             return Ok(dayViewModel);
         }

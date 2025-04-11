@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Controllers
 {
@@ -10,27 +13,29 @@ namespace TravelTipsAPI.Controllers
     /// The controller of Links
     /// </summary>
     [Route("api/[controller]")]
-    public class LinksController(IUsersService usersService, ILinksService linksService) : TravelTipsControllerBase
+    public class LinksController(ILinksService linksService) : TravelTipsControllerBase
     {
         /// <summary>
-        /// Get the link search result by name
+        /// Get the link search result by name from the links you own
         /// </summary>
         /// <param name="name">name</param>
         /// <param name="timeStamp">the time when the http request created</param>
         /// <returns>a link search result of links contain the name</returns>
         [HttpGet]
         [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
         public ActionResult<LinkSearchViewModel> GetLinkSearchByName([FromQuery] string name, int timeStamp)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var user = usersService.GetUserByUserId(userId);
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             
-            var linkSearchViewModel = linksService.GetLinksByName(timeStamp, name, user.Id);
+            var linkViewModels = linksService.GetLinksByName(name, userId);
+
+            var linkSearchViewModel = new LinkSearchViewModel
+            {
+                TimeStamp = timeStamp,
+                Links = linkViewModels
+            };
+
             return Ok(linkSearchViewModel);
         }
 
@@ -41,17 +46,12 @@ namespace TravelTipsAPI.Controllers
         /// <returns>the new link</returns>
         [HttpPost]
         [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
         public async Task<ActionResult<LinkViewModel>> PostNewLink([FromBody] LinkPostViewModel newLink)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var user = usersService.GetUserByUserId(userId);
-
-            var linkViewModel = await linksService.PostNewLinkAsync(user.Id, newLink);
+            var linkViewModel = await linksService.PostNewLinkAsync(userId, newLink);
             return Ok(linkViewModel);
         }
 
@@ -63,19 +63,9 @@ namespace TravelTipsAPI.Controllers
         /// <returns>the updated link</returns>
         [HttpPatch]
         [Route("{id}")]
+        [IsOwner(Resource = Resources.LINKS)]
         public async Task<ActionResult<LinkViewModel>> PatchLink(int id, [FromBody] LinkPatchViewModel link)
         {
-            // Get Auth0 UserId
-            string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (userId == null)
-                return NotFound("User not found.");
-
-            var user = usersService.GetUserByUserId(userId);
-            var isOwner = linksService.IsOwner(user.Id, id);
-            if (!isOwner)
-                return Unauthorized();
-
             var linkViewModel = await linksService.PatchLinkAsync(id, link);
             return Ok(linkViewModel);
         }

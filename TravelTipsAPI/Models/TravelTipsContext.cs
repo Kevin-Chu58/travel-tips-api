@@ -2,18 +2,20 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace TravelTipsAPI.Models.Basic;
+namespace TravelTipsAPI.Models;
 
-public partial class TravelTipsBasicContext : DbContext
+public partial class TravelTipsContext : DbContext
 {
-    public TravelTipsBasicContext()
+    public TravelTipsContext()
     {
     }
 
-    public TravelTipsBasicContext(DbContextOptions<TravelTipsBasicContext> options)
+    public TravelTipsContext(DbContextOptions<TravelTipsContext> options)
         : base(options)
     {
     }
+
+    public virtual DbSet<Admin> Admins { get; set; }
 
     public virtual DbSet<Attraction> Attractions { get; set; }
 
@@ -38,6 +40,20 @@ public partial class TravelTipsBasicContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Admin>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_admins");
+
+            entity.ToTable("Admins", "db_role");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+
+            entity.HasOne(d => d.User).WithOne(p => p.Admin)
+                .HasForeignKey<Admin>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_admins");
+        });
+
         modelBuilder.Entity<Attraction>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_attractions");
@@ -58,6 +74,7 @@ public partial class TravelTipsBasicContext : DbContext
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Attractions)
                 .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_attractions");
 
             entity.HasOne(d => d.Link).WithMany(p => p.Attractions)
@@ -188,6 +205,23 @@ public partial class TravelTipsBasicContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_trips");
+
+            entity.HasMany(d => d.Attractions).WithMany(p => p.Trips)
+                .UsingEntity<Dictionary<string, object>>(
+                    "TripAttraction",
+                    r => r.HasOne<Attraction>().WithMany()
+                        .HasForeignKey("AttractionId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("fk_attraction_trip_attractions"),
+                    l => l.HasOne<Trip>().WithMany()
+                        .HasForeignKey("TripId")
+                        .OnDelete(DeleteBehavior.ClientSetNull)
+                        .HasConstraintName("fk_trip_trip_attractions"),
+                    j =>
+                    {
+                        j.HasKey("TripId", "AttractionId").HasName("pk_trip_attractions");
+                        j.ToTable("TripAttractions", "db_basic");
+                    });
         });
 
         modelBuilder.Entity<TripAttractionOrder>(entity =>

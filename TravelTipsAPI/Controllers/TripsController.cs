@@ -5,9 +5,10 @@ using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Controllers
 {
@@ -68,14 +69,14 @@ namespace TravelTipsAPI.Controllers
         /// </summary>
         /// <returns>a list of your own trips</returns>
         [HttpGet]
-        [Route("yours")]
+        [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<IEnumerable<TripViewModel>> GetYourTrips()
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var yourTripViewModels = tripsService.GetTripsByUserId(userId);
-            return Ok(yourTripViewModels);
+            var myTripViewModels = tripsService.GetTripsByUserId(userId);
+            return Ok(myTripViewModels);
         }
 
         /// <summary>

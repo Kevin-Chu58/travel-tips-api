@@ -1,13 +1,14 @@
-﻿using TravelTipsAPI.Models.Basic;
+﻿using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Services
 {
     /// <summary>
     /// The service of Days
     /// </summary>
-    /// <param name="basicContext">db_basic context</param>
-    public class DaysService(TravelTipsBasicContext basicContext) : IDaysService
+    /// <param name="context">context</param>
+    public class DaysService(TravelTipsContext context) : IDaysService
     {
         /// <summary>
         /// Get day by its id
@@ -16,7 +17,7 @@ namespace TravelTipsAPI.Services
         /// <returns>the day with the id, null if not found</returns>
         public DayViewModel? GetDayById(int id)
         {
-            var day = basicContext.Days.Find(id);
+            var day = context.Days.Find(id);
 
             return (DayViewModel)day;
         }
@@ -28,7 +29,7 @@ namespace TravelTipsAPI.Services
         /// <returns>days with the trip id</returns>
         public IEnumerable<DayViewModel> GetDaysByTripId(int tripId)
         {
-            var dayViewModels = basicContext.Days
+            var dayViewModels = context.Days
                 .Where(day => day.TripId == tripId)
                 .Select(day => (DayViewModel)day)
                 .ToList();
@@ -43,7 +44,7 @@ namespace TravelTipsAPI.Services
         /// <returns>a list of the ids of days you own</returns>
         public IEnumerable<int> GetYourDayIds(int id)
         {
-            var yourDayIds = basicContext.Days
+            var yourDayIds = context.Days
                 .Where (day => day.CreatedBy == id)
                 .Select(day => day.Id)
                 .ToList();
@@ -56,15 +57,15 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="newDay">new day detail</param>
         /// <returns>the new day</returns>
-        public async Task<DayViewModel> PostNewDayAsync(int tripId, int createdBy, DayPostViewModel newDay)
+        public async Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay)
         {
-            var day = newDay.ToDay(tripId, createdBy);
+            var day = newDay.ToDay(createdBy);
 
             if (day.Start == day.End)
                 throw DaysStartEndOrderException();
 
-            await basicContext.Days.AddAsync(day);
-            await basicContext.SaveChangesAsync();
+            await context.Days.AddAsync(day);
+            await context.SaveChangesAsync();
 
             return (DayViewModel)day;
         }
@@ -77,7 +78,7 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated day</returns>
         public async Task<DayViewModel> PatchDayAsync(int id, DayPatchViewModel dayPatchViewModel)
         {
-            var day = basicContext.Days.Find(id);
+            var day = context.Days.Find(id);
 
             day.Name = dayPatchViewModel.Name ?? day.Name;
             day.Description = dayPatchViewModel.Description ?? day.Description;
@@ -88,7 +89,7 @@ namespace TravelTipsAPI.Services
             if (day.Start == day.End) 
                 throw DaysStartEndOrderException();
 
-            await basicContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return (DayViewModel)day;
         }

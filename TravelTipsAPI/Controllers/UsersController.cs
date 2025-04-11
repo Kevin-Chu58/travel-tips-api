@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Controllers
 {

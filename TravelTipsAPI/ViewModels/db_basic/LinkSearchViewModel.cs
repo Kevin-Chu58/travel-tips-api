@@ -1,6 +1,4 @@
-﻿using TravelTipsAPI.ViewModels.db_basic;
-
-namespace TravelTipsAPI.Models.Basic
+﻿namespace TravelTipsAPI.ViewModels.db_basic
 {
     public class LinkSearchViewModel
     {

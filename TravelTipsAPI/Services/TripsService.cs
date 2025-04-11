@@ -2,16 +2,17 @@
 using System;
 using System.Security.Claims;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Services
 {
     /// <summary>
     /// The service of Trips
     /// </summary>
-    /// <param name="basicContext">db_basic context</param>
-    public class TripsService(TravelTipsBasicContext basicContext) : ITripsService
+    /// <param name="context">context</param>
+    public class TripsService(TravelTipsContext context) : ITripsService
     {
         /// <summary>
         /// Get the trip by its id
@@ -24,9 +25,9 @@ namespace TravelTipsAPI.Services
             Trip? trip;
 
             if (isPublic == null)
-                trip = basicContext.Trips.Find(id);
+                trip = context.Trips.Find(id);
             else
-                trip = basicContext.Trips.FirstOrDefault(trip => trip.Id == id && trip.IsPublic == isPublic);
+                trip = context.Trips.FirstOrDefault(trip => trip.Id == id && trip.IsPublic == isPublic);
 
             return (TripViewModel)trip;
         }
@@ -40,16 +41,11 @@ namespace TravelTipsAPI.Services
         {
             name = name.Trim().ToLower();
 
-            var tripViewModels = new List<TripViewModel>();
-            
-            if (name.Length >= TripConstants.TRIP_SEARCH_MIN_LENGTH)
-            {
-               tripViewModels = basicContext.Trips
+            var tripViewModels = context.Trips
                 .Where(trip => trip.Name.ToLower().Contains(name)
                     && trip.IsPublic == true)
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
-            }
 
             return tripViewModels;
         }
@@ -61,7 +57,7 @@ namespace TravelTipsAPI.Services
         /// <returns>trips you created</returns>
         public IEnumerable<TripViewModel> GetTripsByUserId(int id)
         {
-            var yourTripViewModels = basicContext.Trips
+            var yourTripViewModels = context.Trips
                 .Where(trip => trip.CreatedBy == id)
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
@@ -76,7 +72,7 @@ namespace TravelTipsAPI.Services
         /// <returns>a list of the ids of trips you own</returns>
         public IEnumerable<int> GetYourTripIds(int id)
         {
-            var yourTripIds = basicContext.Trips
+            var yourTripIds = context.Trips
                 .Where(trip => trip.CreatedBy == id)
                 .Select(trip => trip.Id)
                 .ToList();
@@ -94,8 +90,8 @@ namespace TravelTipsAPI.Services
         {
             var newTrip = tripPostViewModel.ToTrip(createBy);
 
-            await basicContext.Trips.AddAsync(newTrip);
-            await basicContext.SaveChangesAsync();
+            await context.Trips.AddAsync(newTrip);
+            await context.SaveChangesAsync();
 
             return (TripViewModel)newTrip;
         }
@@ -108,13 +104,13 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> PatchTripAsync(int id, TripPatchViewModel tripPatchViewModel)
         {
-            var trip = basicContext.Trips.Find(id);
+            var trip = context.Trips.Find(id);
 
             trip.Name = tripPatchViewModel.Name ?? trip.Name;
             trip.Description = tripPatchViewModel.Description ?? trip.Description;
             trip.LastUpdatedAt = DateTime.Now;
 
-            await basicContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return (TripViewModel)trip;
         }
@@ -127,10 +123,10 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> UpdateIsPublicAsync(int id, bool isPublic)
         {
-            var trip = basicContext.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
+            var trip = context.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
             trip.IsPublic = isPublic;
             
-            await basicContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return (TripViewModel)trip;
         }
@@ -143,11 +139,11 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> UpdateIsHiddenAsync(int id, bool isHidden)
         {
-            var trip = basicContext.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
+            var trip = context.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
             trip.IsHidden = isHidden;
             trip.IsPublic = false; // when trashed, also make the trip private
 
-            await basicContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return (TripViewModel)trip;
         }
@@ -159,10 +155,10 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> UpdateLastUpdatedAtAsync(int id)
         {
-            var trip = basicContext.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
+            var trip = context.Trips.Find(id) ?? throw TripsIdNotFoundException(id);
             trip.LastUpdatedAt = DateTime.Now;
 
-            await basicContext.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
             return (TripViewModel)trip;
         }
@@ -175,7 +171,7 @@ namespace TravelTipsAPI.Services
         /// <returns>c</returns>
         public bool IsOwner(int id, int tripId)
         {
-            var trip = basicContext.Trips.Find(tripId);
+            var trip = context.Trips.Find(tripId);
             return trip?.CreatedBy == id;
         }
 

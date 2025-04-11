@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddDbContext<TravelTipsBasicContext>(options =>
+builder.Services.AddDbContext<TravelTipsContext>(options =>
     //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
     options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
 );

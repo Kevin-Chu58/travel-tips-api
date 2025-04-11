@@ -5,11 +5,18 @@ using System.Collections.Generic;
 using System.Drawing.Text;
 using System.Security.Claims;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
+using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Authorization
 {
+    /// <summary>
+    /// This ActionFilter annotation serves the simple purpose of verifying the ownership of the resource
+    /// the request intends to update, it does not verify the ownership of its parent resource or of any
+    /// foreign key relation
+    /// </summary>
     public class IsOwner : ActionFilterAttribute
     {
         public required string Resource { get; set; }
@@ -18,6 +25,8 @@ namespace TravelTipsAPI.Authorization
         private IUsersService _usersService;
         private ITripsService _tripsService;
         private IDaysService _daysService;
+        private ILinksService _linksService;
+        private IAttractionsService _attractionsService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -29,11 +38,13 @@ namespace TravelTipsAPI.Authorization
             _usersService = context.HttpContext.RequestServices.GetRequiredService<IUsersService>();
             _tripsService = context.HttpContext.RequestServices.GetRequiredService<ITripsService>();
             _daysService = context.HttpContext.RequestServices.GetRequiredService<IDaysService>();
+            _linksService = context.HttpContext.RequestServices.GetRequiredService<ILinksService>();
+            _attractionsService = context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
 
             var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            UserId = (await _usersService.GetUserByUserId(auth0Id)).Id;
+            UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
-            if (UserId == null)
+            if (UserId == 0)
             {
                 throw new AuthenticationFailureException("Authentication has failed for this request.");
             }
@@ -55,17 +66,26 @@ namespace TravelTipsAPI.Authorization
 
         private bool HasOwnership(string resource)
         {
+            IEnumerable<int> yourTrips, yourDays, yourLinks, yourAttractions;
             switch (resource)
             {
                 case Resources.TRIPS:
-                    var yourTrips = _tripsService.GetYourTripIds(UserId);
+                    yourTrips = _tripsService.GetYourTripIds(UserId);
                     return yourTrips.Any(tripId => tripId == ResourceId);
 
                 case Resources.DAYS:
-                    var yourDays = _daysService.GetYourDayIds(UserId);
+                    yourDays = _daysService.GetYourDayIds(UserId);
                     return yourDays.Any(dayId => dayId == ResourceId);
 
-                // TODO - for other resources
+                case Resources.LINKS:
+                    yourLinks = _linksService.GetYourLinkIds(UserId);
+                    return yourLinks.Any(linkId => linkId == ResourceId);
+
+                case Resources.ATTRACTIONS:
+                    yourAttractions = _attractionsService.GetYourAttractions(UserId);
+                    return yourAttractions.Any(aId => aId == ResourceId);
+
+                    // TODO - for other resources
             }
             return false;
         }

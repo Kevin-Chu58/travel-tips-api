@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TravelTipsAPI.Models.Basic;
+namespace TravelTipsAPI.Models;
 
 public partial class Trip
 {
@@ -26,4 +26,6 @@ public partial class Trip
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
 
     public virtual ICollection<SmallTrip> SmallTrips { get; set; } = new List<SmallTrip>();
+
+    public virtual ICollection<Attraction> Attractions { get; set; } = new List<Attraction>();
 }

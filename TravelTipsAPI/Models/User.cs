@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TravelTipsAPI.Models.Basic;
+namespace TravelTipsAPI.Models;
 
 public partial class User
 {
@@ -12,6 +12,8 @@ public partial class User
     public string Email { get; set; } = null!;
 
     public string UserId { get; set; } = null!;
+
+    public virtual Admin? Admin { get; set; }
 
     public virtual ICollection<Attraction> Attractions { get; set; } = new List<Attraction>();
 
