@@ -27,6 +27,7 @@ namespace TravelTipsAPI.Authorization
         private IDaysService _daysService;
         private ILinksService _linksService;
         private IAttractionsService _attractionsService;
+        private IPreferRoutesService _preferRoutesService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -40,6 +41,7 @@ namespace TravelTipsAPI.Authorization
             _daysService = context.HttpContext.RequestServices.GetRequiredService<IDaysService>();
             _linksService = context.HttpContext.RequestServices.GetRequiredService<ILinksService>();
             _attractionsService = context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
+            _preferRoutesService = context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
 
             var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
@@ -66,7 +68,7 @@ namespace TravelTipsAPI.Authorization
 
         private bool HasOwnership(string resource)
         {
-            IEnumerable<int> yourTrips, yourDays, yourLinks, yourAttractions;
+            IEnumerable<int> yourTrips, yourDays, yourLinks, yourAttractions, yourPreferRoutes;
             switch (resource)
             {
                 case Resources.TRIPS:
@@ -84,6 +86,11 @@ namespace TravelTipsAPI.Authorization
                 case Resources.ATTRACTIONS:
                     yourAttractions = _attractionsService.GetYourAttractions(UserId);
                     return yourAttractions.Any(aId => aId == ResourceId);
+
+                case Resources.PREFER_ROUTES:
+                    yourPreferRoutes = _preferRoutesService.GetYourPreferRoutes(UserId);
+                    return yourPreferRoutes.Any(prId => prId == ResourceId);
+
 
                     // TODO - for other resources
             }

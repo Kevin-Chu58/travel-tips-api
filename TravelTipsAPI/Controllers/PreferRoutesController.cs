@@ -10,7 +10,7 @@ namespace TravelTipsAPI.Controllers
     /// <summary>
     /// The controller of Prefer Routes
     /// </summary>
-    /// <param name="preferRoutesService"></param>
+    /// <param name="preferRoutesService">prefer routes service</param>
     [Route("api/[controller]")]
     public class PreferRoutesController(IPreferRoutesService preferRoutesService) : TravelTipsControllerBase
     {
@@ -34,15 +34,7 @@ namespace TravelTipsAPI.Controllers
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            int? createdBy;
-            if (isOwner == true)
-            {
-                createdBy = userId;
-            }
-            else
-            {
-                createdBy = null;
-            }
+            int? createdBy = isOwner == true ? userId : null;
 
             var preferRouteViewModels = preferRoutesService.GetPreferRoutesByParams(
                  type,
@@ -61,6 +53,30 @@ namespace TravelTipsAPI.Controllers
             };
 
             return Ok(preferRouteSearch);
+        }
+
+        // TODO - add comments
+        [HttpPost]
+        [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<PreferRouteViewModel>> PostNewPreferRouteAsync([FromBody] PreferRoutePostViewModel newPreferRoute)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var preferRouteViewModel = await preferRoutesService.PostPreferRoutesAsync(userId, newPreferRoute);
+
+            return Ok(preferRouteViewModel);
+        }
+
+        // TODO - add comments
+        [HttpPatch]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.PREFER_ROUTES)]
+        public async Task<ActionResult<PreferRouteViewModel>> PatchPreferRouteAsync(int id, [FromBody] PreferRoutePatchViewModel preferRoute)
+        {
+            var preferRouteViewModel = await preferRoutesService.PatchPreferRoutesAsync(id, preferRoute);
+
+            return Ok(preferRouteViewModel);
         }
     }
 }
