@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Reflection;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
@@ -14,6 +15,8 @@ namespace TravelTipsAPI.Controllers
     [Route("api/[controller]")]
     public class PreferRoutesController(IPreferRoutesService preferRoutesService) : TravelTipsControllerBase
     {
+        // prefer routes
+
         /// <summary>
         /// Get prefer route search results by params
         /// </summary>
@@ -55,7 +58,11 @@ namespace TravelTipsAPI.Controllers
             return Ok(preferRouteSearch);
         }
 
-        // TODO - add comments
+        /// <summary>
+        /// Create a new prefer route
+        /// </summary>
+        /// <param name="newPreferRoute">the new prefer route details</param>
+        /// <returns>the new prefer route</returns>
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
@@ -68,7 +75,12 @@ namespace TravelTipsAPI.Controllers
             return Ok(preferRouteViewModel);
         }
 
-        // TODO - add comments
+        /// <summary>
+        /// Update an existing prefer route
+        /// </summary>
+        /// <param name="id">prefer route id</param>
+        /// <param name="preferRoute">prefer route details to be updated</param>
+        /// <returns>the updated prefer route</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.PREFER_ROUTES)]
@@ -77,6 +89,53 @@ namespace TravelTipsAPI.Controllers
             var preferRouteViewModel = await preferRoutesService.PatchPreferRoutesAsync(id, preferRoute);
 
             return Ok(preferRouteViewModel);
+        }
+
+        // route types
+
+        /// <summary>
+        /// Get all route types of prefer routes
+        /// </summary>
+        /// <returns>A list of all route types</returns>
+        [HttpGet]
+        [Route("types")]
+        [AllowAnonymous]
+        public ActionResult<IEnumerable<RouteTypeViewModel>> GetAllRouteTypes()
+        {
+            var routeTypeViewModels = preferRoutesService.GetAllRouteTypes();
+
+            return Ok(routeTypeViewModels);
+        }
+
+        /// <summary>
+        /// Create a new route type
+        /// </summary>
+        /// <param name="name">the name of the new route type</param>
+        /// <returns>the new route type</returns>
+        [HttpPost]
+        [Route("types")]
+        [UserHasRole(Role = UserRoles.ADMIN)]
+        public async Task<ActionResult<RouteTypeViewModel>> PostNewRouteTypeAsync([FromBody] string name)
+        {
+            var newRouteType = await preferRoutesService.PostNewRouteTypeAsync(name);
+
+            return Ok(newRouteType);
+        }
+
+        /// <summary>
+        /// Update an existing route type
+        /// </summary>
+        /// <param name="id">route type id</param>
+        /// <param name="name">route type name to be updated</param>
+        /// <returns>the updated route type</returns>
+        [HttpPatch]
+        [Route("types/{id}")]
+        [UserHasRole(Role = UserRoles.ADMIN)]
+        public async Task<ActionResult<RouteTypeViewModel>> PatchRouteTypeAsync(int id, [FromBody] string name)
+        {
+            var routeTypeViewModel = await preferRoutesService.PatchRouteTypeAsync(id, name);
+
+            return Ok(routeTypeViewModel);
         }
     }
 }
