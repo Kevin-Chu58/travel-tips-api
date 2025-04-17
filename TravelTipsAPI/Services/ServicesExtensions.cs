@@ -25,6 +25,7 @@ namespace TravelTipsAPI.Services
             services.AddScoped<ILinksService, LinksService>();
             services.AddScoped<IAttractionsService, AttractionsService>();
             services.AddScoped<IPreferRoutesService, PreferRoutesService>();
+            services.AddScoped<ITripAttractionOrdersService, TripAttractionOrdersService>();
             // user role schema
             services.AddScoped<IUserRolesService, UserRolesService>();
 

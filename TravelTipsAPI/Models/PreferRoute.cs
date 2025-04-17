@@ -25,7 +25,7 @@ public partial class PreferRoute
 
     public virtual Link? Link { get; set; }
 
-    public virtual RouteType TypeNavigation { get; set; } = null!;
+    public virtual ICollection<TripAttractionOrderRoute> TripAttractionOrderRoutes { get; set; } = new List<TripAttractionOrderRoute>();
 
-    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
+    public virtual RouteType TypeNavigation { get; set; } = null!;
 }

@@ -72,6 +72,22 @@ namespace TravelTipsAPI.Services
             Task<RouteTypeViewModel> PostNewRouteTypeAsync(string name);
             Task<RouteTypeViewModel> PatchRouteTypeAsync(int id, string name);
         }
+
+        public interface ITripAttractionOrdersService
+        {
+            // taos
+            TripAttractionOrderViewModel GetTripAttractionOrderById(int id, bool? isPublic);
+            IEnumerable<int> GetYourTripAttractionOrders(int id);
+            Task<TripAttractionOrderViewModel> PostTripAttractionOrderAsync(int createdBy, TripAttractionOrderPostViewModel newTripAttractionOrder);
+            Task<TripAttractionOrderViewModel> PatchTripAttractionOrderAsync(int id, TripAttractionOrderPatchViewModel tripAttractionOrder);
+            Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(int id, int newOrder);
+            Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(int id);
+
+            // taors
+            Task<TripAttractionOrderViewModel> PostNewTripAttractionOrderRouteAsync(int id, int preferRouteId, int order);
+            Task<TripAttractionOrderViewModel> SetPreferRouteOrderAsync(int id, int preferRouteId, int newOrder);
+            Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderRouteAsync(int id, int preferRouteId);
+        }
     }
 
     public class RoleSchema

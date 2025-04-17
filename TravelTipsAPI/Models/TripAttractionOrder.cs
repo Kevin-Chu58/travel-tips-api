@@ -29,5 +29,5 @@ public partial class TripAttractionOrder
 
     public virtual Day Day { get; set; } = null!;
 
-    public virtual ICollection<PreferRoute> PreferRoutes { get; set; } = new List<PreferRoute>();
+    public virtual ICollection<TripAttractionOrderRoute> TripAttractionOrderRoutes { get; set; } = new List<TripAttractionOrderRoute>();
 }

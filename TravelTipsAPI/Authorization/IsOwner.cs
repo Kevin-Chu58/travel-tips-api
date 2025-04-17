@@ -28,6 +28,7 @@ namespace TravelTipsAPI.Authorization
         private ILinksService _linksService;
         private IAttractionsService _attractionsService;
         private IPreferRoutesService _preferRoutesService;
+        private ITripAttractionOrdersService _tripAttractionOrdersService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -42,6 +43,7 @@ namespace TravelTipsAPI.Authorization
             _linksService = context.HttpContext.RequestServices.GetRequiredService<ILinksService>();
             _attractionsService = context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
             _preferRoutesService = context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
+            _tripAttractionOrdersService = context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
 
             var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
@@ -68,7 +70,7 @@ namespace TravelTipsAPI.Authorization
 
         private bool HasOwnership(string resource)
         {
-            IEnumerable<int> yourTrips, yourDays, yourLinks, yourAttractions, yourPreferRoutes;
+            IEnumerable<int> yourTrips, yourDays, yourLinks, yourAttractions, yourPreferRoutes, yourTripAttractionOrders;
             switch (resource)
             {
                 case Resources.TRIPS:
@@ -91,8 +93,9 @@ namespace TravelTipsAPI.Authorization
                     yourPreferRoutes = _preferRoutesService.GetYourPreferRoutes(UserId);
                     return yourPreferRoutes.Any(prId => prId == ResourceId);
 
-
-                    // TODO - for other resources
+                case Resources.TRIP_ATTRACTION_ORDERS:
+                    yourTripAttractionOrders = _tripAttractionOrdersService.GetYourTripAttractionOrders(UserId);
+                    return yourTripAttractionOrders.Any(taoId => taoId == ResourceId);
             }
             return false;
         }

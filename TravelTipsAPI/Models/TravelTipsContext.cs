@@ -33,6 +33,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
 
+    public virtual DbSet<TripAttractionOrderRoute> TripAttractionOrderRoutes { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -230,6 +232,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("TripAttractionOrders", "db_basic");
 
+            entity.HasIndex(e => new { e.DayId, e.Order }, "unique_day_order").IsUnique();
+
             entity.Property(e => e.IsBikePreferred).HasDefaultValue(true);
             entity.Property(e => e.IsDrivePreferred).HasDefaultValue(true);
             entity.Property(e => e.IsOnFootPreferred).HasDefaultValue(true);
@@ -248,23 +252,25 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.DayId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_days_trip_attraction_orders");
+        });
 
-            entity.HasMany(d => d.PreferRoutes).WithMany(p => p.TripAttractionOrders)
-                .UsingEntity<Dictionary<string, object>>(
-                    "TripAttractionOrderRoute",
-                    r => r.HasOne<PreferRoute>().WithMany()
-                        .HasForeignKey("PreferRouteId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fk_prefer_routes_trip_attraction_order_routes"),
-                    l => l.HasOne<TripAttractionOrder>().WithMany()
-                        .HasForeignKey("TripAttractionOrderId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fk_trip_attraction_orders_trip_attraction_order_routes"),
-                    j =>
-                    {
-                        j.HasKey("TripAttractionOrderId", "PreferRouteId").HasName("pk_trip_attraction_order_routes");
-                        j.ToTable("TripAttractionOrderRoutes", "db_basic");
-                    });
+        modelBuilder.Entity<TripAttractionOrderRoute>(entity =>
+        {
+            entity.HasKey(e => new { e.TripAttractionOrderId, e.PreferRouteId }).HasName("pk_trip_attraction_order_routes");
+
+            entity.ToTable("TripAttractionOrderRoutes", "db_basic");
+
+            entity.HasIndex(e => new { e.TripAttractionOrderId, e.Order }, "unique_trip_attraction_order_order").IsUnique();
+
+            entity.HasOne(d => d.PreferRoute).WithMany(p => p.TripAttractionOrderRoutes)
+                .HasForeignKey(d => d.PreferRouteId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_prefer_routes_trip_attraction_order_routes");
+
+            entity.HasOne(d => d.TripAttractionOrder).WithMany(p => p.TripAttractionOrderRoutes)
+                .HasForeignKey(d => d.TripAttractionOrderId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_trip_attraction_orders_trip_attraction_order_routes");
         });
 
         modelBuilder.Entity<User>(entity =>
