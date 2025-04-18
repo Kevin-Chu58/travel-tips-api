@@ -15,13 +15,13 @@ public partial class TripAttractionOrder
 
     public int EstimateTime { get; set; }
 
+    public int CreatedBy { get; set; }
+
     public bool IsDrivePreferred { get; set; }
 
     public bool IsBikePreferred { get; set; }
 
     public bool IsOnFootPreferred { get; set; }
-
-    public int CreatedBy { get; set; }
 
     public virtual Attraction Attraction { get; set; } = null!;
 
