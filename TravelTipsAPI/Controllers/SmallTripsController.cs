@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using TravelTipsAPI.Models.Basic;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
-using TravelTipsAPI.ViewModels;
+using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Controllers
 {
     [Route("api/[controller]")]
-    public class SmallTripsController(IUsersService usersService, ITripsService tripsService, ISmallTripsService smallTripsService) : Controller
+    public class SmallTripsController(IUsersService usersService, ITripsService tripsService, ISmallTripsService smallTripsService) : TravelTipsControllerBase
     {
         [HttpGet]
         [Route("{tripId}")]
