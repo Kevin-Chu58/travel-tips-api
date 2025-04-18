@@ -1,13 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using TravelTipsAPI.Services;
-using TravelTipsAPI.ViewModels;
+using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Controllers
 {
+    /// <summary>
+    /// The controller of Users
+    /// </summary>
+    /// <param name="usersService">users service</param>
     [Route("api/[controller]")]
     public class UsersController(IUsersService usersService) : TravelTipsControllerBase
     {
+        /// <summary>
+        /// Get your current user basic information
+        /// </summary>
+        /// <returns>user basic information of the current user</returns>
         [HttpGet]
         [Route("me")]
         public async Task<ActionResult<UserViewModel>> GetCurrentUserAsync()

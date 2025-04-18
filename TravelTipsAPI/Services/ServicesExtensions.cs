@@ -1,4 +1,6 @@
 ﻿using TravelTipsAPI.Controllers;
+using static TravelTipsAPI.Services.BasicSchema;
+using static TravelTipsAPI.Services.RoleSchema;
 
 namespace TravelTipsAPI.Services
 {
@@ -15,10 +17,18 @@ namespace TravelTipsAPI.Services
                     .AllowAnyHeader()
                 ); 
             });
-
-            services.AddScoped<ITripsService, TripsService>();
+            // basic schema
             services.AddScoped<IUsersService, UsersService>();
+            services.AddScoped<ITripsService, TripsService>();
             services.AddScoped<ISmallTripsService, SmallTripsService>();
+            services.AddScoped<IDaysService, DaysService>();
+            services.AddScoped<ILinksService, LinksService>();
+            services.AddScoped<IAttractionsService, AttractionsService>();
+            services.AddScoped<IPreferRoutesService, PreferRoutesService>();
+            services.AddScoped<ITripAttractionOrdersService, TripAttractionOrdersService>();
+            // user role schema
+            services.AddScoped<IUserRolesService, UserRolesService>();
+
             return services;
         }
     }
