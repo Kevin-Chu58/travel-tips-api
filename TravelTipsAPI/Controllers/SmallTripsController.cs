@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -8,7 +8,11 @@ using static TravelTipsAPI.Services.BasicSchema;
 namespace TravelTipsAPI.Controllers
 {
     [Route("api/[controller]")]
-    public class SmallTripsController(IUsersService usersService, ITripsService tripsService, ISmallTripsService smallTripsService) : TravelTipsControllerBase
+    public class SmallTripsController(
+        IUsersService usersService,
+        ITripsService tripsService,
+        ISmallTripsService smallTripsService
+    ) : TravelTipsControllerBase
     {
         [HttpGet]
         [Route("{tripId}")]
@@ -34,8 +38,10 @@ namespace TravelTipsAPI.Controllers
         }
 
         [HttpPost]
-        [Route("{tripId}")]
-        public async Task<ActionResult<SmallTripViewModel>> PostNewSmallTrip(int tripId, [FromBody] SmallTripPostViewModel newSmallTrip)
+        [Route("")]
+        public async Task<ActionResult<SmallTripViewModel>> PostNewSmallTrip(
+            [FromBody] SmallTripPostViewModel newSmallTrip
+        )
         {
             // Get Auth0 UserId
             string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -43,22 +49,28 @@ namespace TravelTipsAPI.Controllers
                 return NotFound("User not found.");
 
             var currentUser = usersService.GetUserByUserId(userId);
-            var isOwner = tripsService.IsOwner(currentUser.Id, tripId);
+            var isOwner = tripsService.IsOwner(currentUser.Id, newSmallTrip.TripId);
 
-            if (isOwner)
-            {
-                var smallTripViewModel = await smallTripsService.PostNewSmallTripsAsync(tripId, newSmallTrip);
-                return Ok(smallTripViewModel);
-            }
-            else
-            {
-                return Unauthorized();
-            }
+            //if (isOwner)
+            //{
+            var smallTripViewModel = await smallTripsService.PostNewSmallTripsAsync(
+                newSmallTrip.TripId,
+                newSmallTrip
+            );
+            return Ok(smallTripViewModel);
+            //}
+            //else
+            //{
+            //    return Unauthorized();
+            //}
         }
 
         [HttpPatch]
         [Route("{id}")]
-        public async Task<ActionResult<SmallTripViewModel>> PatchSmallTripAsync(int id, [FromBody] TripPatchViewModel smallTripPatch)
+        public async Task<ActionResult<SmallTripViewModel>> PatchSmallTripAsync(
+            int id,
+            [FromBody] TripPatchViewModel smallTripPatch
+        )
         {
             // Get Auth0 UserId
             string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -74,7 +86,10 @@ namespace TravelTipsAPI.Controllers
 
             if (isOwner)
             {
-                var smallTripViewModel = await smallTripsService.PatchSmallTripAsync(id, smallTripPatch);
+                var smallTripViewModel = await smallTripsService.PatchSmallTripAsync(
+                    id,
+                    smallTripPatch
+                );
                 return Ok(smallTripViewModel);
             }
             else

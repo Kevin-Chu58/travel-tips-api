@@ -13,7 +13,8 @@ namespace TravelTipsAPI.Controllers
     /// </summary>
     /// <param name="attractionsService">attractions service</param>
     [Route("api/[controller]")]
-    public class AttractionsController(IAttractionsService attractionsService) : TravelTipsControllerBase
+    public class AttractionsController(IAttractionsService attractionsService)
+        : TravelTipsControllerBase
     {
         /// <summary>
         /// Get the search result contains a list of attractions with filter params in public trips
@@ -25,19 +26,18 @@ namespace TravelTipsAPI.Controllers
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<AttractionSearchViewModel> GetPublicAttractionsByParams([FromQuery] string? name, int? osmId, int time)
+        public ActionResult<AttractionSearchViewModel> GetPublicAttractionsByParams(
+            [FromQuery] string? name,
+            int? osmId,
+            int time
+        )
         {
-            var attractionViewModels = attractionsService.GetAttractionsByParams(
-                name,
-                osmId,
-                true,
-                null
-            );
+            var attractionViewModels = attractionsService.GetAttractionsByParams(name, osmId, null);
 
             var attractionSearch = new AttractionSearchViewModel
             {
                 TimeStamp = time,
-                Attractions = attractionViewModels
+                Attractions = attractionViewModels,
             };
 
             return Ok(attractionSearch);
@@ -53,21 +53,24 @@ namespace TravelTipsAPI.Controllers
         [HttpGet]
         [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<AttractionSearchViewModel> GetYourAttractionsByParams([FromQuery] string? name, int? osmId, int time)
+        public ActionResult<AttractionSearchViewModel> GetYourAttractionsByParams(
+            [FromQuery] string? name,
+            int? osmId,
+            int time
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var attractionViewModels = attractionsService.GetAttractionsByParams(
                 name,
                 osmId,
-                null,
                 userId
             );
 
             var attractionSearch = new AttractionSearchViewModel
             {
                 TimeStamp = time,
-                Attractions = attractionViewModels
+                Attractions = attractionViewModels,
             };
 
             return Ok(attractionSearch);
@@ -81,11 +84,16 @@ namespace TravelTipsAPI.Controllers
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<AttractionViewModel>> PostNewAttractionAsync([FromBody] AttractionPostViewModel newAttraction)
+        public async Task<ActionResult<AttractionViewModel>> PostNewAttractionAsync(
+            [FromBody] AttractionPostViewModel newAttraction
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var attractionViewModel = await attractionsService.PostNewAttractionAsync(userId, newAttraction);
+            var attractionViewModel = await attractionsService.PostNewAttractionAsync(
+                userId,
+                newAttraction
+            );
 
             return Ok(attractionViewModel);
         }
@@ -99,7 +107,10 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.ATTRACTIONS)]
-        public async Task<ActionResult<AttractionViewModel>> PatchAttractionAsync(int id, [FromBody] AttractionPatchViewModel attraction)
+        public async Task<ActionResult<AttractionViewModel>> PatchAttractionAsync(
+            int id,
+            [FromBody] AttractionPatchViewModel attraction
+        )
         {
             var attractionViewModel = await attractionsService.PatchAttractionAsync(id, attraction);
 
