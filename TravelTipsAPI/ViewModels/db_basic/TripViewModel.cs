@@ -11,11 +11,9 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
 
-        public static explicit operator TripViewModel?(Trip? trip)
+        public static explicit operator TripViewModel(Trip trip)
         {
-            if (trip == null) return null;
-
-            var tripViewModel = new TripViewModel
+            return new TripViewModel
             {
                 Id = trip.Id,
                 Name = trip.Name,
@@ -24,8 +22,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 CreatedAt = trip.CreatedAt,
                 LastUpdatedAt = trip.LastUpdatedAt,
             };
-
-            return tripViewModel;
         }
     }
 }

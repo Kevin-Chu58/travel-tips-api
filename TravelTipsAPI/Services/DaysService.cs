@@ -1,4 +1,5 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
 
@@ -11,26 +12,33 @@ namespace TravelTipsAPI.Services
     public class DaysService(TravelTipsContext context) : IDaysService
     {
         /// <summary>
-        /// Get day by its id
+        /// Find day by its id
         /// </summary>
         /// <param name="id">day id</param>
-        /// <returns>the day with the id, null if not found</returns>
-        public DayViewModel? GetDayById(int id)
+        /// <returns>the day with the id</returns>
+        public Day FindDayById(int id, bool? isPublic = null)
         {
             var day = context.Days.Find(id);
 
-            return (DayViewModel)day;
+            if (day is null || (isPublic != null && day.Trip.IsPublic != isPublic))
+                throw new Exception(Messages.DayNotFound);
+
+            return day;
         }
 
         /// <summary>
-        /// Get days by trip id
+        /// Get days by public trip id
         /// </summary>
         /// <param name="tripId">trip id</param>
         /// <returns>days with the trip id</returns>
         public IEnumerable<DayViewModel> GetDaysByTripId(int tripId)
         {
-            var dayViewModels = context.Days
-                .Where(day => day.TripId == tripId)
+            var trip = context.Trips.Find(tripId);
+            if (trip?.IsPublic == false)
+                throw new Exception(Messages.TripNotFound);
+
+            var dayViewModels = context
+                .Days.Where(day => day.TripId == tripId)
                 .Select(day => (DayViewModel)day)
                 .ToList();
 
@@ -44,8 +52,8 @@ namespace TravelTipsAPI.Services
         /// <returns>a list of the ids of days you own</returns>
         public IEnumerable<int> GetYourDayIds(int id)
         {
-            var yourDayIds = context.Days
-                .Where (day => day.CreatedBy == id)
+            var yourDayIds = context
+                .Days.Where(day => day.CreatedBy == id)
                 .Select(day => day.Id)
                 .ToList();
 
@@ -55,6 +63,7 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// Create a new day
         /// </summary>
+        /// <param name="createdBy">user id</param>
         /// <param name="newDay">new day detail</param>
         /// <returns>the new day</returns>
         public async Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay)
@@ -62,7 +71,10 @@ namespace TravelTipsAPI.Services
             var day = newDay.ToDay(createdBy);
 
             if (day.Start == day.End)
-                throw DaysStartEndOrderException();
+                throw new Exception(Messages.Day24HourRestricted);
+
+            if (!DoesDayEndBeforeStart(day))
+                throw new Exception(Messages.DayStartsBeforeEndRestricted);
 
             await context.Days.AddAsync(day);
             await context.SaveChangesAsync();
@@ -73,21 +85,22 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// Update the day detail by its id
         /// </summary>
-        /// <param name="id">day id</param>
-        /// <param name="day">day detail to update</param>
+        /// <param name="day">day</param>
+        /// <param name="dayPatch">day detail to update</param>
         /// <returns>the updated day</returns>
-        public async Task<DayViewModel> PatchDayAsync(int id, DayPatchViewModel dayPatchViewModel)
+        public async Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch)
         {
-            var day = context.Days.Find(id);
-
-            day.Name = dayPatchViewModel.Name ?? day.Name;
-            day.Description = dayPatchViewModel.Description ?? day.Description;
-            day.Start = dayPatchViewModel.Start ?? day.Start;
-            day.End = dayPatchViewModel.End ?? day.End;
+            day.Name = dayPatch.Name ?? day.Name;
+            day.Description = dayPatch.Description ?? day.Description;
+            day.Start = dayPatch.Start ?? day.Start;
+            day.End = dayPatch.End ?? day.End;
             day.IsOverNight = day.Start > day.End;
 
-            if (day.Start == day.End) 
-                throw DaysStartEndOrderException();
+            if (day.Start == day.End)
+                throw new Exception(Messages.Day24HourRestricted);
+
+            if (!DoesDayEndBeforeStart(day, day.Id))
+                throw new Exception(Messages.DayStartsBeforeEndRestricted);
 
             await context.SaveChangesAsync();
 
@@ -95,23 +108,53 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
-        /// Get the exception of day id not found
+        /// Check if yesterday ends before the new day's dawning
         /// </summary>
-        /// <param name="id">day id</param>
-        /// <returns>an exception</returns>
-        private static Exception DaysIdNotFoundException(int id)
+        /// <param name="tripId">trip id</param>
+        /// <param name="today">today</param>
+        /// <param name="dayId"> next day id</param>
+        /// <returns>true if ends before next start, false otherwise</returns>
+        private bool DoesDayEndBeforeStart(Day today, int? dayId = null)
         {
-            return new Exception($"Day not found with id {id}");
-        }
+            var days = context.Days.Where(day => day.TripId == today.TripId).ToList();
+            // if no days exist in the trip, always return true
+            if (days.Count == 0)
+                return true;
 
-        /// <summary>
-        /// Get the exception of day id not found
-        /// </summary>
-        /// <param name="id">day id</param>
-        /// <returns>an exception</returns>
-        private static Exception DaysStartEndOrderException()
-        {
-            return new Exception("Start time cannot equal to End time");
+            // POST new day - checks only yesterday
+            // PATCH day - checks both yesterday and tomorrow
+
+            List<Day> daysBefore,
+                daysAfter;
+            Day yesterday,
+                tomorrow;
+
+            if (dayId is null)
+            {
+                yesterday = days.OrderBy(day => day.Id).Last();
+                return !yesterday.IsOverNight || yesterday.End < today.Start;
+            }
+            else
+            {
+                daysBefore = [.. days.Where(day => day.Id < dayId)];
+                daysAfter = [.. days.Where(day => day.Id > dayId)];
+
+                // the status of end before start restriction is applied
+                bool isRestricted = true;
+
+                if (daysBefore.Count > 0)
+                {
+                    yesterday = daysBefore.OrderBy(day => day.Id).Last();
+                    isRestricted &= !yesterday.IsOverNight || yesterday.End < today.Start;
+                }
+                if (daysAfter.Count > 0)
+                {
+                    tomorrow = daysAfter.OrderBy(day => day.Id).First();
+                    isRestricted &= !today.IsOverNight || today.End < tomorrow.Start;
+                }
+
+                return isRestricted;
+            }
         }
     }
 }

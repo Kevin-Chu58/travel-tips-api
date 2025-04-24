@@ -24,6 +24,4 @@ public partial class Attraction
     public virtual Link? Link { get; set; }
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
-
-    public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

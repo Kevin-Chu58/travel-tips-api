@@ -13,10 +13,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int TripId { get; set; }
         public int CreatedBy { get; set; }
 
-        public static explicit operator DayViewModel?(Day? day)
+        public static explicit operator DayViewModel(Day day)
         {
-            if (day == null) return null;
-
             var dayViewModel = new DayViewModel
             {
                 Id = day.Id,
@@ -26,7 +24,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 End = day.End,
                 IsOverNight = day.IsOverNight,
                 TripId = day.TripId,
-                CreatedBy = day.CreatedBy
+                CreatedBy = day.CreatedBy,
             };
 
             return dayViewModel;

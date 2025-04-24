@@ -38,7 +38,7 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
+        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -207,23 +207,6 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_trips");
-
-            entity.HasMany(d => d.Attractions).WithMany(p => p.Trips)
-                .UsingEntity<Dictionary<string, object>>(
-                    "TripAttraction",
-                    r => r.HasOne<Attraction>().WithMany()
-                        .HasForeignKey("AttractionId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fk_attraction_trip_attractions"),
-                    l => l.HasOne<Trip>().WithMany()
-                        .HasForeignKey("TripId")
-                        .OnDelete(DeleteBehavior.ClientSetNull)
-                        .HasConstraintName("fk_trip_trip_attractions"),
-                    j =>
-                    {
-                        j.HasKey("TripId", "AttractionId").HasName("pk_trip_attractions");
-                        j.ToTable("TripAttractions", "db_basic");
-                    });
         });
 
         modelBuilder.Entity<TripAttractionOrder>(entity =>
@@ -279,7 +262,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D6791EB48").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D884AB0EF").IsUnique();
 
             entity.Property(e => e.Email)
                 .HasMaxLength(50)

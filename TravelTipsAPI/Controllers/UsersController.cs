@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
@@ -25,7 +26,8 @@ namespace TravelTipsAPI.Controllers
             {
                 // Get Auth0 UserId
                 string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (userId == null) return NotFound();
+                if (userId == null)
+                    return NotFound(Messages.UserIdNotFound);
 
                 UserViewModel userViewModel = await usersService.GetUserByUserId(userId);
                 return Ok(userViewModel);
