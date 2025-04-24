@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Security.Principal;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
@@ -84,18 +85,18 @@ namespace TravelTipsAPI.Controllers
             var currentUser = usersService.GetUserByUserId(userId);
             var isOwner = tripsService.IsOwner(currentUser.Id, smallTrip.TripId);
 
-            if (isOwner)
-            {
-                var smallTripViewModel = await smallTripsService.PatchSmallTripAsync(
-                    id,
-                    smallTripPatch
-                );
-                return Ok(smallTripViewModel);
-            }
-            else
-            {
-                return Unauthorized();
-            }
+            //if (isOwner)
+            //{
+            var smallTripViewModel = await smallTripsService.PatchSmallTripAsync(
+                id,
+                smallTripPatch
+            );
+            return Ok(smallTripViewModel);
+            //}
+            //else
+            //{
+            //    return Unauthorized();
+            //}
         }
     }
 }
