@@ -4,7 +4,8 @@ using static TravelTipsAPI.Services.BasicSchema;
 
 namespace TravelTipsAPI.Services
 {
-    public class SmallTripsService(TravelTipsContext context, ITripsService tripsService) : ISmallTripsService
+    public class SmallTripsService(TravelTipsContext context, ITripsService tripsService)
+        : ISmallTripsService
     {
         public SmallTripViewModel? GetSmallTripById(int id)
         {
@@ -15,33 +16,42 @@ namespace TravelTipsAPI.Services
 
         public IEnumerable<SmallTripViewModel> GetSmallTripsByTripId(int tripId)
         {
-            var smallTripViewModels = context.SmallTrips
-                .Where(smallTrip => smallTrip.TripId == tripId)
+            var smallTripViewModels = context
+                .SmallTrips.Where(smallTrip => smallTrip.TripId == tripId)
                 .Select(smallTrip => (SmallTripViewModel)smallTrip)
                 .ToList();
 
             return smallTripViewModels;
         }
 
-        public async Task<SmallTripViewModel> PostNewSmallTripsAsync(int tripId, SmallTripPostViewModel smallTripPostViewModel)
+        public async Task<SmallTripViewModel> PostNewSmallTripsAsync(
+            int tripId,
+            SmallTripPostViewModel smallTripPostViewModel
+        )
         {
             var newSmallTrip = smallTripPostViewModel.ToSmallTrip();
             await context.SmallTrips.AddAsync(newSmallTrip);
 
+            Trip trip = tripsService.FindTripByParams(tripId);
+
             // save changes when update lastUpdatedAt
-            await tripsService.UpdateLastUpdatedAtAsync(tripId);
+            await tripsService.UpdateLastUpdatedAtAsync(trip);
 
             return (SmallTripViewModel)newSmallTrip;
         }
 
-        public async Task<SmallTripViewModel> PatchSmallTripAsync(int id, TripPatchViewModel smallTripPatchViewModel)
+        public async Task<SmallTripViewModel> PatchSmallTripAsync(
+            int id,
+            TripPatchViewModel smallTripPatchViewModel
+        )
         {
             var smallTrip = context.SmallTrips.Find(id);
             smallTrip.Name = smallTripPatchViewModel.Name ?? smallTrip.Name;
             smallTrip.Description = smallTripPatchViewModel.Description ?? smallTrip.Description;
 
+            Trip trip = tripsService.FindTripByParams(smallTrip.TripId);
             // save changes when update lastUpdatedAt
-            await tripsService.UpdateLastUpdatedAtAsync(smallTrip.TripId);
+            await tripsService.UpdateLastUpdatedAtAsync(trip);
 
             return (SmallTripViewModel)smallTrip;
         }

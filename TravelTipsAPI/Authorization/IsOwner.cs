@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc.Filters;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Drawing.Text;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
@@ -41,16 +42,23 @@ namespace TravelTipsAPI.Authorization
             _tripsService = context.HttpContext.RequestServices.GetRequiredService<ITripsService>();
             _daysService = context.HttpContext.RequestServices.GetRequiredService<IDaysService>();
             _linksService = context.HttpContext.RequestServices.GetRequiredService<ILinksService>();
-            _attractionsService = context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
-            _preferRoutesService = context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
-            _tripAttractionOrdersService = context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
+            _attractionsService =
+                context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
+            _preferRoutesService =
+                context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
+            _tripAttractionOrdersService =
+                context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
 
             var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             if (UserId == 0)
             {
-                throw new AuthenticationFailureException("Authentication has failed for this request.");
+                context.Result = new ObjectResult(new { message = Messages.AuthenticationFailed })
+                {
+                    StatusCode = 401,
+                };
+                return;
             }
 
             // caching for easy reuse
@@ -63,14 +71,23 @@ namespace TravelTipsAPI.Authorization
                 var isAuthorized = HasOwnership(Resource);
                 if (!isAuthorized)
                 {
-                    throw new UnauthorizedAccessException("Authorization has been denied for this request.");
+                    context.Result = new ObjectResult(new { message = Messages.AccessDenied })
+                    {
+                        StatusCode = 403,
+                    };
+                    return;
                 }
-            }            
+            }
         }
 
         private bool HasOwnership(string resource)
         {
-            IEnumerable<int> yourTrips, yourDays, yourLinks, yourAttractions, yourPreferRoutes, yourTripAttractionOrders;
+            IEnumerable<int> yourTrips,
+                yourDays,
+                yourLinks,
+                yourAttractions,
+                yourPreferRoutes,
+                yourTripAttractionOrders;
             switch (resource)
             {
                 case Resources.TRIPS:
@@ -94,7 +111,8 @@ namespace TravelTipsAPI.Authorization
                     return yourPreferRoutes.Any(prId => prId == ResourceId);
 
                 case Resources.TRIP_ATTRACTION_ORDERS:
-                    yourTripAttractionOrders = _tripAttractionOrdersService.GetYourTripAttractionOrders(UserId);
+                    yourTripAttractionOrders =
+                        _tripAttractionOrdersService.GetYourTripAttractionOrders(UserId);
                     return yourTripAttractionOrders.Any(taoId => taoId == ResourceId);
             }
             return false;

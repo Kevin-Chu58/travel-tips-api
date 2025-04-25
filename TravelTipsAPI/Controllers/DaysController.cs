@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
@@ -17,7 +17,8 @@ namespace TravelTipsAPI.Controllers
     /// <param name="tripsService"></param>
     /// <param name="daysService"></param>
     [Route("api/[controller]")]
-    public class DaysController(ITripsService tripsService, IDaysService daysService) : TravelTipsControllerBase
+    public class DaysController(ITripsService tripsService, IDaysService daysService)
+        : TravelTipsControllerBase
     {
         /// <summary>
         /// Get the days by trip id
@@ -27,20 +28,23 @@ namespace TravelTipsAPI.Controllers
         [HttpGet]
         [Route("{tripId}")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<DayViewModel>> GetDayById(int tripId)
+        public ActionResult<IEnumerable<DayViewModel>> GetDaysById(int tripId)
         {
-            var dayViewModels = daysService.GetDaysByTripId(tripId);
+            try
+            {
+                var dayViewModels = daysService.GetDaysByTripId(tripId);
 
-            if (dayViewModels == null)
-                return NotFound();
-
-            return Ok(dayViewModels);
+                return Ok(dayViewModels);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         /// <summary>
         /// Create a new day with day detail and trip id
         /// </summary>
-        /// <param name="tripId">trip id</param>
         /// <param name="newDay">new day detail</param>
         /// <returns>the new day</returns>
         [HttpPost]
@@ -53,27 +57,46 @@ namespace TravelTipsAPI.Controllers
             // verify the ownership of the parent trip
             var yourTripIds = tripsService.GetYourTripIds(userId);
             if (!yourTripIds.Any(id => id == newDay.TripId))
-                return Unauthorized("You are not authorized.");
+                return Unauthorized(Messages.AccessDenied);
 
-            var dayViewModel = await daysService.PostNewDayAsync(userId, newDay);
+            try
+            {
+                var dayViewModel = await daysService.PostNewDayAsync(userId, newDay);
 
-            return Ok(dayViewModel);
+                return Ok(dayViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
         /// Update a day with day details
         /// </summary>
         /// <param name="id">day id</param>
-        /// <param name="day">day details to be updated</param>
+        /// <param name="dayPatch">day details to be updated</param>
         /// <returns>the updated day</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.DAYS)]
-        public async Task<ActionResult<DayViewModel>> UpdateDay(int id, [FromBody] DayPatchViewModel day)
+        public async Task<ActionResult<DayViewModel>> UpdateDay(
+            int id,
+            [FromBody] DayPatchViewModel dayPatch
+        )
         {
-            var updatedDayViewModel = await daysService.PatchDayAsync(id, day);
+            Day day = daysService.FindDayById(id);
 
-            return Ok(updatedDayViewModel);
+            try
+            {
+                var updatedDayViewModel = await daysService.PatchDayAsync(day, dayPatch);
+
+                return Ok(updatedDayViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

@@ -1,8 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using System.Reflection.Metadata.Ecma335;
+﻿using System.Reflection.Metadata.Ecma335;
 using System.Runtime.CompilerServices;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
@@ -15,24 +15,70 @@ namespace TravelTipsAPI.Controllers
     /// <summary>
     /// The controller of Trips
     /// </summary>
-    /// <param name="usersService">users service</param>
     /// <param name="tripsService">trips service</param>
+    /// <param name="smallTripsService"></param>small trips service</param>
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService, ISmallTripsService smallTripsService) : TravelTipsControllerBase
+    public class TripsController(ITripsService tripsService, ISmallTripsService smallTripsService)
+        : TravelTipsControllerBase
     {
         /// <summary>
-        /// Get a trip by its id
+        /// Get a public trip by its id
         /// </summary>
         /// <param name="id">the id of a trip</param>
-        /// <returns>a trip with that id</returns>
+        /// <returns>a trip with that id, Not Found otherwise</returns>
         [HttpGet]
         [Route("{id}")]
         [AllowAnonymous]
+        public ActionResult<TripDetailViewModel> GetPublicTripById(int id)
+        {
+            Trip trip;
+            try
+            {
+                trip = tripsService.FindTripByParams(id, true);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            TripViewModel tripViewModel = (TripViewModel)trip;
+
+            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+
+            var tripDetailViewModel = new TripDetailViewModel
+            {
+                Id = tripViewModel.Id,
+                Name = tripViewModel.Name,
+                Description = tripViewModel.Description,
+                CreatedBy = tripViewModel.CreatedBy,
+                CreatedAt = tripViewModel.CreatedAt,
+                LastUpdatedAt = tripViewModel.LastUpdatedAt,
+                SmallTrips = smallTripViewModels,
+            };
+
+            return Ok(tripDetailViewModel);
+        }
+
+        /// <summary>
+        /// Get your own trip by id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the trip you own</returns>
+        [HttpGet]
+        [Route("my/{id}")]
+        [IsOwner(Resource = Resources.TRIPS)]
         public ActionResult<TripDetailViewModel> GetTripById(int id)
         {
-            var tripViewModel = tripsService.GetTripById(id, true);
-            if (tripViewModel == null)
-                return NotFound();
+            Trip trip;
+            try
+            {
+                trip = tripsService.FindTripByParams(id);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(Messages.TripNotFound);
+            }
+            var tripViewModel = (TripViewModel)trip;
 
             var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
 
@@ -87,9 +133,19 @@ namespace TravelTipsAPI.Controllers
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<TripViewModel>> PostNewTrip([FromBody] TripPostViewModel newTrip)
+        public async Task<ActionResult<TripViewModel>> PostNewTrip(
+            [FromBody] TripPostViewModel newTrip
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // validate the inputs
+            var invalidParams = tripsService.ValidatePost(newTrip);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
 
             var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip);
             return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
@@ -104,9 +160,22 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> PatchTrip(int id, [FromBody] TripPatchViewModel trip)
+        public async Task<ActionResult<TripViewModel>> PatchTrip(
+            int id,
+            [FromBody] TripPatchViewModel tripPatch
+        )
         {
-            var tripViewModel = await tripsService.PatchTripAsync(id, trip);
+            Trip trip;
+            try
+            {
+                trip = tripsService.FindTripByParams(id);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            var tripViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
             return Ok(tripViewModel);
         }
 
@@ -119,9 +188,22 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}/isPublic")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(int id, [FromBody] bool isPublic)
+        public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(
+            int id,
+            [FromBody] bool isPublic
+        )
         {
-            var tripViewModel = await tripsService.UpdateIsPublicAsync(id, isPublic);
+            Trip trip;
+            try
+            {
+                trip = tripsService.FindTripByParams(id);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            var tripViewModel = await tripsService.UpdateIsPublicAsync(trip, isPublic);
             return Ok(tripViewModel);
         }
 
@@ -134,9 +216,22 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}/isHidden")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> UpdateTripIsHidden(int id, [FromBody] bool isHidden)
+        public async Task<ActionResult<TripViewModel>> UpdateTripIsHidden(
+            int id,
+            [FromBody] bool isHidden
+        )
         {
-            var tripViewModel = await tripsService.UpdateIsHiddenAsync(id, isHidden);
+            Trip trip;
+            try
+            {
+                trip = tripsService.FindTripByParams(id);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            var tripViewModel = await tripsService.UpdateIsHiddenAsync(trip, isHidden);
             return Ok(tripViewModel);
         }
     }
