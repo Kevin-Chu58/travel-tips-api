@@ -60,43 +60,6 @@ namespace TravelTipsAPI.Controllers
         }
 
         /// <summary>
-        /// Get your own trip by id
-        /// </summary>
-        /// <param name="id">trip id</param>
-        /// <returns>the trip you own</returns>
-        [HttpGet]
-        [Route("my/{id}")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public ActionResult<TripDetailViewModel> GetTripById(int id)
-        {
-            Trip trip;
-            try
-            {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(Messages.TripNotFound);
-            }
-            var tripViewModel = (TripViewModel)trip;
-
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
-
-            var tripDetailViewModel = new TripDetailViewModel
-            {
-                Id = tripViewModel.Id,
-                Name = tripViewModel.Name,
-                Description = tripViewModel.Description,
-                CreatedBy = tripViewModel.CreatedBy,
-                CreatedAt = tripViewModel.CreatedAt,
-                LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
-            };
-
-            return Ok(tripDetailViewModel);
-        }
-
-        /// <summary>
         /// Get trips by name
         /// </summary>
         /// <param name="name">the name of the trips</param>
@@ -123,6 +86,35 @@ namespace TravelTipsAPI.Controllers
 
             var myTripViewModels = tripsService.GetTripsByUserId(userId);
             return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get your own trip by id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the trip you own</returns>
+        [HttpGet]
+        [Route("my/{id}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public ActionResult<TripDetailViewModel> GetTripById(int id)
+        {
+            Trip trip = tripsService.FindTripByParams(id);
+            var tripViewModel = (TripViewModel)trip;
+
+            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+
+            var tripDetailViewModel = new TripDetailViewModel
+            {
+                Id = tripViewModel.Id,
+                Name = tripViewModel.Name,
+                Description = tripViewModel.Description,
+                CreatedBy = tripViewModel.CreatedBy,
+                CreatedAt = tripViewModel.CreatedAt,
+                LastUpdatedAt = tripViewModel.LastUpdatedAt,
+                SmallTrips = smallTripViewModels,
+            };
+
+            return Ok(tripDetailViewModel);
         }
 
         /// <summary>
@@ -155,7 +147,7 @@ namespace TravelTipsAPI.Controllers
         /// Update a trip's information
         /// </summary>
         /// <param name="id">the id of the trip</param>
-        /// <param name="tripPatchViewModel">the trip information to be updated</param>
+        /// <param name="tripPatch">the trip information to be updated</param>
         /// <returns>the updated trip</returns>
         [HttpPatch]
         [Route("{id}")]
@@ -173,6 +165,14 @@ namespace TravelTipsAPI.Controllers
             catch (Exception ex)
             {
                 return NotFound(ex.Message);
+            }
+
+            // validate the inputs
+            var invalidParams = tripsService.ValidatePatch(tripPatch);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
             var tripViewModel = await tripsService.PatchTripAsync(trip, tripPatch);

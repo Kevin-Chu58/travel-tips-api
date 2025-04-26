@@ -61,18 +61,18 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
-        /// Get your trips' ids
+        /// Get my trips' ids
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>a list of the ids of trips you own</returns>
-        public IEnumerable<int> GetYourTripIds(int id)
+        /// <returns>a list of the ids of trips I own</returns>
+        public IEnumerable<int> GetMyTripIds(int id)
         {
-            var yourTripIds = context
+            var myTripIds = context
                 .Trips.Where(trip => trip.CreatedBy == id)
                 .Select(trip => trip.Id)
                 .ToList();
 
-            return yourTripIds;
+            return myTripIds;
         }
 
         /// <summary>
@@ -102,8 +102,8 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch)
         {
-            trip.Name = tripPatch.Name ?? trip.Name;
-            trip.Description = tripPatch.Description ?? trip.Description;
+            trip.Name = tripPatch.Name?.Trim() ?? trip.Name;
+            trip.Description = tripPatch.Description?.Trim() ?? trip.Description;
             trip.LastUpdatedAt = DateTime.Now;
 
             await context.SaveChangesAsync();
@@ -186,6 +186,11 @@ namespace TravelTipsAPI.Services
             return invalidParams;
         }
 
+        /// <summary>
+        /// Check if trip's detail is valid
+        /// </summary>
+        /// <param name="trip">existing trip</param>
+        /// <returns>true if is valid, false otherwise</returns>
         public List<string> ValidatePatch(TripPatchViewModel trip)
         {
             var invalidParams = new List<string>();

@@ -15,12 +15,12 @@ namespace TravelTipsAPI.ViewModels.db_basic
             var attraction = new Attraction
             {
                 Id = new int(),
-                Name = Name,
-                Description = Description,
-                Address = Address,
+                Name = Name.Trim(),
+                Description = Description?.Trim(),
+                Address = Address.Trim(),
                 OsmId = OsmId,
                 LinkId = LinkId,
-                CreatedBy = createdBy
+                CreatedBy = createdBy,
             };
 
             return attraction;

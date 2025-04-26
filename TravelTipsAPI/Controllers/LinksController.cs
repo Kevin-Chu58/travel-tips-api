@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Components.Routing;
+using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
@@ -19,21 +20,24 @@ namespace TravelTipsAPI.Controllers
         /// Get the link search result by name from the links you own
         /// </summary>
         /// <param name="name">name</param>
-        /// <param name="timeStamp">the time when the http request created</param>
+        /// <param name="timestamp">the time when the http request created</param>
         /// <returns>a link search result of links contain the name</returns>
         [HttpGet]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<LinkSearchViewModel> GetLinkSearchByName([FromQuery] string name, int timeStamp)
+        public ActionResult<LinkSearchViewModel> GetLinkSearchByName(
+            [FromQuery] string name,
+            int timestamp
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-            
+
             var linkViewModels = linksService.GetLinksByName(name, userId);
 
             var linkSearchViewModel = new LinkSearchViewModel
             {
-                TimeStamp = timeStamp,
-                Links = linkViewModels
+                Timestamp = timestamp,
+                Links = linkViewModels,
             };
 
             return Ok(linkSearchViewModel);
@@ -47,9 +51,18 @@ namespace TravelTipsAPI.Controllers
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<LinkViewModel>> PostNewLink([FromBody] LinkPostViewModel newLink)
+        public async Task<ActionResult<LinkViewModel>> PostNewLink(
+            [FromBody] LinkPostViewModel newLink
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var invalidParams = linksService.ValidatePost(newLink);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
 
             var linkViewModel = await linksService.PostNewLinkAsync(userId, newLink);
             return Ok(linkViewModel);
@@ -64,8 +77,18 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.LINKS)]
-        public async Task<ActionResult<LinkViewModel>> PatchLink(int id, [FromBody] LinkPatchViewModel link)
+        public async Task<ActionResult<LinkViewModel>> PatchLink(
+            int id,
+            [FromBody] LinkPatchViewModel link
+        )
         {
+            var invalidParams = linksService.ValidatePatch(link);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
+
             var linkViewModel = await linksService.PatchLinkAsync(id, link);
             return Ok(linkViewModel);
         }

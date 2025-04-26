@@ -25,9 +25,10 @@ namespace TravelTipsAPI.Services
 
             if (name.Length >= SearchConstants.LINK_SEARCH_MIN_LENGTH)
             {
-                linkViewModels = context.Links
-                    .Where(link => link.Name.ToLower().Contains(name)
-                        && link.CreatedBy == createdBy)
+                linkViewModels = context
+                    .Links.Where(link =>
+                        link.Name.ToLower().Contains(name) && link.CreatedBy == createdBy
+                    )
                     .Select(link => (LinkViewModel)link)
                     .ToList();
             }
@@ -36,18 +37,18 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
-        /// Get the links you owned
+        /// Get the links I own
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>the link ids you own</returns>
-        public IEnumerable<int> GetYourLinkIds(int id)
+        /// <returns>the link ids I own</returns>
+        public IEnumerable<int> GetMyLinkIds(int id)
         {
-            var yourLinkIds = context.Links
-                .Where(link => link.CreatedBy == id)
+            var myLinkIds = context
+                .Links.Where(link => link.CreatedBy == id)
                 .Select(link => link.Id)
                 .ToList();
 
-            return yourLinkIds;
+            return myLinkIds;
         }
 
         /// <summary>
@@ -56,7 +57,10 @@ namespace TravelTipsAPI.Services
         /// <param name="createdBy">user id</param>
         /// <param name="linkPostViewModel">new link detail</param>
         /// <returns>the new link</returns>
-        public async Task<LinkViewModel> PostNewLinkAsync(int createdBy, LinkPostViewModel linkPostViewModel)
+        public async Task<LinkViewModel> PostNewLinkAsync(
+            int createdBy,
+            LinkPostViewModel linkPostViewModel
+        )
         {
             var newLink = linkPostViewModel.ToLink(createdBy);
 
@@ -72,16 +76,53 @@ namespace TravelTipsAPI.Services
         /// <param name="id">link id</param>
         /// <param name="linkPatchViewModel">link detail to be updated</param>
         /// <returns>the link updated</returns>
-        public async Task<LinkViewModel> PatchLinkAsync(int id, LinkPatchViewModel linkPatchViewModel)
+        public async Task<LinkViewModel> PatchLinkAsync(
+            int id,
+            LinkPatchViewModel linkPatchViewModel
+        )
         {
             var link = context.Links.Find(id) ?? throw new Exception("Link not found.");
 
-            link.Name = linkPatchViewModel.Name ?? link.Name;
-            link.Url = linkPatchViewModel?.Url ?? link.Url;
+            link.Name = linkPatchViewModel.Name?.Trim() ?? link.Name;
+            link.Url = linkPatchViewModel?.Url?.Trim() ?? link.Url;
 
             await context.SaveChangesAsync();
 
             return (LinkViewModel)link;
+        }
+
+        /// <summary>
+        /// Check if new link's detail is valid
+        /// </summary>
+        /// <param name="newLink">new link</param>
+        /// <returns>true if is valid, false otherwise</returns>
+        public List<string> ValidatePost(LinkPostViewModel newLink)
+        {
+            var invalidParams = new List<string>();
+
+            if (newLink.Name.Length > 50)
+                invalidParams.Add("name");
+            if (newLink.Url.Length > 100)
+                invalidParams.Add("url");
+
+            return invalidParams;
+        }
+
+        /// <summary>
+        /// Check if link's detail is valid
+        /// </summary>
+        /// <param name="link">existing link</param>
+        /// <returns>true if is valid, false otherwise</returns>
+        public List<string> ValidatePatch(LinkPatchViewModel link)
+        {
+            var invalidParams = new List<string>();
+
+            if (link.Name?.Length > 50)
+                invalidParams.Add("name");
+            if (link.Url?.Length > 100)
+                invalidParams.Add("url");
+
+            return invalidParams;
         }
     }
 }

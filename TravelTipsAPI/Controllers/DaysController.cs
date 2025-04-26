@@ -13,9 +13,8 @@ namespace TravelTipsAPI.Controllers
     /// <summary>
     /// The controller of Days
     /// </summary>
-    /// <param name="usersService"></param>
-    /// <param name="tripsService"></param>
-    /// <param name="daysService"></param>
+    /// <param name="tripsService">trips service</param>
+    /// <param name="daysService">days service</param>
     [Route("api/[controller]")]
     public class DaysController(ITripsService tripsService, IDaysService daysService)
         : TravelTipsControllerBase
@@ -55,9 +54,17 @@ namespace TravelTipsAPI.Controllers
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             // verify the ownership of the parent trip
-            var yourTripIds = tripsService.GetYourTripIds(userId);
-            if (!yourTripIds.Any(id => id == newDay.TripId))
+            var myTripIds = tripsService.GetMyTripIds(userId);
+            if (!myTripIds.Any(id => id == newDay.TripId))
                 return Unauthorized(Messages.AccessDenied);
+
+            // validate the inputs
+            var invalidParams = daysService.ValidatePost(newDay);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
 
             try
             {
@@ -86,6 +93,14 @@ namespace TravelTipsAPI.Controllers
         )
         {
             Day day = daysService.FindDayById(id);
+
+            // validate the inputs
+            var invalidParams = daysService.ValidatePatch(dayPatch);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
 
             try
             {

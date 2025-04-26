@@ -21,5 +21,11 @@
         public static readonly string Day24HourRestricted = "Start time cannot equal to End time.";
         public static readonly string DayStartsBeforeEndRestricted =
             "A Day starts before another ends.";
+
+        // Links
+        public static readonly string LinkNotFound = "Link not found.";
+
+        // Attractions
+        public static readonly string AttractionNotFound = "Attraction not found.";
     }
 }

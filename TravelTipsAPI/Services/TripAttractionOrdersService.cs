@@ -22,16 +22,17 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <returns>the trip attraction order with the id</returns>
     public TripAttractionOrderViewModel GetTripAttractionOrderById(int id, bool? isPublic)
     {
-        var tao = context.TripAttractionOrders.Find(id)
+        var tao =
+            context.TripAttractionOrders.Find(id)
             ?? throw new Exception("Trip Attraction Order not found.");
 
         if (isPublic != null)
         {
-            var isTripPublic = context.Days
-            .Where(day => day.Id == tao.DayId)
-            .Select(day => day.Trip)
-            .Select(trip => trip.IsPublic)
-            .First();
+            var isTripPublic = context
+                .Days.Where(day => day.Id == tao.DayId)
+                .Select(day => day.Trip)
+                .Select(trip => trip.IsPublic)
+                .First();
 
             if (isTripPublic != isPublic)
                 throw new Exception("Access denied due to privacy protection.");
@@ -45,14 +46,14 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// </summary>
     /// <param name="id">user id</param>
     /// <returns>a list of your trip attraction order ids</returns>
-    public IEnumerable<int> GetYourTripAttractionOrders(int id)
+    public IEnumerable<int> GetMyTripAttractionOrders(int id)
     {
-        var yourTaoIds = context.TripAttractionOrders
-            .Where(tao => tao.CreatedBy == id)
+        var myTaoIds = context
+            .TripAttractionOrders.Where(tao => tao.CreatedBy == id)
             .Select(tao => tao.Id)
             .ToList();
 
-        return yourTaoIds;
+        return myTaoIds;
     }
 
     /// <summary>
@@ -61,10 +62,13 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="createdBy">user id</param>
     /// <param name="taoPostViewModel">the new trip attraction order detail</param>
     /// <returns>the new trip attraction order</returns>
-    public async Task<TripAttractionOrderViewModel> PostTripAttractionOrderAsync(int createdBy, TripAttractionOrderPostViewModel taoPostViewModel)
+    public async Task<TripAttractionOrderViewModel> PostTripAttractionOrderAsync(
+        int createdBy,
+        TripAttractionOrderPostViewModel taoPostViewModel
+    )
     {
-        var taosInSameDay = context.TripAttractionOrders
-            .Where(tao => tao.DayId == taoPostViewModel.DayId)
+        var taosInSameDay = context
+            .TripAttractionOrders.Where(tao => tao.DayId == taoPostViewModel.DayId)
             .ToList();
 
         // append new trip attraction order to the end of the order list
@@ -91,7 +95,10 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="id">trip attraction order id</param>
     /// <param name="taoPatchViewModel">the trip attraction order details to be updated</param>
     /// <returns>the trip attraction order up to date</returns>
-    public async Task<TripAttractionOrderViewModel> PatchTripAttractionOrderAsync(int id, TripAttractionOrderPatchViewModel taoPatchViewModel)
+    public async Task<TripAttractionOrderViewModel> PatchTripAttractionOrderAsync(
+        int id,
+        TripAttractionOrderPatchViewModel taoPatchViewModel
+    )
     {
         var tao = context.TripAttractionOrders.Find(id);
 
@@ -117,9 +124,8 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     {
         var tao = context.TripAttractionOrders.Find(id);
 
-        var taosInSameDay = context.TripAttractionOrders
-            .Where(tao => tao.DayId == tao.DayId
-            )
+        var taosInSameDay = context
+            .TripAttractionOrders.Where(tao => tao.DayId == tao.DayId)
             .OrderBy(tao => tao.Order)
             .ToList();
 
@@ -173,17 +179,21 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="preferRouteId">prefer route id</param>
     /// <param name="order">order</param>
     /// <returns>the new trip attraction order where new trip attraction order route is</returns>
-    public async Task<TripAttractionOrderViewModel> PostNewTripAttractionOrderRouteAsync(int id, int preferRouteId, int order)
+    public async Task<TripAttractionOrderViewModel> PostNewTripAttractionOrderRouteAsync(
+        int id,
+        int preferRouteId,
+        int order
+    )
     {
-        var toars = context.TripAttractionOrderRoutes
-            .Where(toar => toar.TripAttractionOrderId == id)
+        var toars = context
+            .TripAttractionOrderRoutes.Where(toar => toar.TripAttractionOrderId == id)
             .ToList();
 
         var newTaor = new TripAttractionOrderRoute
         {
             TripAttractionOrderId = id,
             PreferRouteId = preferRouteId,
-            Order = toars.Count + 1
+            Order = toars.Count + 1,
         };
 
         // append new trip attraction order route to the end of the order list
@@ -207,16 +217,18 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="preferRouteId">prefer route id</param>
     /// <param name="newOrder">new order</param>
     /// <returns>the trip attraction order with updated prefer route order</returns>
-    public async Task<TripAttractionOrderViewModel> SetPreferRouteOrderAsync(int id, int preferRouteId, int newOrder)
+    public async Task<TripAttractionOrderViewModel> SetPreferRouteOrderAsync(
+        int id,
+        int preferRouteId,
+        int newOrder
+    )
     {
-        var taor = context.TripAttractionOrderRoutes
-            .FirstOrDefault(taor => taor.TripAttractionOrderId == id
-                && taor.PreferRouteId == preferRouteId
-            );
+        var taor = context.TripAttractionOrderRoutes.FirstOrDefault(taor =>
+            taor.TripAttractionOrderId == id && taor.PreferRouteId == preferRouteId
+        );
 
-        var taors = context.TripAttractionOrderRoutes
-            .Where(taor => taor.TripAttractionOrderId == id
-            )
+        var taors = context
+            .TripAttractionOrderRoutes.Where(taor => taor.TripAttractionOrderId == id)
             .ToList();
 
         var isOrderValid = IsOrderValid(taors.Count, newOrder);
@@ -245,12 +257,14 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="id">trip attraction order id</param>
     /// <param name="preferRouteId">prefer route id</param>
     /// <returns>the trip attraction order where the trip attraction order route was</returns>
-    public async Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderRouteAsync(int id, int preferRouteId)
+    public async Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderRouteAsync(
+        int id,
+        int preferRouteId
+    )
     {
-        var taor = context.TripAttractionOrderRoutes
-            .FirstOrDefault(taor => taor.TripAttractionOrderId == id
-                && taor.PreferRouteId == preferRouteId
-            );
+        var taor = context.TripAttractionOrderRoutes.FirstOrDefault(taor =>
+            taor.TripAttractionOrderId == id && taor.PreferRouteId == preferRouteId
+        );
 
         context.TripAttractionOrderRoutes.Remove(taor);
         await context.SaveChangesAsync();
@@ -268,7 +282,8 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <returns>trip attraction order view model</returns>
     private TripAttractionOrderViewModel? ToViewModel(TripAttractionOrder? tao)
     {
-        if (tao == null) return null;
+        if (tao == null)
+            return null;
 
         var taoViewModel = new TripAttractionOrderViewModel
         {
@@ -281,11 +296,9 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
             IsDrivePreferred = tao.IsDrivePreferred,
             IsBikePreferred = tao.IsBikePreferred,
             IsOnFootPreferred = tao.IsOnFootPreferred,
-            PreferRoutes = tao.TripAttractionOrderRoutes
-                .Select(taor =>
-                    (PreferRouteViewModel)context.PreferRoutes
-                    .Find(taor.PreferRouteId)
-                )
+            PreferRoutes = tao.TripAttractionOrderRoutes.Select(taor =>
+                (PreferRouteViewModel)context.PreferRoutes.Find(taor.PreferRouteId)
+            ),
         };
 
         return taoViewModel;
