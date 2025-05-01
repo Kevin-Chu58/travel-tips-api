@@ -18,8 +18,11 @@ namespace TravelTipsAPI.Controllers
     /// <param name="tripsService">trips service</param>
     /// <param name="smallTripsService"></param>small trips service</param>
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService, ISmallTripsService smallTripsService)
-        : TravelTipsControllerBase
+    public class TripsController(
+        ITripsService tripsService,
+        IDaysService daysService,
+        ITripAttractionOrdersService tripAttractionOrdersService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get a public trip by its id
@@ -43,7 +46,21 @@ namespace TravelTipsAPI.Controllers
 
             TripViewModel tripViewModel = (TripViewModel)trip;
 
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+            var days = daysService.GetDaysByTripId(id);
+
+            foreach (var day in days)
+            {
+                var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
+                var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+                foreach (var tao in taos)
+                {
+                    taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
+                }
+
+                day.TripAttractionOrderCount = taos.Count();
+                day.TripAttractionOrders = taoViewModels;
+            }
 
             var tripDetailViewModel = new TripDetailViewModel
             {
@@ -53,44 +70,7 @@ namespace TravelTipsAPI.Controllers
                 CreatedBy = tripViewModel.CreatedBy,
                 CreatedAt = tripViewModel.CreatedAt,
                 LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
-            };
-
-            return Ok(tripDetailViewModel);
-        }
-
-        /// <summary>
-        /// Get your own trip by id
-        /// </summary>
-        /// <param name="id">trip id</param>
-        /// <returns>the trip you own</returns>
-        [HttpGet]
-        [Route("my/{id}")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public ActionResult<TripDetailViewModel> GetTripById(int id)
-        {
-            Trip trip;
-            try
-            {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(Messages.TripNotFound);
-            }
-            var tripViewModel = (TripViewModel)trip;
-
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
-
-            var tripDetailViewModel = new TripDetailViewModel
-            {
-                Id = tripViewModel.Id,
-                Name = tripViewModel.Name,
-                Description = tripViewModel.Description,
-                CreatedBy = tripViewModel.CreatedBy,
-                CreatedAt = tripViewModel.CreatedAt,
-                LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
+                Days = days,
             };
 
             return Ok(tripDetailViewModel);
@@ -126,6 +106,49 @@ namespace TravelTipsAPI.Controllers
         }
 
         /// <summary>
+        /// Get your own trip by id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the trip you own</returns>
+        [HttpGet]
+        [Route("my/{id}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public ActionResult<TripDetailViewModel> GetTripById(int id)
+        {
+            Trip trip = tripsService.FindTripByParams(id);
+            var tripViewModel = (TripViewModel)trip;
+
+            var days = daysService.GetDaysByTripId(id);
+
+            foreach (var day in days)
+            {
+                var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
+                var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+                foreach (var tao in taos)
+                {
+                    taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
+                }
+
+                day.TripAttractionOrderCount = taos.Count();
+                day.TripAttractionOrders = taoViewModels;
+            }
+
+            var tripDetailViewModel = new TripDetailViewModel
+            {
+                Id = tripViewModel.Id,
+                Name = tripViewModel.Name,
+                Description = tripViewModel.Description,
+                CreatedBy = tripViewModel.CreatedBy,
+                CreatedAt = tripViewModel.CreatedAt,
+                LastUpdatedAt = tripViewModel.LastUpdatedAt,
+                Days = days,
+            };
+
+            return Ok(tripDetailViewModel);
+        }
+
+        /// <summary>
         /// Post a new trip to db
         /// </summary>
         /// <param name="newTrip">a new trip to be posted</param>
@@ -155,7 +178,7 @@ namespace TravelTipsAPI.Controllers
         /// Update a trip's information
         /// </summary>
         /// <param name="id">the id of the trip</param>
-        /// <param name="tripPatchViewModel">the trip information to be updated</param>
+        /// <param name="tripPatch">the trip information to be updated</param>
         /// <returns>the updated trip</returns>
         [HttpPatch]
         [Route("{id}")]
@@ -173,6 +196,14 @@ namespace TravelTipsAPI.Controllers
             catch (Exception ex)
             {
                 return NotFound(ex.Message);
+            }
+
+            // validate the inputs
+            var invalidParams = tripsService.ValidatePatch(tripPatch);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
             var tripViewModel = await tripsService.PatchTripAsync(trip, tripPatch);

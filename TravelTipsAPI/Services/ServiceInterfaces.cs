@@ -18,7 +18,7 @@ namespace TravelTipsAPI.Services
             Trip FindTripByParams(int id, bool? isPublic = null);
             IEnumerable<TripViewModel> GetTripsByName(string name);
             IEnumerable<TripViewModel> GetTripsByUserId(int id);
-            IEnumerable<int> GetYourTripIds(int id);
+            IEnumerable<int> GetMyTripIds(int id);
             Task<TripViewModel> PostNewTripAsync(int createdBy, TripPostViewModel newTrip);
             Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<TripViewModel> UpdateIsPublicAsync(Trip trip, bool isPublic);
@@ -26,113 +26,126 @@ namespace TravelTipsAPI.Services
             Task<TripViewModel> UpdateLastUpdatedAtAsync(Trip trip);
             bool IsOwner(int id, int tripId);
             List<string> ValidatePost(TripPostViewModel newTrip);
-        }
-
-        public interface ISmallTripsService
-        {
-            SmallTripViewModel? GetSmallTripById(int id);
-            IEnumerable<SmallTripViewModel> GetSmallTripsByTripId(int tripId);
-            Task<SmallTripViewModel> PostNewSmallTripsAsync(
-                int tripId,
-                SmallTripPostViewModel newSmallTrip
-            );
-            Task<SmallTripViewModel> PatchSmallTripAsync(int id, TripPatchViewModel smallTrip);
+            List<string> ValidatePatch(TripPatchViewModel trip);
         }
 
         public interface IDaysService
         {
             Day FindDayById(int id, bool? isPublic = null);
             IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
-            IEnumerable<int> GetYourDayIds(int id);
+            IEnumerable<int> GetMyDayIds(int id);
             Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
+            Task<DayViewModel> DeleteDay(Day day);
+            List<string> ValidatePost(DayPostViewModel newDay);
+            List<string> ValidatePatch(DayPatchViewModel day);
         }
 
         public interface ILinksService
         {
             IEnumerable<LinkViewModel> GetLinksByName(string name, int createdBy);
-            IEnumerable<int> GetYourLinkIds(int id);
+            IEnumerable<int> GetMyLinkIds(int id);
             Task<LinkViewModel> PostNewLinkAsync(int createdBy, LinkPostViewModel newLink);
             Task<LinkViewModel> PatchLinkAsync(int id, LinkPatchViewModel link);
+            List<string> ValidatePost(LinkPostViewModel newLink);
+            List<string> ValidatePatch(LinkPatchViewModel link);
         }
 
         public interface IAttractionsService
         {
+            Attraction FindAttractionById(int id);
             IEnumerable<AttractionViewModel> GetAttractionsByParams(
                 string? name,
                 int? osmId,
                 int? ownerId
             );
-            IEnumerable<int> GetYourAttractions(int id);
+            IEnumerable<int> GetMyAttractions(int id);
             Task<AttractionViewModel> PostNewAttractionAsync(
                 int createdBy,
                 AttractionPostViewModel newAttraction
             );
             Task<AttractionViewModel> PatchAttractionAsync(
-                int id,
-                AttractionPatchViewModel attraction
+                Attraction attraction,
+                AttractionPatchViewModel attractionPatch
             );
+            List<string> ValidatePost(AttractionPostViewModel newAttraction);
+            List<string> ValidatePatch(AttractionPatchViewModel attraction);
         }
 
         public interface IPreferRoutesService
         {
             // prefer routes
+            PreferRoute FindPreferRouteById(int id);
             IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
                 int? type,
-                string? reference,
                 int? departOsmId,
                 int? arrivalOsmId,
                 int? estimateTimeMin,
                 int? estimateTimeMax,
                 int? ownerId
             );
-            IEnumerable<int> GetYourPreferRoutes(int id);
+            IEnumerable<int> GetMyPreferRoutes(int id);
             Task<PreferRouteViewModel> PostPreferRoutesAsync(
                 int createdBy,
                 PreferRoutePostViewModel newPreferRoute
             );
             Task<PreferRouteViewModel> PatchPreferRoutesAsync(
-                int id,
-                PreferRoutePatchViewModel preferRoute
+                PreferRoute preferRoute,
+                PreferRoutePatchViewModel preferRoutePatch
             );
+            Task<PreferRouteViewModel> DeletePreferRoute(PreferRoute preferRoute);
 
             // route types
+            RouteType FindRouteTypeById(int id);
             IEnumerable<RouteTypeViewModel> GetAllRouteTypes();
             Task<RouteTypeViewModel> PostNewRouteTypeAsync(string name);
-            Task<RouteTypeViewModel> PatchRouteTypeAsync(int id, string name);
+            Task<RouteTypeViewModel> PatchRouteTypeAsync(RouteType routeType, string name);
+
+            // utils
+            PreferRouteViewModel ToViewModel(PreferRoute preferRoute);
+            List<string> ValidateNameChange(string name);
         }
 
         public interface ITripAttractionOrdersService
         {
             // taos
-            TripAttractionOrderViewModel GetTripAttractionOrderById(int id, bool? isPublic);
-            IEnumerable<int> GetYourTripAttractionOrders(int id);
+            TripAttractionOrder FindTripAttractionOrderById(int id, bool? isPublic = null);
+            IEnumerable<TripAttractionOrder> GetTripAttractionOrdersByDayId(int dayId);
+            IEnumerable<int> GetMyTripAttractionOrders(int id);
             Task<TripAttractionOrderViewModel> PostTripAttractionOrderAsync(
                 int createdBy,
                 TripAttractionOrderPostViewModel newTripAttractionOrder
             );
             Task<TripAttractionOrderViewModel> PatchTripAttractionOrderAsync(
-                int id,
+                TripAttractionOrder tao,
                 TripAttractionOrderPatchViewModel tripAttractionOrder
             );
-            Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(int id, int newOrder);
-            Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(int id);
+            Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(
+                TripAttractionOrder tao,
+                int newOrder
+            );
+            Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(
+                TripAttractionOrder tao
+            );
 
             // taors
+            TripAttractionOrderRoute FindTripAttractionOrderRoute(int taoId, int preferRouteId);
             Task<TripAttractionOrderViewModel> PostNewTripAttractionOrderRouteAsync(
                 int id,
                 int preferRouteId,
                 int order
             );
             Task<TripAttractionOrderViewModel> SetPreferRouteOrderAsync(
-                int id,
-                int preferRouteId,
+                TripAttractionOrderRoute taor,
                 int newOrder
             );
             Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderRouteAsync(
-                int id,
-                int preferRouteId
+                TripAttractionOrderRoute taor
             );
+            bool IsOrderValid(int size, int order);
+
+            // utils
+            TripAttractionOrderViewModel ToViewModel(TripAttractionOrder tao);
         }
     }
 

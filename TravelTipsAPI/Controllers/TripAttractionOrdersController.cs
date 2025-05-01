@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Reflection;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models;
+using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
 
@@ -13,7 +15,8 @@ namespace TravelTipsAPI.Controllers
     /// </summary>
     /// <param name="taosService">trip attraction orders service</param>
     [Route("api/[controller]")]
-    public class TripAttractionOrdersController(ITripAttractionOrdersService taosService) : TravelTipsControllerBase
+    public class TripAttractionOrdersController(ITripAttractionOrdersService taosService)
+        : TravelTipsControllerBase
     {
         // taos
 
@@ -27,10 +30,16 @@ namespace TravelTipsAPI.Controllers
         [AllowAnonymous]
         public ActionResult<TripAttractionOrderViewModel> GetPublicTripAttractionOrderById(int id)
         {
-            var taoViewModel = taosService
-                .GetTripAttractionOrderById(id, true);
+            try
+            {
+                var tao = taosService.FindTripAttractionOrderById(id, true);
 
-            return Ok(taoViewModel);
+                return Ok(taosService.ToViewModel(tao));
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         /// <summary>
@@ -43,8 +52,7 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
         public ActionResult<TripAttractionOrderViewModel> GetYourTripAttractionOrderById(int id)
         {
-            var taoViewModel = taosService
-                .GetTripAttractionOrderById(id, null);
+            var taoViewModel = taosService.FindTripAttractionOrderById(id);
 
             return Ok(taoViewModel);
         }
@@ -57,31 +65,50 @@ namespace TravelTipsAPI.Controllers
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>> PostNewTripAttractionOrderAsync(
-            [FromBody] TripAttractionOrderPostViewModel newTao)
+        public async Task<
+            ActionResult<TripAttractionOrderViewModel>
+        > PostNewTripAttractionOrderAsync([FromBody] TripAttractionOrderPostViewModel newTao)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var taoViewModel = await taosService.PostTripAttractionOrderAsync(userId, newTao);
+            try
+            {
+                var taoViewModel = await taosService.PostTripAttractionOrderAsync(userId, newTao);
 
-            return Ok(taoViewModel);
+                return Ok(taoViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
         /// Update an existing trip attraction order
         /// </summary>
         /// <param name="id">trip attraction order id</param>
-        /// <param name="tao">the new trip attraction order to be updated</param>
+        /// <param name="taoPatch">the new trip attraction order to be updated</param>
         /// <returns>the trip attraction order up to date</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
         public async Task<ActionResult<TripAttractionOrderViewModel>> PatchTripAttractionOrderAsync(
-            int id, [FromBody] TripAttractionOrderPatchViewModel tao)
+            int id,
+            [FromBody] TripAttractionOrderPatchViewModel taoPatch
+        )
         {
-            var taoViewModel = await taosService.PatchTripAttractionOrderAsync(id, tao);
+            var tao = taosService.FindTripAttractionOrderById(id);
 
-            return Ok(taoViewModel);
+            try
+            {
+                var taoViewModel = await taosService.PatchTripAttractionOrderAsync(tao, taoPatch);
+
+                return Ok(taoViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -91,13 +118,25 @@ namespace TravelTipsAPI.Controllers
         /// <param name="newOrder">the new order</param>
         /// <returns>a list of trip attraction order ids in new order</returns>
         [HttpPatch]
-        [Route("{id}/switch")]
+        [Route("{id}/order")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> SetOrderAsync(int id, [FromBody] int newOrder)
+        public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> SetOrderAsync(
+            int id,
+            [FromBody] int newOrder
+        )
         {
-            var taoViewModels = await taosService.SetOrderAsync(id, newOrder);
+            var tao = taosService.FindTripAttractionOrderById(id);
 
-            return Ok(taoViewModels);
+            try
+            {
+                var taoViewModels = await taosService.SetOrderAsync(tao, newOrder);
+
+                return Ok(taoViewModels);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -108,9 +147,12 @@ namespace TravelTipsAPI.Controllers
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>> DeleteTripAttractionOrderAsync(int id)
+        public async Task<
+            ActionResult<TripAttractionOrderViewModel>
+        > DeleteTripAttractionOrderAsync(int id)
         {
-            var deletedTaoViewModel = await taosService.DeleteTripAttractionOrderAsync(id);
+            var tao = taosService.FindTripAttractionOrderById(id);
+            var deletedTaoViewModel = await taosService.DeleteTripAttractionOrderAsync(tao);
 
             return Ok(deletedTaoViewModel);
         }
@@ -127,12 +169,35 @@ namespace TravelTipsAPI.Controllers
         [HttpPost]
         [Route("{id}/routes/{routeId}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>> PostNewTripAttractionOrderRouteAsync(
-            int id, int routeId, [FromBody] int order)
+        public async Task<
+            ActionResult<TripAttractionOrderViewModel>
+        > PostNewTripAttractionOrderRouteAsync(int id, int routeId, [FromBody] int order)
         {
-            var taoViewModel = await taosService.PostNewTripAttractionOrderRouteAsync(id, routeId, order);
+            try
+            {
+                var tao = taosService.FindTripAttractionOrderRoute(id, routeId);
 
-            return Ok(taoViewModel);
+                if (tao != null)
+                {
+                    return BadRequest(Messages.TaorExist);
+                }
+            }
+            catch (Exception) { }
+
+            try
+            {
+                var taoViewModel = await taosService.PostNewTripAttractionOrderRouteAsync(
+                    id,
+                    routeId,
+                    order
+                );
+
+                return Ok(taoViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -145,12 +210,31 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}/routes/{routeId}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> SetPreferRouteOrderAsync(
-            int id, int routeId, [FromBody] int order)
+        public async Task<
+            ActionResult<IEnumerable<TripAttractionOrderViewModel>>
+        > SetPreferRouteOrderAsync(int id, int routeId, [FromBody] int order)
         {
-            var taoViewModel = await taosService.SetPreferRouteOrderAsync(id, routeId, order);
+            // check if taor exists
+            TripAttractionOrderRoute taor;
+            try
+            {
+                taor = taosService.FindTripAttractionOrderRoute(id, routeId);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
 
-            return Ok(taoViewModel);
+            try
+            {
+                var taoViewModel = await taosService.SetPreferRouteOrderAsync(taor, order);
+
+                return Ok(taoViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -162,10 +246,22 @@ namespace TravelTipsAPI.Controllers
         [HttpDelete]
         [Route("{id}/routes/{routeId}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>>  DeleteTripAttractionOrderRouteAsync(
-            int id, int routeId)
+        public async Task<
+            ActionResult<TripAttractionOrderViewModel>
+        > DeleteTripAttractionOrderRouteAsync(int id, int routeId)
         {
-            var taoViewModel = await taosService.DeleteTripAttractionOrderRouteAsync(id, routeId);
+            // check if taor exists
+            TripAttractionOrderRoute taor;
+            try
+            {
+                taor = taosService.FindTripAttractionOrderRoute(id, routeId);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            var taoViewModel = await taosService.DeleteTripAttractionOrderRouteAsync(taor);
 
             return Ok(taoViewModel);
         }

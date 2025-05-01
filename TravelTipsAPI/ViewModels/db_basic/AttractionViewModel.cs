@@ -12,19 +12,17 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int OsmId { get; set; }
         public int? LinkId { get; set; }
 
-        public static explicit operator AttractionViewModel?(Attraction attraction)
+        public static explicit operator AttractionViewModel(Attraction attraction)
         {
-            if (attraction == null) return null;
-
             var attractionViewModel = new AttractionViewModel
             {
                 Id = attraction.Id,
-                Name = attraction.Name,
-                Description = attraction.Description,
-                Address = attraction.Address,
+                Name = attraction.Name.Trim(),
+                Description = attraction.Description?.Trim(),
+                Address = attraction.Address.Trim(),
                 CreatedBy = attraction.CreatedBy,
                 OsmId = attraction.OsmId,
-                LinkId = attraction.LinkId
+                LinkId = attraction.LinkId,
             };
 
             return attractionViewModel;

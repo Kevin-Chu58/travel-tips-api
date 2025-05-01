@@ -23,8 +23,6 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<RouteType> RouteTypes { get; set; }
 
-    public virtual DbSet<SmallTrip> SmallTrips { get; set; }
-
     public virtual DbSet<Trip> Trips { get; set; }
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
@@ -131,8 +129,6 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => new { e.DepartOsmId, e.ArrivalOsmId }, "idx_prefer_routes_osmId");
 
-            entity.Property(e => e.Ref).HasMaxLength(20).IsUnicode(false);
-
             entity
                 .HasOne(d => d.CreatedByNavigation)
                 .WithMany(p => p.PreferRoutes)
@@ -163,28 +159,13 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(20).IsUnicode(false);
         });
 
-        modelBuilder.Entity<SmallTrip>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_small_trips");
-
-            entity.ToTable("SmallTrips", "db_basic");
-
-            entity.Property(e => e.Description).HasMaxLength(500).IsUnicode(false);
-            entity.Property(e => e.Name).HasMaxLength(50).IsUnicode(false);
-
-            entity
-                .HasOne(d => d.Trip)
-                .WithMany(p => p.SmallTrips)
-                .HasForeignKey(d => d.TripId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_trips_small_trips");
-        });
-
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
 
             entity.ToTable("Trips", "db_basic");
+
+            entity.HasIndex(e => e.IsHidden, "idx_trips_isHidden");
 
             entity.HasIndex(e => e.IsPublic, "idx_trips_isPublic");
 
@@ -206,8 +187,6 @@ public partial class TravelTipsContext : DbContext
             entity.HasKey(e => e.Id).HasName("pk_trip_attraction_orders");
 
             entity.ToTable("TripAttractionOrders", "db_basic");
-
-            entity.HasIndex(e => new { e.DayId, e.Order }, "unique_day_order").IsUnique();
 
             entity.Property(e => e.IsBikePreferred).HasDefaultValue(true);
             entity.Property(e => e.IsDrivePreferred).HasDefaultValue(true);
@@ -242,13 +221,6 @@ public partial class TravelTipsContext : DbContext
                 .HasName("pk_trip_attraction_order_routes");
 
             entity.ToTable("TripAttractionOrderRoutes", "db_basic");
-
-            entity
-                .HasIndex(
-                    e => new { e.TripAttractionOrderId, e.Order },
-                    "unique_trip_attraction_order_order"
-                )
-                .IsUnique();
 
             entity
                 .HasOne(d => d.PreferRoute)

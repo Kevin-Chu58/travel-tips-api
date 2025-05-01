@@ -46,18 +46,18 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
-        /// Get your days' ids
+        /// Get my days' ids
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>a list of the ids of days you own</returns>
-        public IEnumerable<int> GetYourDayIds(int id)
+        /// <returns>a list of the ids of days I own</returns>
+        public IEnumerable<int> GetMyDayIds(int id)
         {
-            var yourDayIds = context
+            var myDayIds = context
                 .Days.Where(day => day.CreatedBy == id)
                 .Select(day => day.Id)
                 .ToList();
 
-            return yourDayIds;
+            return myDayIds;
         }
 
         /// <summary>
@@ -90,8 +90,8 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated day</returns>
         public async Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch)
         {
-            day.Name = dayPatch.Name ?? day.Name;
-            day.Description = dayPatch.Description ?? day.Description;
+            day.Name = dayPatch.Name?.Trim() ?? day.Name;
+            day.Description = dayPatch.Description?.Trim() ?? day.Description;
             day.Start = dayPatch.Start ?? day.Start;
             day.End = dayPatch.End ?? day.End;
             day.IsOverNight = day.Start > day.End;
@@ -108,9 +108,57 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
+        /// Delete a day from database
+        /// </summary>
+        /// <param name="day">day</param>
+        /// <returns>the day deleted</returns>
+        public async Task<DayViewModel> DeleteDay(Day day)
+        {
+            var dayViewModel = (DayViewModel)day;
+
+            context.Days.Remove(day);
+            await context.SaveChangesAsync();
+
+            return dayViewModel;
+        }
+
+        /// <summary>
+        /// Check if new day's detail is valid
+        /// </summary>
+        /// <param name="newDay">new day</param>
+        /// <returns>true if is valid, false otherwise</returns>
+        public List<string> ValidatePost(DayPostViewModel newDay)
+        {
+            var invalidParams = new List<string>();
+
+            if (newDay.Name?.Length > 50)
+                invalidParams.Add("name");
+            if (newDay.Description?.Length > 500)
+                invalidParams.Add("description");
+
+            return invalidParams;
+        }
+
+        /// <summary>
+        /// Check if day's detail is valid
+        /// </summary>
+        /// <param name="day">existing day</param>
+        /// <returns>true if is valid, false otherwise</returns>
+        public List<string> ValidatePatch(DayPatchViewModel day)
+        {
+            var invalidParams = new List<string>();
+
+            if (day.Name?.Length > 50)
+                invalidParams.Add("name");
+            if (day.Description?.Length > 500)
+                invalidParams.Add("description");
+
+            return invalidParams;
+        }
+
+        /// <summary>
         /// Check if yesterday ends before the new day's dawning
         /// </summary>
-        /// <param name="tripId">trip id</param>
         /// <param name="today">today</param>
         /// <param name="dayId"> next day id</param>
         /// <returns>true if ends before next start, false otherwise</returns>

@@ -9,8 +9,6 @@ public partial class PreferRoute
 
     public int Type { get; set; }
 
-    public string Ref { get; set; } = null!;
-
     public int CreatedBy { get; set; }
 
     public int DepartOsmId { get; set; }
