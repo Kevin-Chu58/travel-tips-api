@@ -5,6 +5,7 @@ using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
+using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
 
@@ -64,6 +65,13 @@ namespace TravelTipsAPI.Controllers
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
+            // validate link
+            var isLinkValid = UrlUtils.IsValidUrlFormat(newLink.Url);
+            if (!isLinkValid)
+            {
+                return BadRequest(Messages.LinkInvalid);
+            }
+
             var linkViewModel = await linksService.PostNewLinkAsync(userId, newLink);
             return Ok(linkViewModel);
         }
@@ -87,6 +95,16 @@ namespace TravelTipsAPI.Controllers
             {
                 var invalidInputs = string.Join(", ", invalidParams);
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
+
+            // validate link
+            if (link.Url != null)
+            {
+                var isLinkValid = UrlUtils.IsValidUrlFormat(link.Url);
+                if (!isLinkValid)
+                {
+                    return BadRequest(Messages.LinkInvalid);
+                }
             }
 
             var linkViewModel = await linksService.PatchLinkAsync(id, link);

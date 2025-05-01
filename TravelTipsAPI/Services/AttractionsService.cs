@@ -45,9 +45,9 @@ namespace TravelTipsAPI.Services
 
             var attractionViewModels = new List<AttractionViewModel>();
 
-            IEnumerable<Attraction> attractions = [.. context.Attractions];
+            IEnumerable<Attraction> attractions = context.Attractions.ToList();
 
-            if (name != null && name.Length < SearchConstants.ATTRACTION_SEARCH_MIN_LENGTH)
+            if (name != null && name.Length < SearchConstraints.ATTRACTION_SEARCH_MIN_LENGTH)
             {
                 attractions = [];
             }

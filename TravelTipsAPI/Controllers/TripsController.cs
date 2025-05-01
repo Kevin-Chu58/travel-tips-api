@@ -18,8 +18,11 @@ namespace TravelTipsAPI.Controllers
     /// <param name="tripsService">trips service</param>
     /// <param name="smallTripsService"></param>small trips service</param>
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService, ISmallTripsService smallTripsService)
-        : TravelTipsControllerBase
+    public class TripsController(
+        ITripsService tripsService,
+        IDaysService daysService,
+        ITripAttractionOrdersService tripAttractionOrdersService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get a public trip by its id
@@ -43,7 +46,21 @@ namespace TravelTipsAPI.Controllers
 
             TripViewModel tripViewModel = (TripViewModel)trip;
 
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+            var days = daysService.GetDaysByTripId(id);
+
+            foreach (var day in days)
+            {
+                var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
+                var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+                foreach (var tao in taos)
+                {
+                    taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
+                }
+
+                day.TripAttractionOrderCount = taos.Count();
+                day.TripAttractionOrders = taoViewModels;
+            }
 
             var tripDetailViewModel = new TripDetailViewModel
             {
@@ -53,7 +70,7 @@ namespace TravelTipsAPI.Controllers
                 CreatedBy = tripViewModel.CreatedBy,
                 CreatedAt = tripViewModel.CreatedAt,
                 LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
+                Days = days,
             };
 
             return Ok(tripDetailViewModel);
@@ -101,7 +118,21 @@ namespace TravelTipsAPI.Controllers
             Trip trip = tripsService.FindTripByParams(id);
             var tripViewModel = (TripViewModel)trip;
 
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+            var days = daysService.GetDaysByTripId(id);
+
+            foreach (var day in days)
+            {
+                var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
+                var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+                foreach (var tao in taos)
+                {
+                    taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
+                }
+
+                day.TripAttractionOrderCount = taos.Count();
+                day.TripAttractionOrders = taoViewModels;
+            }
 
             var tripDetailViewModel = new TripDetailViewModel
             {
@@ -111,7 +142,7 @@ namespace TravelTipsAPI.Controllers
                 CreatedBy = tripViewModel.CreatedBy,
                 CreatedAt = tripViewModel.CreatedAt,
                 LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
+                Days = days,
             };
 
             return Ok(tripDetailViewModel);

@@ -14,10 +14,24 @@ namespace TravelTipsAPI.Services
         // prefer routes
 
         /// <summary>
+        /// Find a route type by id
+        /// </summary>
+        /// <param name="id">route type id</param>
+        /// <returns>the route type with id</returns>
+        public PreferRoute FindPreferRouteById(int id)
+        {
+            var preferRoute = context.PreferRoutes.Find(id);
+
+            if (preferRoute == null)
+                throw new Exception(Messages.PreferRouteNotFound);
+
+            return preferRoute;
+        }
+
+        /// <summary>
         /// Ge a list of prefer routes by search params
         /// </summary>
         /// <param name="type">prefer route type</param>
-        /// <param name="reference">prefer route ref</param>
         /// <param name="departOsmId">prefer route depart osm id</param>
         /// <param name="arrivalOsmId">prefer route arrival osm id</param>
         /// <param name="estimateTimeMin">prefer route min estimate time</param>
@@ -26,7 +40,6 @@ namespace TravelTipsAPI.Services
         /// <returns>a list of prefer routes that satisfy the search params</returns>
         public IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
             int? type,
-            string? reference,
             int? departOsmId,
             int? arrivalOsmId,
             int? estimateTimeMin,
@@ -34,23 +47,11 @@ namespace TravelTipsAPI.Services
             int? ownerId
         )
         {
-            reference = reference?.Trim().ToLower();
             if (estimateTimeMin >= estimateTimeMax)
-                throw new Exception("Max estimate time is smaller than min estimate time.");
+                throw new Exception(Messages.EstimateTimeMinMaxRestricted);
 
             IEnumerable<PreferRoute> preferRoutes = [.. context.PreferRoutes];
 
-            if (
-                reference != null
-                && reference.Length < SearchConstants.PREFER_ROUTE_SEARCH_MIN_LENGTH
-            )
-            {
-                preferRoutes = [];
-            }
-            else
-            {
-                preferRoutes = preferRoutes.Where(pr => pr.Ref.ToLower().Contains(reference));
-            }
             if (type != null)
                 preferRoutes = preferRoutes.Where(pr => pr.Type == type);
             if (departOsmId != null)
@@ -69,8 +70,7 @@ namespace TravelTipsAPI.Services
                 .Select(pr => new PreferRouteViewModel
                 {
                     Id = pr.Id,
-                    Type = GetRouteTypeById(pr.Type),
-                    Ref = pr.Ref,
+                    Type = (RouteTypeViewModel)FindRouteTypeById(pr.Type),
                     DepartOsmId = pr.DepartOsmId,
                     ArrivalOsmId = pr.ArrivalOsmId,
                     EstimateTime = pr.EstimateTime,
@@ -114,7 +114,7 @@ namespace TravelTipsAPI.Services
             await context.SaveChangesAsync();
 
             var preferRouteViewModel = (PreferRouteViewModel)newPreferRoute;
-            preferRouteViewModel.Type = GetRouteTypeById(newPreferRoute.Type);
+            preferRouteViewModel.Type = (RouteTypeViewModel)FindRouteTypeById(newPreferRoute.Type);
 
             return preferRouteViewModel;
         }
@@ -122,25 +122,15 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// Update an existing prefer route you own
         /// </summary>
-        /// <param name="id">prefer route id</param>
+        /// <param name="preferRoute">prefer route</param>
         /// <param name="preferRoutePatchViewModel">the prefer route details to be updated</param>
         /// <returns>the prefer route up to date</returns>
         public async Task<PreferRouteViewModel> PatchPreferRoutesAsync(
-            int id,
+            PreferRoute preferRoute,
             PreferRoutePatchViewModel preferRoutePatchViewModel
         )
         {
-            var preferRoute =
-                context.PreferRoutes.Find(id) ?? throw new Exception("Prefer Route not found.");
-
-            // check preferRoute.Type in range
-            bool isTypeValid = GetAllRouteTypes()
-                .Any(rt => rt.Id == preferRoutePatchViewModel.Type);
-            if (!isTypeValid)
-                throw new Exception("Prefer Route type invalid.");
-
             preferRoute.Type = preferRoutePatchViewModel.Type ?? preferRoute.Type;
-            preferRoute.Ref = preferRoutePatchViewModel.Ref?.Trim() ?? preferRoute.Ref;
             preferRoute.DepartOsmId =
                 preferRoutePatchViewModel.DepartOsmId ?? preferRoute.DepartOsmId;
             preferRoute.ArrivalOsmId =
@@ -152,54 +142,56 @@ namespace TravelTipsAPI.Services
             await context.SaveChangesAsync();
 
             var preferRouteViewModel = (PreferRouteViewModel)preferRoute;
-            preferRouteViewModel.Type = GetRouteTypeById(preferRoute.Type);
+            preferRouteViewModel.Type = (RouteTypeViewModel)FindRouteTypeById(preferRoute.Type);
 
             return preferRouteViewModel;
         }
 
         /// <summary>
-        /// Check if new prefer route's detail is valid
+        /// Delete a prefer route by its id
         /// </summary>
-        /// <param name="newPreferRoute">new prefer route</param>
-        /// <returns>true if is valid, false otherwise</returns>
-        public List<string> ValidatePost(PreferRoutePostViewModel newPreferRoute)
+        /// <param name="preferRoute">prefer route</param>
+        /// <returns>the prefer route deleted</returns>
+        public async Task<PreferRouteViewModel> DeletePreferRoute(PreferRoute preferRoute)
         {
-            var invalidParams = new List<string>();
+            if (GetTaoInUse(preferRoute.Id) > 0)
+                throw new Exception(Messages.PreferRouteInUse);
 
-            if (newPreferRoute.Ref.Length > 20)
-                invalidParams.Add("ref");
+            var preferRouteViewModel = ToViewModel(preferRoute);
 
-            return invalidParams;
+            context.PreferRoutes.Remove(preferRoute);
+            await context.SaveChangesAsync();
+
+            return preferRouteViewModel;
         }
 
         /// <summary>
-        /// Check if prefer route's detail is valid
+        /// Get the number of trip attraction orders using the prefer route with the id
         /// </summary>
-        /// <param name="preferRoute">existing prefer route</param>
-        /// <returns>true if is valid, false otherwise</returns>
-        public List<string> ValidatePatch(PreferRoutePatchViewModel preferRoute)
+        /// <param name="id">prefer route id</param>
+        /// <returns>the number of taos in use</returns>
+        private int GetTaoInUse(int id)
         {
-            var invalidParams = new List<string>();
-
-            if (preferRoute.Ref?.Length > 20)
-                invalidParams.Add("ref");
-
-            return invalidParams;
+            return context
+                .TripAttractionOrderRoutes.Where(taor => taor.PreferRouteId == id)
+                .Count();
         }
 
         // route types
 
         /// <summary>
-        /// Get a route type by its id
+        /// Find a route type by its id
         /// </summary>
         /// <param name="id">route type id</param>
         /// <returns>the route type with the id</returns>
-        private RouteTypeViewModel GetRouteTypeById(int id)
+        public RouteType FindRouteTypeById(int id)
         {
-            var routeTypeViewModel =
-                context.RouteTypes.Find(id) ?? throw new Exception("Route Type not found.");
+            var routeType = context.RouteTypes.Find(id);
 
-            return (RouteTypeViewModel)routeTypeViewModel;
+            if (routeType == null)
+                throw new Exception(Messages.RouteTypeNotFound);
+
+            return routeType;
         }
 
         /// <summary>
@@ -233,19 +225,26 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// Update an existing route type
         /// </summary>
-        /// <param name="id">route type id</param>
+        /// <param name="routeType">route type</param>
         /// <param name="name">route type name to be updated</param>
         /// <returns>the route type up to date</returns>
-        public async Task<RouteTypeViewModel> PatchRouteTypeAsync(int id, string name)
+        public async Task<RouteTypeViewModel> PatchRouteTypeAsync(RouteType routeType, string name)
         {
-            var routeType =
-                context.RouteTypes.Find(id) ?? throw new Exception("Route Type not found.");
-
             routeType.Name = name.Trim();
 
             await context.SaveChangesAsync();
 
             return (RouteTypeViewModel)routeType;
+        }
+
+        // utils
+
+        public PreferRouteViewModel ToViewModel(PreferRoute preferRoute)
+        {
+            var preferRouteViewModel = (PreferRouteViewModel)preferRoute;
+            preferRouteViewModel.Type = (RouteTypeViewModel)FindRouteTypeById(preferRoute.Type);
+
+            return preferRouteViewModel;
         }
 
         /// <summary>

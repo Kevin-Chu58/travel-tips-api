@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
@@ -14,8 +15,10 @@ namespace TravelTipsAPI.Controllers
     /// </summary>
     /// <param name="preferRoutesService">prefer routes service</param>
     [Route("api/[controller]")]
-    public class PreferRoutesController(IPreferRoutesService preferRoutesService)
-        : TravelTipsControllerBase
+    public class PreferRoutesController(
+        IPreferRoutesService preferRoutesService,
+        ILinksService linksService
+    ) : TravelTipsControllerBase
     {
         // prefer routes
 
@@ -23,7 +26,6 @@ namespace TravelTipsAPI.Controllers
         /// Get prefer route search results by params
         /// </summary>
         /// <param name="type">prefer route type</param>
-        /// <param name="reference">prefer route ref</param>
         /// <param name="departOsmId">prefer route depart osm id</param>
         /// <param name="arrivalOsmId">prefer route arrival osm id</param>
         /// <param name="estimateTimeMin">prefer route min estimate time</param>
@@ -36,7 +38,6 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<PreferRouteSearchViewModel> GetPreferRoutesByParams(
             [FromQuery] int? type,
-            string? reference,
             int? departOsmId,
             int? arrivalOsmId,
             int? estimateTimeMin,
@@ -49,23 +50,29 @@ namespace TravelTipsAPI.Controllers
 
             int? createdBy = isOwner == true ? userId : null;
 
-            var preferRouteViewModels = preferRoutesService.GetPreferRoutesByParams(
-                type,
-                reference,
-                departOsmId,
-                arrivalOsmId,
-                estimateTimeMin,
-                estimateTimeMax,
-                createdBy
-            );
-
-            var preferRouteSearch = new PreferRouteSearchViewModel
+            try
             {
-                Timestamp = timestamp,
-                PreferRoutes = preferRouteViewModels,
-            };
+                var preferRouteViewModels = preferRoutesService.GetPreferRoutesByParams(
+                    type,
+                    departOsmId,
+                    arrivalOsmId,
+                    estimateTimeMin,
+                    estimateTimeMax,
+                    createdBy
+                );
 
-            return Ok(preferRouteSearch);
+                var preferRouteSearch = new PreferRouteSearchViewModel
+                {
+                    Timestamp = timestamp,
+                    PreferRoutes = preferRouteViewModels,
+                };
+
+                return Ok(preferRouteSearch);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
@@ -82,13 +89,27 @@ namespace TravelTipsAPI.Controllers
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            // validate the inputs
-            var invalidParams = preferRoutesService.ValidatePost(newPreferRoute);
-            if (invalidParams.Count > 0)
+            // verify the ownership of link
+            var myLinkIds = linksService.GetMyLinkIds(userId);
+            if (
+                newPreferRoute.LinkId != null
+                && myLinkIds.All(linkId => linkId != newPreferRoute.LinkId)
+            )
+                return Unauthorized(Messages.AccessDenied);
+
+            // check Route Type exists
+            try
             {
-                var invalidInputs = string.Join(", ", invalidParams);
-                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+                preferRoutesService.FindRouteTypeById(newPreferRoute.Type);
             }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            // validate estimate time
+            if (newPreferRoute.EstimateTime <= 0)
+                return BadRequest(Messages.EstimateTimeRestricted);
 
             var preferRouteViewModel = await preferRoutesService.PostPreferRoutesAsync(
                 userId,
@@ -102,30 +123,75 @@ namespace TravelTipsAPI.Controllers
         /// Update an existing prefer route
         /// </summary>
         /// <param name="id">prefer route id</param>
-        /// <param name="preferRoute">prefer route details to be updated</param>
+        /// <param name="preferRoutePatch">prefer route details to be updated</param>
         /// <returns>the updated prefer route</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.PREFER_ROUTES)]
         public async Task<ActionResult<PreferRouteViewModel>> PatchPreferRouteAsync(
             int id,
-            [FromBody] PreferRoutePatchViewModel preferRoute
+            [FromBody] PreferRoutePatchViewModel preferRoutePatch
         )
         {
-            // validate the inputs
-            var invalidParams = preferRoutesService.ValidatePatch(preferRoute);
-            if (invalidParams.Count > 0)
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // verify the ownership of link
+            var myLinkIds = linksService.GetMyLinkIds(userId);
+            if (
+                preferRoutePatch.LinkId != null
+                && myLinkIds.All(linkId => linkId != preferRoutePatch.LinkId)
+            )
+                return Unauthorized(Messages.AccessDenied);
+
+            // check Route Type exists
+            if (preferRoutePatch.Type != null)
             {
-                var invalidInputs = string.Join(", ", invalidParams);
-                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+                try
+                {
+                    preferRoutesService.FindRouteTypeById((int)preferRoutePatch.Type);
+                }
+                catch (Exception ex)
+                {
+                    return NotFound(ex.Message);
+                }
             }
 
+            // validate estimate time
+            if (preferRoutePatch.EstimateTime <= 0)
+                return BadRequest(Messages.EstimateTimeRestricted);
+
+            var preferRoute = preferRoutesService.FindPreferRouteById(id);
+
             var preferRouteViewModel = await preferRoutesService.PatchPreferRoutesAsync(
-                id,
-                preferRoute
+                preferRoute,
+                preferRoutePatch
             );
 
             return Ok(preferRouteViewModel);
+        }
+
+        /// <summary>
+        /// Delete a prefer route by its id
+        /// </summary>
+        /// <param name="id">prefer route id</param>
+        /// <returns>the prefer route deleted</returns>
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.PREFER_ROUTES)]
+        public async Task<ActionResult<PreferRouteViewModel>> DeletePreferRouteById(int id)
+        {
+            var preferRoute = preferRoutesService.FindPreferRouteById(id);
+
+            try
+            {
+                var preferRouteViewModel = await preferRoutesService.DeletePreferRoute(preferRoute);
+
+                return Ok(preferRouteViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // route types
@@ -183,6 +249,17 @@ namespace TravelTipsAPI.Controllers
             [FromBody] string name
         )
         {
+            // validate the route type exists
+            RouteType routeType;
+            try
+            {
+                routeType = preferRoutesService.FindRouteTypeById(id);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
             // validate the inputs
             var invalidParams = preferRoutesService.ValidateNameChange(name);
             if (invalidParams.Count > 0)
@@ -191,7 +268,7 @@ namespace TravelTipsAPI.Controllers
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
-            var routeTypeViewModel = await preferRoutesService.PatchRouteTypeAsync(id, name);
+            var routeTypeViewModel = await preferRoutesService.PatchRouteTypeAsync(routeType, name);
 
             return Ok(routeTypeViewModel);
         }

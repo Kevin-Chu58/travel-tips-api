@@ -5,7 +5,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
     public class PreferRoutePostViewModel
     {
         public int Type { get; set; }
-        public required string Ref { get; set; }
         public int DepartOsmId { get; set; }
         public int ArrivalOsmId { get; set; }
         public int EstimateTime { get; set; }
@@ -17,7 +16,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
             {
                 Id = new int(),
                 Type = Type,
-                Ref = Ref.Trim(),
                 DepartOsmId = DepartOsmId,
                 ArrivalOsmId = ArrivalOsmId,
                 EstimateTime = EstimateTime,

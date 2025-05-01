@@ -29,17 +29,6 @@ namespace TravelTipsAPI.Services
             List<string> ValidatePatch(TripPatchViewModel trip);
         }
 
-        public interface ISmallTripsService
-        {
-            SmallTripViewModel? GetSmallTripById(int id);
-            IEnumerable<SmallTripViewModel> GetSmallTripsByTripId(int tripId);
-            Task<SmallTripViewModel> PostNewSmallTripsAsync(
-                int tripId,
-                SmallTripPostViewModel newSmallTrip
-            );
-            Task<SmallTripViewModel> PatchSmallTripAsync(int id, TripPatchViewModel smallTrip);
-        }
-
         public interface IDaysService
         {
             Day FindDayById(int id, bool? isPublic = null);
@@ -47,6 +36,7 @@ namespace TravelTipsAPI.Services
             IEnumerable<int> GetMyDayIds(int id);
             Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
+            Task<DayViewModel> DeleteDay(Day day);
             List<string> ValidatePost(DayPostViewModel newDay);
             List<string> ValidatePatch(DayPatchViewModel day);
         }
@@ -85,9 +75,9 @@ namespace TravelTipsAPI.Services
         public interface IPreferRoutesService
         {
             // prefer routes
+            PreferRoute FindPreferRouteById(int id);
             IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
                 int? type,
-                string? reference,
                 int? departOsmId,
                 int? arrivalOsmId,
                 int? estimateTimeMin,
@@ -100,50 +90,62 @@ namespace TravelTipsAPI.Services
                 PreferRoutePostViewModel newPreferRoute
             );
             Task<PreferRouteViewModel> PatchPreferRoutesAsync(
-                int id,
-                PreferRoutePatchViewModel preferRoute
+                PreferRoute preferRoute,
+                PreferRoutePatchViewModel preferRoutePatch
             );
-            List<string> ValidatePost(PreferRoutePostViewModel newPreferRoute);
-            List<string> ValidatePatch(PreferRoutePatchViewModel preferRoute);
+            Task<PreferRouteViewModel> DeletePreferRoute(PreferRoute preferRoute);
 
             // route types
+            RouteType FindRouteTypeById(int id);
             IEnumerable<RouteTypeViewModel> GetAllRouteTypes();
             Task<RouteTypeViewModel> PostNewRouteTypeAsync(string name);
-            Task<RouteTypeViewModel> PatchRouteTypeAsync(int id, string name);
+            Task<RouteTypeViewModel> PatchRouteTypeAsync(RouteType routeType, string name);
+
+            // utils
+            PreferRouteViewModel ToViewModel(PreferRoute preferRoute);
             List<string> ValidateNameChange(string name);
         }
 
         public interface ITripAttractionOrdersService
         {
             // taos
-            TripAttractionOrderViewModel GetTripAttractionOrderById(int id, bool? isPublic);
+            TripAttractionOrder FindTripAttractionOrderById(int id, bool? isPublic = null);
+            IEnumerable<TripAttractionOrder> GetTripAttractionOrdersByDayId(int dayId);
             IEnumerable<int> GetMyTripAttractionOrders(int id);
             Task<TripAttractionOrderViewModel> PostTripAttractionOrderAsync(
                 int createdBy,
                 TripAttractionOrderPostViewModel newTripAttractionOrder
             );
             Task<TripAttractionOrderViewModel> PatchTripAttractionOrderAsync(
-                int id,
+                TripAttractionOrder tao,
                 TripAttractionOrderPatchViewModel tripAttractionOrder
             );
-            Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(int id, int newOrder);
-            Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(int id);
+            Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(
+                TripAttractionOrder tao,
+                int newOrder
+            );
+            Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(
+                TripAttractionOrder tao
+            );
 
             // taors
+            TripAttractionOrderRoute FindTripAttractionOrderRoute(int taoId, int preferRouteId);
             Task<TripAttractionOrderViewModel> PostNewTripAttractionOrderRouteAsync(
                 int id,
                 int preferRouteId,
                 int order
             );
             Task<TripAttractionOrderViewModel> SetPreferRouteOrderAsync(
-                int id,
-                int preferRouteId,
+                TripAttractionOrderRoute taor,
                 int newOrder
             );
             Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderRouteAsync(
-                int id,
-                int preferRouteId
+                TripAttractionOrderRoute taor
             );
+            bool IsOrderValid(int size, int order);
+
+            // utils
+            TripAttractionOrderViewModel ToViewModel(TripAttractionOrder tao);
         }
     }
 

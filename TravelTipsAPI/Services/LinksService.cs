@@ -23,7 +23,7 @@ namespace TravelTipsAPI.Services
 
             var linkViewModels = new List<LinkViewModel>();
 
-            if (name.Length >= SearchConstants.LINK_SEARCH_MIN_LENGTH)
+            if (name.Length >= SearchConstraints.LINK_SEARCH_MIN_LENGTH)
             {
                 linkViewModels = context
                     .Links.Where(link =>
@@ -81,7 +81,7 @@ namespace TravelTipsAPI.Services
             LinkPatchViewModel linkPatchViewModel
         )
         {
-            var link = context.Links.Find(id) ?? throw new Exception("Link not found.");
+            var link = context.Links.Find(id) ?? throw new Exception(Messages.LinkNotFound);
 
             link.Name = linkPatchViewModel.Name?.Trim() ?? link.Name;
             link.Url = linkPatchViewModel?.Url?.Trim() ?? link.Url;

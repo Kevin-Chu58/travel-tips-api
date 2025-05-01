@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
@@ -10,7 +11,10 @@ using static TravelTipsAPI.Services.BasicSchema;
 /// The service of Trip Attraction Orders
 /// </summary>
 /// <param name="context">travel tips context</param>
-public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttractionOrdersService
+public class TripAttractionOrdersService(
+    TravelTipsContext context,
+    IPreferRoutesService preferRoutesService
+) : ITripAttractionOrdersService
 {
     // taos
 
@@ -20,11 +24,12 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="id">trip attraction order id</param>
     /// <param name="isPublic">is trip attraction order in a public trip</param>
     /// <returns>the trip attraction order with the id</returns>
-    public TripAttractionOrderViewModel GetTripAttractionOrderById(int id, bool? isPublic)
+    public TripAttractionOrder FindTripAttractionOrderById(int id, bool? isPublic = null)
     {
-        var tao =
-            context.TripAttractionOrders.Find(id)
-            ?? throw new Exception("Trip Attraction Order not found.");
+        var tao = context.TripAttractionOrders.Find(id);
+
+        if (tao == null)
+            throw new Exception(Messages.TaoNotFound);
 
         if (isPublic != null)
         {
@@ -35,10 +40,29 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
                 .First();
 
             if (isTripPublic != isPublic)
-                throw new Exception("Access denied due to privacy protection.");
+                throw new Exception(Messages.TaoNotFound);
         }
 
-        return ToViewModel(tao);
+        return tao;
+    }
+
+    /// <summary>
+    /// Get a list of trip attraction orders by day id
+    /// </summary>
+    /// <param name="dayId">day id</param>
+    /// <returns>a list of trip attraction orders of the day</returns>
+    public IEnumerable<TripAttractionOrder> GetTripAttractionOrdersByDayId(int dayId)
+    {
+        var taos = context
+            .TripAttractionOrders.Where(tao => tao.DayId == dayId)
+            .OrderBy(tao => tao.Order)
+            .ToList();
+        //var taoViewModels = new List<TripAttractionOrderViewModel>();
+        //foreach (var tao in taos)
+        //{
+        //    taoViewModels.Add(ToViewModel(tao));
+        //}
+        return taos;
     }
 
     /// <summary>
@@ -67,6 +91,10 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         TripAttractionOrderPostViewModel taoPostViewModel
     )
     {
+        // validate estimate time
+        if (taoPostViewModel.EstimateTime <= 0)
+            throw new Exception(Messages.EstimateTimeRestricted);
+
         var taosInSameDay = context
             .TripAttractionOrders.Where(tao => tao.DayId == taoPostViewModel.DayId)
             .ToList();
@@ -77,13 +105,13 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
 
         var isOrderValid = IsOrderValid(taosInSameDay.Count + 1, taoPostViewModel.Order);
         if (!isOrderValid)
-            throw new Exception("Order is invalid.");
+            throw new Exception(Messages.NewOrderInvalid);
 
         await context.TripAttractionOrders.AddAsync(tao);
         await context.SaveChangesAsync();
 
         // update the orders of the taos in the same day
-        await SetOrderAsync(tao.Id, taoPostViewModel.Order);
+        await SetOrderAsync(tao, taoPostViewModel.Order);
 
         tao.Order = taoPostViewModel.Order;
         return ToViewModel(tao);
@@ -92,15 +120,17 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <summary>
     /// Update an existing trip attraction order
     /// </summary>
-    /// <param name="id">trip attraction order id</param>
+    /// <param name="tao">trip attraction order</param>
     /// <param name="taoPatchViewModel">the trip attraction order details to be updated</param>
     /// <returns>the trip attraction order up to date</returns>
     public async Task<TripAttractionOrderViewModel> PatchTripAttractionOrderAsync(
-        int id,
+        TripAttractionOrder tao,
         TripAttractionOrderPatchViewModel taoPatchViewModel
     )
     {
-        var tao = context.TripAttractionOrders.Find(id);
+        // validate estimate time
+        if (taoPatchViewModel.EstimateTime <= 0)
+            throw new Exception(Messages.EstimateTimeRestricted);
 
         tao.DayId = taoPatchViewModel.DayId ?? tao.DayId;
         tao.AttractionId = taoPatchViewModel.AttractionId ?? tao.AttractionId;
@@ -117,33 +147,37 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <summary>
     /// Update the order of a trip attraction order and the consequent order change
     /// </summary>
-    /// <param name="id">trip attraction order id</param>
+    /// <param name="tao">trip attraction order</param>
     /// <param name="newOrder">trip attraction order new order</param>
     /// <returns>a list of trip attraction orders under the same day</returns>
-    public async Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(int id, int newOrder)
+    public async Task<IEnumerable<TripAttractionOrderViewModel>> SetOrderAsync(
+        TripAttractionOrder tao,
+        int newOrder
+    )
     {
-        var tao = context.TripAttractionOrders.Find(id);
-
         var taosInSameDay = context
             .TripAttractionOrders.Where(tao => tao.DayId == tao.DayId)
             .OrderBy(tao => tao.Order)
             .ToList();
 
-        var isOrderValid = IsOrderValid(taosInSameDay.Count, newOrder);
-        if (!isOrderValid)
-            throw new Exception("New order is invalid.");
-
-        // swap the index of tao
-        taosInSameDay.RemoveAt(tao.Order - 1);
-        taosInSameDay.Insert(newOrder - 1, tao);
-
-        // reorganize taos in the same day
-        foreach (var (_tao, i) in taosInSameDay.Select((tao, i) => (tao, i)))
+        if (taosInSameDay.Count > 1)
         {
-            _tao.Order = i + 1;
-        }
+            var isOrderValid = IsOrderValid(taosInSameDay.Count, newOrder);
+            if (!isOrderValid)
+                throw new Exception(Messages.NewOrderInvalid);
 
-        await context.SaveChangesAsync();
+            // swap the index of tao
+            taosInSameDay.RemoveAt(tao.Order - 1);
+            taosInSameDay.Insert(newOrder - 1, tao);
+
+            // reorganize taos in the same day
+            foreach (var (_tao, i) in taosInSameDay.Select((tao, i) => (tao, i)))
+            {
+                _tao.Order = i + 1;
+            }
+
+            await context.SaveChangesAsync();
+        }
 
         var taoViewModels = taosInSameDay.Select(tao => ToViewModel(tao));
 
@@ -153,15 +187,17 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <summary>
     /// Remove a trip attraction order you own
     /// </summary>
-    /// <param name="id">trip attraction order id</param>
+    /// <param name="tao">trip attraction order</param>
     /// <returns>the id of the deleted trip attraction order</returns>
-    public async Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(int id)
+    public async Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderAsync(
+        TripAttractionOrder tao
+    )
     {
-        var tao = context.TripAttractionOrders.Find(id);
         var taoViewModel = ToViewModel(tao);
 
         // remove the trip attraction order routes
-        context.TripAttractionOrderRoutes.RemoveRange(tao.TripAttractionOrderRoutes);
+        var taors = GetTripAttractionOrderRoutes(tao.Id);
+        context.TripAttractionOrderRoutes.RemoveRange(taors);
 
         // remove the trip attraction order
         context.TripAttractionOrders.Remove(tao);
@@ -171,6 +207,42 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     }
 
     // taors
+
+    private IEnumerable<TripAttractionOrderRoute> GetTripAttractionOrderRoutes(int taoId)
+    {
+        var preferRoutes = context
+            .TripAttractionOrderRoutes.Where(taor => taor.TripAttractionOrderId == taoId)
+            .ToList();
+
+        return preferRoutes;
+    }
+
+    private IEnumerable<PreferRoute> GetPreferRoutes(int taoId)
+    {
+        var preferRoutes = context
+            .TripAttractionOrderRoutes.Where(taor => taor.TripAttractionOrderId == taoId)
+            .OrderBy(taor => taor.Order)
+            .Select(taor => taor.PreferRoute)
+            .ToList();
+
+        return preferRoutes;
+    }
+
+    /// <summary>
+    /// Find a taor with tao id and prefer route id
+    /// </summary>
+    /// <param name="taoId">trip attraction order id</param>
+    /// <param name="preferRouteId">prefer route id</param>
+    /// <returns>the taor with the id</returns>
+    public TripAttractionOrderRoute FindTripAttractionOrderRoute(int taoId, int preferRouteId)
+    {
+        var taor = context.TripAttractionOrderRoutes.Find(taoId, preferRouteId);
+
+        if (taor == null)
+            throw new Exception(Messages.TaorNotFound);
+
+        return taor;
+    }
 
     /// <summary>
     /// Create a new trip attraction order route
@@ -199,13 +271,13 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         // append new trip attraction order route to the end of the order list
         var isOrderValid = IsOrderValid(toars.Count + 1, order);
         if (!isOrderValid)
-            throw new Exception("New order is invalid.");
+            throw new Exception(Messages.NewOrderInvalid);
 
         await context.TripAttractionOrderRoutes.AddAsync(newTaor);
         await context.SaveChangesAsync();
 
         // update the orders of the taors in the same tao
-        var taoViewModel = await SetPreferRouteOrderAsync(id, preferRouteId, order);
+        var taoViewModel = await SetPreferRouteOrderAsync(newTaor, order);
 
         return taoViewModel;
     }
@@ -213,63 +285,57 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <summary>
     /// Update the order of a trip attraction order route and the consequent order change
     /// </summary>
-    /// <param name="id">trip attraction order id</param>
-    /// <param name="preferRouteId">prefer route id</param>
+    /// <param name="taor">trip attraction order route</param>
     /// <param name="newOrder">new order</param>
     /// <returns>the trip attraction order with updated prefer route order</returns>
     public async Task<TripAttractionOrderViewModel> SetPreferRouteOrderAsync(
-        int id,
-        int preferRouteId,
+        TripAttractionOrderRoute taor,
         int newOrder
     )
     {
-        var taor = context.TripAttractionOrderRoutes.FirstOrDefault(taor =>
-            taor.TripAttractionOrderId == id && taor.PreferRouteId == preferRouteId
-        );
-
         var taors = context
-            .TripAttractionOrderRoutes.Where(taor => taor.TripAttractionOrderId == id)
+            .TripAttractionOrderRoutes.Where(taor =>
+                taor.TripAttractionOrderId == taor.TripAttractionOrderId
+            )
+            .OrderBy(taor => taor.Order)
             .ToList();
 
-        var isOrderValid = IsOrderValid(taors.Count, newOrder);
-        if (!isOrderValid)
-            throw new Exception("New order is invalid.");
-
-        // swap the index of taor
-        taors.RemoveAt(taor.Order);
-        taors.Insert(newOrder, taor);
-
-        // reorganize taors in the same tao
-        foreach (var (_taor, i) in taors.Select((taor, i) => (taor, i)))
+        if (taors.Count > 1)
         {
-            _taor.Order = i + 1;
+            var isOrderValid = IsOrderValid(taors.Count, newOrder);
+            if (!isOrderValid)
+                throw new Exception(Messages.NewOrderInvalid);
+
+            // swap the index of taor
+            taors.RemoveAt(taor.Order - 1);
+            taors.Insert(newOrder - 1, taor);
+
+            // reorganize taors in the same tao
+            foreach (var (_taor, i) in taors.Select((taor, i) => (taor, i)))
+            {
+                _taor.Order = i + 1;
+            }
+
+            await context.SaveChangesAsync();
         }
 
-        await context.SaveChangesAsync();
-
-        var tao = context.TripAttractionOrders.Find(id);
+        var tao = FindTripAttractionOrderById(taor.TripAttractionOrderId);
         return ToViewModel(tao);
     }
 
     /// <summary>
     /// Delete a trip attraction order route you own
     /// </summary>
-    /// <param name="id">trip attraction order id</param>
-    /// <param name="preferRouteId">prefer route id</param>
+    /// <param name="taor">trip attraction order route</param>
     /// <returns>the trip attraction order where the trip attraction order route was</returns>
     public async Task<TripAttractionOrderViewModel> DeleteTripAttractionOrderRouteAsync(
-        int id,
-        int preferRouteId
+        TripAttractionOrderRoute taor
     )
     {
-        var taor = context.TripAttractionOrderRoutes.FirstOrDefault(taor =>
-            taor.TripAttractionOrderId == id && taor.PreferRouteId == preferRouteId
-        );
-
         context.TripAttractionOrderRoutes.Remove(taor);
         await context.SaveChangesAsync();
 
-        var tao = context.TripAttractionOrders.Find(id);
+        var tao = FindTripAttractionOrderById(taor.TripAttractionOrderId);
         return ToViewModel(tao);
     }
 
@@ -280,10 +346,9 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// </summary>
     /// <param name="tao">trip attraction order</param>
     /// <returns>trip attraction order view model</returns>
-    private TripAttractionOrderViewModel? ToViewModel(TripAttractionOrder? tao)
+    public TripAttractionOrderViewModel ToViewModel(TripAttractionOrder tao)
     {
-        if (tao == null)
-            return null;
+        var preferRoutes = GetPreferRoutes(tao.Id);
 
         var taoViewModel = new TripAttractionOrderViewModel
         {
@@ -296,9 +361,7 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
             IsDrivePreferred = tao.IsDrivePreferred,
             IsBikePreferred = tao.IsBikePreferred,
             IsOnFootPreferred = tao.IsOnFootPreferred,
-            PreferRoutes = tao.TripAttractionOrderRoutes.Select(taor =>
-                (PreferRouteViewModel)context.PreferRoutes.Find(taor.PreferRouteId)
-            ),
+            PreferRoutes = preferRoutes.Select(route => preferRoutesService.ToViewModel(route)),
         };
 
         return taoViewModel;
@@ -310,7 +373,7 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <param name="size">size of order</param>
     /// <param name="order">the order</param>
     /// <returns>true if the order is valid, false otherwise</returns>
-    private static bool IsOrderValid(int size, int order)
+    public bool IsOrderValid(int size, int order)
     {
         return order >= 1 && order <= size;
     }

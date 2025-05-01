@@ -108,6 +108,21 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
+        /// Delete a day from database
+        /// </summary>
+        /// <param name="day">day</param>
+        /// <returns>the day deleted</returns>
+        public async Task<DayViewModel> DeleteDay(Day day)
+        {
+            var dayViewModel = (DayViewModel)day;
+
+            context.Days.Remove(day);
+            await context.SaveChangesAsync();
+
+            return dayViewModel;
+        }
+
+        /// <summary>
         /// Check if new day's detail is valid
         /// </summary>
         /// <param name="newDay">new day</param>

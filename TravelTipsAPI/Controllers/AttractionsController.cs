@@ -110,6 +110,10 @@ namespace TravelTipsAPI.Controllers
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
+            // validate osm id
+            if (newAttraction.OsmId <= 0)
+                return BadRequest(Messages.OsmIdRestricted);
+
             var attractionViewModel = await attractionsService.PostNewAttractionAsync(
                 userId,
                 newAttraction
@@ -151,6 +155,10 @@ namespace TravelTipsAPI.Controllers
                 var invalidInputs = string.Join(", ", invalidParams);
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
+
+            // validate osm id
+            if (attractionPatch.OsmId <= 0)
+                return BadRequest(Messages.OsmIdRestricted);
 
             var attractionViewModel = await attractionsService.PatchAttractionAsync(
                 attraction,

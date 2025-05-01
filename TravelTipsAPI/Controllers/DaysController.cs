@@ -16,8 +16,11 @@ namespace TravelTipsAPI.Controllers
     /// <param name="tripsService">trips service</param>
     /// <param name="daysService">days service</param>
     [Route("api/[controller]")]
-    public class DaysController(ITripsService tripsService, IDaysService daysService)
-        : TravelTipsControllerBase
+    public class DaysController(
+        ITripsService tripsService,
+        IDaysService daysService,
+        ITripAttractionOrdersService taosService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get the days by trip id
@@ -112,6 +115,33 @@ namespace TravelTipsAPI.Controllers
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Delete a day by its id
+        /// </summary>
+        /// <param name="id">day id</param>
+        /// <returns>the day deleted</returns>
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.DAYS)]
+        public async Task<ActionResult<DayViewModel>> DeleteDay(int id)
+        {
+            var taos = taosService.GetTripAttractionOrdersByDayId(id);
+
+            var taoViewModels = new List<TripAttractionOrderViewModel>();
+            foreach (var t in taos)
+            {
+                taoViewModels.Add(await taosService.DeleteTripAttractionOrderAsync(t));
+            }
+
+            Day day = daysService.FindDayById(id);
+            var dayViewModel = await daysService.DeleteDay(day);
+
+            dayViewModel.TripAttractionOrderCount = taoViewModels.Count;
+            dayViewModel.TripAttractionOrders = taoViewModels;
+
+            return Ok(dayViewModel);
         }
     }
 }
