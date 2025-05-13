@@ -9,8 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddDbContext<TravelTipsContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
-//options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
 );
 
 // Add authentication to the container.
@@ -40,6 +40,18 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddServices();
 
+// Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AllowLocalhost5173",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod();
+        }
+    );
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -49,7 +61,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowLocalhost3000");
+app.UseCors("AllowLocalhost5173");
 
 app.UseHttpsRedirection();
 

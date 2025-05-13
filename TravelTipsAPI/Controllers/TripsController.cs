@@ -118,7 +118,7 @@ namespace TravelTipsAPI.Controllers
             Trip trip = tripsService.FindTripByParams(id);
             var tripViewModel = (TripViewModel)trip;
 
-            var days = daysService.GetDaysByTripId(id);
+            var days = daysService.GetDaysByTripId(id, false);
 
             foreach (var day in days)
             {

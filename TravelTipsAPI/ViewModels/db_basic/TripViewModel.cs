@@ -10,6 +10,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
+        public int? NumDays { get; set; }
 
         public static explicit operator TripViewModel(Trip trip)
         {

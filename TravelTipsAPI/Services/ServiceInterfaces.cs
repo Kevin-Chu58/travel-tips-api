@@ -32,7 +32,7 @@ namespace TravelTipsAPI.Services
         public interface IDaysService
         {
             Day FindDayById(int id, bool? isPublic = null);
-            IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
+            IEnumerable<DayViewModel> GetDaysByTripId(int tripId, bool? isPublic = true);
             IEnumerable<int> GetMyDayIds(int id);
             Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);

@@ -32,7 +32,7 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
+        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
