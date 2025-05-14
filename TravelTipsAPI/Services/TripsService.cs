@@ -213,7 +213,7 @@ namespace TravelTipsAPI.Services
         {
             var invalidParams = new List<string>();
 
-            if (trip.Name?.Length > 50)
+            if (trip.Name?.Length == 0 || trip.Name?.Length > 50)
                 invalidParams.Add("name");
             if (trip.Description?.Length > 500)
                 invalidParams.Add("description");
