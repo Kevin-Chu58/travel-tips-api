@@ -6,8 +6,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
     {
         public int Id { get; set; }
         public RouteTypeViewModel? Type { get; set; }
-        public int DepartOsmId { get; set; }
-        public int ArrivalOsmId { get; set; }
+        public long DepartOsmId { get; set; }
+        public long ArrivalOsmId { get; set; }
         public int EstimateTime { get; set; }
         public int? LinkId { get; set; }
         public int CreatedBy { get; set; }

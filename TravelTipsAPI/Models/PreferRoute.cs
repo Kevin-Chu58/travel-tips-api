@@ -11,9 +11,9 @@ public partial class PreferRoute
 
     public int CreatedBy { get; set; }
 
-    public int DepartOsmId { get; set; }
+    public long DepartOsmId { get; set; }
 
-    public int ArrivalOsmId { get; set; }
+    public long ArrivalOsmId { get; set; }
 
     public int EstimateTime { get; set; }
 

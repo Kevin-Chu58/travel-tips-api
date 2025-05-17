@@ -56,18 +56,19 @@ namespace TravelTipsAPI.Services
             Attraction FindAttractionById(int id);
             IEnumerable<AttractionViewModel> GetAttractionsByParams(
                 string? name,
-                int? osmId,
+                long? osmId,
                 int? ownerId
             );
             IEnumerable<int> GetMyAttractions(int id);
             Task<AttractionViewModel> PostNewAttractionAsync(
-                int createdBy,
+                int? createdBy,
                 AttractionPostViewModel newAttraction
             );
             Task<AttractionViewModel> PatchAttractionAsync(
                 Attraction attraction,
                 AttractionPatchViewModel attractionPatch
             );
+            Task<AttractionViewModel> DeleteAttractionAsync(Attraction attraction);
             List<string> ValidatePost(AttractionPostViewModel newAttraction);
             List<string> ValidatePatch(AttractionPatchViewModel attraction);
         }
@@ -78,8 +79,8 @@ namespace TravelTipsAPI.Services
             PreferRoute FindPreferRouteById(int id);
             IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
                 int? type,
-                int? departOsmId,
-                int? arrivalOsmId,
+                long? departOsmId,
+                long? arrivalOsmId,
                 int? estimateTimeMin,
                 int? estimateTimeMax,
                 int? ownerId

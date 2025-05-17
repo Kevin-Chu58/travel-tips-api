@@ -38,12 +38,12 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<PreferRouteSearchViewModel> GetPreferRoutesByParams(
             [FromQuery] int? type,
-            int? departOsmId,
-            int? arrivalOsmId,
+            long? departOsmId,
+            long? arrivalOsmId,
             int? estimateTimeMin,
             int? estimateTimeMax,
             bool? isOwner,
-            int timestamp
+            long timestamp
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);

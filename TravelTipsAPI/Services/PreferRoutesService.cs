@@ -40,8 +40,8 @@ namespace TravelTipsAPI.Services
         /// <returns>a list of prefer routes that satisfy the search params</returns>
         public IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
             int? type,
-            int? departOsmId,
-            int? arrivalOsmId,
+            long? departOsmId,
+            long? arrivalOsmId,
             int? estimateTimeMin,
             int? estimateTimeMax,
             int? ownerId

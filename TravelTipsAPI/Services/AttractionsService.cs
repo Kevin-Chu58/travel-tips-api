@@ -37,7 +37,7 @@ namespace TravelTipsAPI.Services
         /// <returns>a list of attractions that satisfy the search params</returns>
         public IEnumerable<AttractionViewModel> GetAttractionsByParams(
             string? name,
-            int? osmId,
+            long? osmId,
             int? ownerId
         )
         {
@@ -47,13 +47,11 @@ namespace TravelTipsAPI.Services
 
             IEnumerable<Attraction> attractions = context.Attractions.ToList();
 
-            if (name != null && name.Length < SearchConstraints.ATTRACTION_SEARCH_MIN_LENGTH)
+            if (name != null)
             {
-                attractions = [];
-            }
-            else
-            {
-                if (name != null)
+                if (name.Length < SearchConstraints.ATTRACTION_SEARCH_MIN_LENGTH)
+                    attractions = [];
+                else
                     attractions = attractions.Where(a => a.Name.ToLower().Contains(name));
             }
 
@@ -89,16 +87,59 @@ namespace TravelTipsAPI.Services
         /// <param name="attractionPost">new attraction</param>
         /// <returns>the new attraction created</returns>
         public async Task<AttractionViewModel> PostNewAttractionAsync(
-            int createdBy,
+            int? createdBy,
             AttractionPostViewModel attractionPost
         )
         {
-            var newAttraction = attractionPost.ToAttraction(createdBy);
+            // check if osmId exists
+            var exist = context.Attractions.Any((a) => a.OsmId == attractionPost.OsmId);
+            var isDefault = attractionPost.Description is null && attractionPost.LinkId is null;
 
-            await context.Attractions.AddAsync(newAttraction);
-            await context.SaveChangesAsync();
+            // if exist, check whether is default
+            if (exist)
+            {
+                // if is default, return default attraction
+                if (isDefault)
+                {
+                    return (AttractionViewModel)
+                        context.Attractions.First(
+                            (a) => a.OsmId == attractionPost.OsmId && a.CreatedBy == null
+                        );
+                }
+                // if is not default, create a non-default and return it
+                else
+                {
+                    var newAttraction = attractionPost.ToAttraction(createdBy);
 
-            return (AttractionViewModel)newAttraction;
+                    await context.Attractions.AddAsync(newAttraction);
+                    await context.SaveChangesAsync();
+
+                    return (AttractionViewModel)newAttraction;
+                }
+            }
+            // if does not exist, check whether is default
+            else
+            {
+                // if is default, create the default and return it
+                // if is not the default, create both and return the non-default
+                var defaultAttraction = attractionPost.ToAttraction(null);
+                await context.Attractions.AddAsync(defaultAttraction);
+
+                Attraction newAttraction;
+
+                if (isDefault)
+                {
+                    newAttraction = defaultAttraction;
+                }
+                else
+                {
+                    newAttraction = attractionPost.ToAttraction(createdBy);
+                    await context.Attractions.AddAsync(newAttraction);
+                }
+
+                await context.SaveChangesAsync();
+                return (AttractionViewModel)newAttraction;
+            }
         }
 
         /// <summary>
@@ -124,6 +165,29 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
+        /// Delete an attraction
+        /// </summary>
+        /// <param name="attraction">the attraction to be deleted</param>
+        /// <returns>the deleted attraction</returns>
+        public async Task<AttractionViewModel> DeleteAttractionAsync(Attraction attraction)
+        {
+            // replace all usage of this attraction with the default attraction
+            var defaultAttraction = GetDefaultAttraction(attraction.OsmId);
+            var taos = context.TripAttractionOrders.Where(tao => tao.AttractionId == attraction.Id);
+
+            foreach (var tao in taos)
+            {
+                tao.AttractionId = defaultAttraction.Id;
+            }
+
+            // delete the attraction
+            context.Attractions.Remove(attraction);
+            await context.SaveChangesAsync();
+
+            return (AttractionViewModel)attraction;
+        }
+
+        /// <summary>
         /// Check if new attraction's detail is valid
         /// </summary>
         /// <param name="newAttraction">new attraction</param>
@@ -136,7 +200,7 @@ namespace TravelTipsAPI.Services
                 invalidParams.Add("name");
             if (newAttraction.Description?.Length > 500)
                 invalidParams.Add("description");
-            if (newAttraction.Address.Length > 100)
+            if (newAttraction.Address.Length > 200)
                 invalidParams.Add("address");
 
             return invalidParams;
@@ -155,10 +219,15 @@ namespace TravelTipsAPI.Services
                 invalidParams.Add("name");
             if (attraction.Description?.Length > 500)
                 invalidParams.Add("description");
-            if (attraction.Address?.Length > 100)
+            if (attraction.Address?.Length > 200)
                 invalidParams.Add("address");
 
             return invalidParams;
+        }
+
+        private Attraction GetDefaultAttraction(long osmId)
+        {
+            return context.Attractions.First(a => a.OsmId == osmId && a.CreatedBy == null);
         }
     }
 }

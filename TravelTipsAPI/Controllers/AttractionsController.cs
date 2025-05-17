@@ -32,8 +32,8 @@ namespace TravelTipsAPI.Controllers
         [AllowAnonymous]
         public ActionResult<AttractionSearchViewModel> GetAllAttractionsByParams(
             [FromQuery] string? name,
-            int? osmId,
-            int timestamp
+            long? osmId,
+            long timestamp
         )
         {
             var attractionViewModels = attractionsService.GetAttractionsByParams(name, osmId, null);
@@ -59,8 +59,8 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<AttractionSearchViewModel> GetYourAttractionsByParams(
             [FromQuery] string? name,
-            int? osmId,
-            int timestamp
+            long? osmId,
+            long timestamp
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -165,6 +165,22 @@ namespace TravelTipsAPI.Controllers
                 attractionPatch
             );
 
+            return Ok(attractionViewModel);
+        }
+
+        /// <summary>
+        /// Delete an existing attraction
+        /// </summary>
+        /// <param name="id">the id of the attraction to be deleted</param>
+        /// <returns>the attraction deleted</returns>
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.ATTRACTIONS)]
+        public async Task<ActionResult<AttractionViewModel>> DeleteAttractionAsync(int id)
+        {
+            var attraction = attractionsService.FindAttractionById(id);
+
+            var attractionViewModel = await attractionsService.DeleteAttractionAsync(attraction);
             return Ok(attractionViewModel);
         }
     }

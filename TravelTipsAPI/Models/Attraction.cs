@@ -13,13 +13,13 @@ public partial class Attraction
 
     public string Address { get; set; } = null!;
 
-    public int CreatedBy { get; set; }
+    public int? CreatedBy { get; set; }
 
     public int? LinkId { get; set; }
 
-    public int OsmId { get; set; }
+    public long OsmId { get; set; }
 
-    public virtual User CreatedByNavigation { get; set; } = null!;
+    public virtual User? CreatedByNavigation { get; set; }
 
     public virtual Link? Link { get; set; }
 
