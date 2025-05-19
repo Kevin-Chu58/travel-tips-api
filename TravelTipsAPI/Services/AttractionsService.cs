@@ -59,18 +59,18 @@ namespace TravelTipsAPI.Services
 
             foreach (var attraction in attractions)
             {
-                // exclude default highlights
-                var highlights = context.Highlights.Where(h =>
-                    h.AttractionId == attraction.Id && h.CreatedBy != null
-                );
+                var highlights = context.Highlights.Where(h => h.AttractionId == attraction.Id);
 
                 // filter by the createdBy param
                 if (ownerId != null)
                     highlights = highlights.Where(h => h.CreatedBy == ownerId);
 
-                var viewModels = highlights
-                    .Select(h => ToAttractionViewModel(h, attraction))
-                    .ToList();
+                var viewModels = new List<AttractionViewModel>();
+
+                foreach (var highlight in highlights)
+                {
+                    viewModels.Add(ToAttractionViewModel(highlight, attraction));
+                }
 
                 attractionViewModels = [.. attractionViewModels, .. viewModels];
             }
