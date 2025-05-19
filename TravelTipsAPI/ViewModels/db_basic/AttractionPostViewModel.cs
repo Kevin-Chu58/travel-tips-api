@@ -10,34 +10,33 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public long OsmId { get; set; }
         public int? LinkId { get; set; }
 
-        public Attraction ToAttraction(int? createdBy)
+        public Attraction ToAttraction()
         {
-            if (createdBy is null)
-            {
-                return new Attraction
-                {
-                    Id = new int(),
-                    Name = Name.Trim(),
-                    Description = null,
-                    Address = Address.Trim(),
-                    OsmId = OsmId,
-                    LinkId = null,
-                    CreatedBy = createdBy,
-                };
-            }
-
-            var attraction = new Attraction
+            return new Attraction
             {
                 Id = new int(),
                 Name = Name.Trim(),
-                Description = Description?.Trim(),
                 Address = Address.Trim(),
                 OsmId = OsmId,
-                LinkId = LinkId,
+            };
+        }
+
+        public Highlight ToHighlight(int attractionId, int? createdBy = null)
+        {
+            var highlight = new Highlight
+            {
+                Id = new int(),
+                AttractionId = attractionId,
                 CreatedBy = createdBy,
             };
 
-            return attraction;
+            if (createdBy != null)
+            {
+                highlight.Description = Description?.Trim();
+                highlight.LinkId = LinkId;
+            }
+
+            return highlight;
         }
     }
 }

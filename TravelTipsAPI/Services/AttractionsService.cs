@@ -14,28 +14,28 @@ namespace TravelTipsAPI.Services
     public class AttractionsService(TravelTipsContext context) : IAttractionsService
     {
         /// <summary>
-        /// Find an attraction by id
+        /// Find a highlight by id
         /// </summary>
-        /// <param name="id">attraction id</param>
-        /// <returns>the attraction with the id</returns>
-        public Attraction FindAttractionById(int id)
+        /// <param name="id">highlight id</param>
+        /// <returns>the highlight with the id</returns>
+        public Highlight FindHighlightById(int id)
         {
-            var attraction = context.Attractions.Find(id);
+            var highlight = context.Highlights.Find(id);
 
-            if (attraction == null)
+            if (highlight == null)
                 throw new Exception(Messages.AttractionNotFound);
 
-            return attraction;
+            return highlight;
         }
 
         /// <summary>
-        /// Get a list of attractions by search params
+        /// Get a list of highlights by search params
         /// </summary>
         /// <param name="name">name to search</param>
         /// <param name="osmId">osm id</param>
         /// <param name="ownerId">user id</param>
-        /// <returns>a list of attractions that satisfy the search params</returns>
-        public IEnumerable<AttractionViewModel> GetAttractionsByParams(
+        /// <returns>a list of highlights that satisfy the search params</returns>
+        public IEnumerable<AttractionViewModel> GetHighlightsByParams(
             string? name,
             long? osmId,
             int? ownerId
@@ -54,137 +54,152 @@ namespace TravelTipsAPI.Services
                 else
                     attractions = attractions.Where(a => a.Name.ToLower().Contains(name));
             }
-
-            if (ownerId != null)
-                attractions = attractions.Where(a => a.CreatedBy == ownerId);
             if (osmId != null)
                 attractions = attractions.Where(a => a.OsmId == osmId);
 
-            attractionViewModels = attractions.Select(a => (AttractionViewModel)a).ToList();
+            foreach (var attraction in attractions)
+            {
+                // exclude default highlights
+                var highlights = context.Highlights.Where(h =>
+                    h.AttractionId == attraction.Id && h.CreatedBy != null
+                );
+
+                // filter by the createdBy param
+                if (ownerId != null)
+                    highlights = highlights.Where(h => h.CreatedBy == ownerId);
+
+                var viewModels = highlights
+                    .Select(h => ToAttractionViewModel(h, attraction))
+                    .ToList();
+
+                attractionViewModels = [.. attractionViewModels, .. viewModels];
+            }
 
             return attractionViewModels;
         }
 
         /// <summary>
-        /// Get my attraction ids
+        /// Get my highlight ids
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>a list of my attraction ids</returns>
-        public IEnumerable<int> GetMyAttractions(int id)
+        /// <returns>a list of my highlight ids</returns>
+        public IEnumerable<int> GetMyHighlights(int id)
         {
-            var myAttractionIds = context
-                .Attractions.Where(a => a.CreatedBy == id)
-                .Select(a => a.Id)
+            var myHighlightIds = context
+                .Highlights.Where(h => h.CreatedBy == id)
+                .Select(h => h.Id)
                 .ToList();
 
-            return myAttractionIds;
+            return myHighlightIds;
         }
 
         /// <summary>
-        /// Create a new attraction
+        /// Create a new highlight
         /// </summary>
         /// <param name="createdBy">user id</param>
         /// <param name="attractionPost">new attraction</param>
         /// <returns>the new attraction created</returns>
-        public async Task<AttractionViewModel> PostNewAttractionAsync(
+        public async Task<AttractionViewModel> PostNewHighlightAsync(
             int? createdBy,
             AttractionPostViewModel attractionPost
         )
         {
             // check if osmId exists
-            var exist = context.Attractions.Any((a) => a.OsmId == attractionPost.OsmId);
+            var attraction = context.Attractions.FirstOrDefault(
+                (a) => a.OsmId == attractionPost.OsmId
+            );
             var isDefault = attractionPost.Description is null && attractionPost.LinkId is null;
 
             // if exist, check whether is default
-            if (exist)
+            if (attraction != null)
             {
-                // if is default, return default attraction
+                // if attraction exists, then default highlight also exists because they are created together
+                var defaultHighlight = GetDefaultHighlight(attraction.Id);
+
+                // if is default, return default highlight
                 if (isDefault)
                 {
-                    return (AttractionViewModel)
-                        context.Attractions.First(
-                            (a) => a.OsmId == attractionPost.OsmId && a.CreatedBy == null
-                        );
+                    return ToAttractionViewModel(defaultHighlight!, attraction);
                 }
-                // if is not default, create a non-default and return it
+                // if is not default, create a custom highlight and return it
                 else
                 {
-                    var newAttraction = attractionPost.ToAttraction(createdBy);
+                    var newHighlight = attractionPost.ToHighlight(attraction.Id, createdBy);
 
-                    await context.Attractions.AddAsync(newAttraction);
+                    await context.Highlights.AddAsync(newHighlight);
                     await context.SaveChangesAsync();
 
-                    return (AttractionViewModel)newAttraction;
+                    return ToAttractionViewModel(newHighlight, attraction);
                 }
             }
-            // if does not exist, check whether is default
+            // if does not exist, create the attraction first
             else
             {
-                // if is default, create the default and return it
-                // if is not the default, create both and return the non-default
-                var defaultAttraction = attractionPost.ToAttraction(null);
-                await context.Attractions.AddAsync(defaultAttraction);
+                var newAttraction = attractionPost.ToAttraction();
+                await context.Attractions.AddAsync(newAttraction);
+                await context.SaveChangesAsync();
 
-                Attraction newAttraction;
+                var newDefaultHighlight = attractionPost.ToHighlight(newAttraction.Id);
+                await context.Highlights.AddAsync(newDefaultHighlight);
+
+                Highlight highlight;
 
                 if (isDefault)
                 {
-                    newAttraction = defaultAttraction;
+                    highlight = newDefaultHighlight;
                 }
                 else
                 {
-                    newAttraction = attractionPost.ToAttraction(createdBy);
-                    await context.Attractions.AddAsync(newAttraction);
+                    highlight = attractionPost.ToHighlight(newAttraction.Id, createdBy);
+                    await context.Highlights.AddAsync(highlight);
                 }
 
                 await context.SaveChangesAsync();
-                return (AttractionViewModel)newAttraction;
+                return ToAttractionViewModel(highlight, newAttraction);
             }
         }
 
         /// <summary>
-        /// Update an attraction you own
+        /// Update a highlight you own
         /// </summary>
-        /// <param name="attraction">attraction</param>
+        /// <param name="highlight">highlight</param>
         /// <param name="attractionPatch">attraction detail be updated</param>
         /// <returns>the attraction up to date</returns>
-        public async Task<AttractionViewModel> PatchAttractionAsync(
-            Attraction attraction,
+        public async Task<AttractionViewModel> PatchHighlightAsync(
+            Highlight highlight,
             AttractionPatchViewModel attractionPatch
         )
         {
-            attraction.Name = attractionPatch.Name?.Trim() ?? attraction.Name;
-            attraction.Description = attractionPatch.Description?.Trim() ?? attraction.Description;
-            attraction.Address = attractionPatch.Address?.Trim() ?? attraction.Address;
-            attraction.OsmId = attractionPatch.OsmId ?? attraction.OsmId;
-            attraction.LinkId = attractionPatch.LinkId ?? attraction.LinkId;
+            // change highlight
+            highlight.Description = attractionPatch.Description?.Trim() ?? highlight.Description;
+            highlight.LinkId = attractionPatch.LinkId ?? highlight.LinkId;
 
             await context.SaveChangesAsync();
 
-            return (AttractionViewModel)attraction;
+            return ToAttractionViewModel(highlight);
         }
 
         /// <summary>
-        /// Delete an attraction
+        /// Delete a highlight
         /// </summary>
-        /// <param name="attraction">the attraction to be deleted</param>
+        /// <param name="highlight">the highlight to be deleted</param>
         /// <returns>the deleted attraction</returns>
-        public async Task<AttractionViewModel> DeleteAttractionAsync(Attraction attraction)
+        public async Task<AttractionViewModel> DeleteHighlightAsync(Highlight highlight)
         {
             // replace all usage of this attraction with the default attraction
-            var defaultAttraction = GetDefaultAttraction(attraction.OsmId);
-            var taos = context.TripAttractionOrders.Where(tao => tao.AttractionId == attraction.Id);
+            var defaultHighlight = GetDefaultHighlight(highlight.AttractionId);
+            var taos = context.TripAttractionOrders.Where(tao => tao.HighlightId == highlight.Id);
 
             foreach (var tao in taos)
             {
-                tao.AttractionId = defaultAttraction.Id;
+                tao.HighlightId = defaultHighlight!.Id;
             }
 
             // delete the attraction
-            context.Attractions.Remove(attraction);
+            context.Highlights.Remove(highlight);
             await context.SaveChangesAsync();
 
-            return (AttractionViewModel)attraction;
+            return ToAttractionViewModel(highlight);
         }
 
         /// <summary>
@@ -215,19 +230,34 @@ namespace TravelTipsAPI.Services
         {
             var invalidParams = new List<string>();
 
-            if (attraction.Name?.Length > 50)
-                invalidParams.Add("name");
             if (attraction.Description?.Length > 500)
                 invalidParams.Add("description");
-            if (attraction.Address?.Length > 200)
-                invalidParams.Add("address");
 
             return invalidParams;
         }
 
-        private Attraction GetDefaultAttraction(long osmId)
+        public AttractionViewModel ToAttractionViewModel(
+            Highlight highlight,
+            Attraction? attraction = null
+        )
         {
-            return context.Attractions.First(a => a.OsmId == osmId && a.CreatedBy == null);
+            var _attraction =
+                attraction ?? context.Attractions.First(a => a.Id == highlight.AttractionId);
+            var attractionViewModel = (AttractionViewModel)_attraction!;
+
+            attractionViewModel.Id = highlight.Id;
+            attractionViewModel.Description = highlight.Description;
+            attractionViewModel.CreatedBy = highlight.CreatedBy;
+            attractionViewModel.LinkId = highlight.LinkId;
+
+            return attractionViewModel;
+        }
+
+        private Highlight? GetDefaultHighlight(int attractionId)
+        {
+            return context.Highlights.FirstOrDefault(h =>
+                h.AttractionId == attractionId && h.CreatedBy == null
+            );
         }
     }
 }

@@ -100,7 +100,7 @@ namespace TravelTipsAPI.Authorization
                     return yourLinks.Any(linkId => linkId == ResourceId);
 
                 case Resources.ATTRACTIONS:
-                    yourAttractions = _attractionsService.GetMyAttractions(UserId);
+                    yourAttractions = _attractionsService.GetMyHighlights(UserId);
                     return yourAttractions.Any(aId => aId == ResourceId);
 
                 case Resources.PREFER_ROUTES:

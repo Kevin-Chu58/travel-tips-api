@@ -13,9 +13,9 @@ public partial class Link
 
     public int CreatedBy { get; set; }
 
-    public virtual ICollection<Attraction> Attractions { get; set; } = new List<Attraction>();
-
     public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
     public virtual ICollection<PreferRoute> PreferRoutes { get; set; } = new List<PreferRoute>();
 }

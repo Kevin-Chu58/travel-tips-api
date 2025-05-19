@@ -53,24 +53,28 @@ namespace TravelTipsAPI.Services
 
         public interface IAttractionsService
         {
-            Attraction FindAttractionById(int id);
-            IEnumerable<AttractionViewModel> GetAttractionsByParams(
+            Highlight FindHighlightById(int id);
+            IEnumerable<AttractionViewModel> GetHighlightsByParams(
                 string? name,
                 long? osmId,
                 int? ownerId
             );
-            IEnumerable<int> GetMyAttractions(int id);
-            Task<AttractionViewModel> PostNewAttractionAsync(
+            IEnumerable<int> GetMyHighlights(int id);
+            Task<AttractionViewModel> PostNewHighlightAsync(
                 int? createdBy,
                 AttractionPostViewModel newAttraction
             );
-            Task<AttractionViewModel> PatchAttractionAsync(
-                Attraction attraction,
+            Task<AttractionViewModel> PatchHighlightAsync(
+                Highlight highlight,
                 AttractionPatchViewModel attractionPatch
             );
-            Task<AttractionViewModel> DeleteAttractionAsync(Attraction attraction);
+            Task<AttractionViewModel> DeleteHighlightAsync(Highlight highlight);
             List<string> ValidatePost(AttractionPostViewModel newAttraction);
             List<string> ValidatePatch(AttractionPatchViewModel attraction);
+            AttractionViewModel ToAttractionViewModel(
+                Highlight highlight,
+                Attraction? attraction = null
+            );
         }
 
         public interface IPreferRoutesService

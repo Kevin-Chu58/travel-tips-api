@@ -15,9 +15,9 @@ public partial class User
 
     public virtual Admin? Admin { get; set; }
 
-    public virtual ICollection<Attraction> Attractions { get; set; } = new List<Attraction>();
-
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
+
+    public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
     public virtual ICollection<Link> Links { get; set; } = new List<Link>();
 

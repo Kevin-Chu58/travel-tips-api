@@ -36,7 +36,7 @@ namespace TravelTipsAPI.Controllers
             long timestamp
         )
         {
-            var attractionViewModels = attractionsService.GetAttractionsByParams(name, osmId, null);
+            var attractionViewModels = attractionsService.GetHighlightsByParams(name, osmId, null);
 
             var attractionSearch = new AttractionSearchViewModel
             {
@@ -65,7 +65,7 @@ namespace TravelTipsAPI.Controllers
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var attractionViewModels = attractionsService.GetAttractionsByParams(
+            var attractionViewModels = attractionsService.GetHighlightsByParams(
                 name,
                 osmId,
                 userId
@@ -114,7 +114,7 @@ namespace TravelTipsAPI.Controllers
             if (newAttraction.OsmId <= 0)
                 return BadRequest(Messages.OsmIdRestricted);
 
-            var attractionViewModel = await attractionsService.PostNewAttractionAsync(
+            var attractionViewModel = await attractionsService.PostNewHighlightAsync(
                 userId,
                 newAttraction
             );
@@ -146,7 +146,7 @@ namespace TravelTipsAPI.Controllers
             )
                 return Unauthorized(Messages.AccessDenied);
 
-            var attraction = attractionsService.FindAttractionById(id);
+            var highlight = attractionsService.FindHighlightById(id);
 
             // validate the inputs
             var invalidParams = attractionsService.ValidatePatch(attractionPatch);
@@ -156,12 +156,8 @@ namespace TravelTipsAPI.Controllers
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
-            // validate osm id
-            if (attractionPatch.OsmId <= 0)
-                return BadRequest(Messages.OsmIdRestricted);
-
-            var attractionViewModel = await attractionsService.PatchAttractionAsync(
-                attraction,
+            var attractionViewModel = await attractionsService.PatchHighlightAsync(
+                highlight,
                 attractionPatch
             );
 
@@ -178,9 +174,9 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.ATTRACTIONS)]
         public async Task<ActionResult<AttractionViewModel>> DeleteAttractionAsync(int id)
         {
-            var attraction = attractionsService.FindAttractionById(id);
+            var highlight = attractionsService.FindHighlightById(id);
 
-            var attractionViewModel = await attractionsService.DeleteAttractionAsync(attraction);
+            var attractionViewModel = await attractionsService.DeleteHighlightAsync(highlight);
             return Ok(attractionViewModel);
         }
     }

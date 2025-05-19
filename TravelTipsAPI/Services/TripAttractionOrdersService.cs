@@ -13,7 +13,8 @@ using static TravelTipsAPI.Services.BasicSchema;
 /// <param name="context">travel tips context</param>
 public class TripAttractionOrdersService(
     TravelTipsContext context,
-    IPreferRoutesService preferRoutesService
+    IPreferRoutesService preferRoutesService,
+    IAttractionsService attractionsService
 ) : ITripAttractionOrdersService
 {
     // taos
@@ -133,7 +134,7 @@ public class TripAttractionOrdersService(
             throw new Exception(Messages.EstimateTimeRestricted);
 
         tao.DayId = taoPatchViewModel.DayId ?? tao.DayId;
-        tao.AttractionId = taoPatchViewModel.AttractionId ?? tao.AttractionId;
+        tao.HighlightId = taoPatchViewModel.HighlightId ?? tao.HighlightId;
         tao.EstimateTime = taoPatchViewModel.EstimateTime ?? tao.EstimateTime;
         tao.IsDrivePreferred = taoPatchViewModel.IsDrivePreferred ?? tao.IsDrivePreferred;
         tao.IsBikePreferred = taoPatchViewModel.IsBikePreferred ?? tao.IsBikePreferred;
@@ -355,9 +356,11 @@ public class TripAttractionOrdersService(
             Id = tao.Id,
             DayId = tao.DayId,
             Order = tao.Order,
-            AttractionId = tao.AttractionId,
+            Attraction = attractionsService.ToAttractionViewModel(
+                attractionsService.FindHighlightById(tao.HighlightId)
+            ),
             EstimateTime = tao.EstimateTime,
-            CreatedBy = tao.AttractionId,
+            CreatedBy = tao.CreatedBy,
             IsDrivePreferred = tao.IsDrivePreferred,
             IsBikePreferred = tao.IsBikePreferred,
             IsOnFootPreferred = tao.IsOnFootPreferred,
