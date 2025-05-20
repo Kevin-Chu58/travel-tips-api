@@ -45,16 +45,39 @@ namespace TravelTipsAPI.Controllers
         /// <summary>
         /// Get a trip attraction order you own by id
         /// </summary>
-        /// <param name="id">trip attraction order</param>
+        /// <param name="id">trip attraction order id</param>
         /// <returns>the trip attraction order with the id</returns>
         [HttpGet]
         [Route("my/{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public ActionResult<TripAttractionOrderViewModel> GetYourTripAttractionOrderById(int id)
+        public ActionResult<TripAttractionOrderViewModel> GetMyTripAttractionOrderById(int id)
         {
             var taoViewModel = taosService.FindTripAttractionOrderById(id);
 
             return Ok(taoViewModel);
+        }
+
+        /// <summary>
+        /// Get a list of trip attraction orders you own by day id
+        /// </summary>
+        /// <param name="id">day id</param>
+        /// <returns>a list of trip attraction orders of a day</returns>
+        [HttpGet]
+        [Route("my/day/{id}")]
+        [IsOwner(Resource = Resources.DAYS)]
+        public ActionResult<
+            IEnumerable<TripAttractionOrderViewModel>
+        > GetMyTripAttractionOrdersByDayId(int id)
+        {
+            var taos = taosService.GetTripAttractionOrdersByDayId(id);
+
+            var taoViewModels = new List<TripAttractionOrderViewModel>();
+            foreach (var tao in taos)
+            {
+                taoViewModels.Add(taosService.ToViewModel(tao));
+            }
+
+            return Ok(taoViewModels);
         }
 
         /// <summary>

@@ -58,11 +58,6 @@ public class TripAttractionOrdersService(
             .TripAttractionOrders.Where(tao => tao.DayId == dayId)
             .OrderBy(tao => tao.Order)
             .ToList();
-        //var taoViewModels = new List<TripAttractionOrderViewModel>();
-        //foreach (var tao in taos)
-        //{
-        //    taoViewModels.Add(ToViewModel(tao));
-        //}
         return taos;
     }
 
