@@ -14,7 +14,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int CreatedBy { get; set; }
 
         // details
-        public int TripAttractionOrderCount { get; set; }
         public required IEnumerable<TripAttractionOrderViewModel> TripAttractionOrders { get; set; }
 
         public static explicit operator DayViewModel(Day day)
@@ -30,7 +29,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 TripId = day.TripId,
                 CreatedBy = day.CreatedBy,
                 // details
-                TripAttractionOrderCount = 0,
                 TripAttractionOrders = [],
             };
 

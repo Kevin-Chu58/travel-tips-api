@@ -52,9 +52,7 @@ namespace TravelTipsAPI.Controllers
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<IEnumerable<DayViewModel>>> PostNewDay(
-            [FromBody] DayPostViewModel newDay
-        )
+        public async Task<ActionResult<DayViewModel>> PostNewDay([FromBody] DayPostViewModel newDay)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -73,11 +71,9 @@ namespace TravelTipsAPI.Controllers
 
             try
             {
-                await daysService.PostNewDayAsync(userId, newDay);
+                var dayViewModel = await daysService.PostNewDayAsync(userId, newDay);
 
-                var dayViewModels = daysService.GetDaysByTripId(newDay.TripId);
-
-                return Ok(dayViewModels);
+                return Ok(dayViewModel);
             }
             catch (Exception ex)
             {
@@ -94,7 +90,7 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.DAYS)]
-        public async Task<ActionResult<IEnumerable<DayViewModel>>> UpdateDay(
+        public async Task<ActionResult<DayViewModel>> UpdateDay(
             int id,
             [FromBody] DayPatchViewModel dayPatch
         )
@@ -113,9 +109,7 @@ namespace TravelTipsAPI.Controllers
             {
                 var updatedDayViewModel = await daysService.PatchDayAsync(day, dayPatch);
 
-                var dayViewModels = daysService.GetDaysByTripId(updatedDayViewModel.TripId);
-
-                return Ok(dayViewModels);
+                return Ok(updatedDayViewModel);
             }
             catch (Exception ex)
             {
@@ -131,7 +125,7 @@ namespace TravelTipsAPI.Controllers
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.DAYS)]
-        public async Task<ActionResult<IEnumerable<DayViewModel>>> DeleteDay(int id)
+        public async Task<ActionResult<DayViewModel>> DeleteDay(int id)
         {
             var taos = taosService.GetTripAttractionOrdersByDayId(id);
 
@@ -143,10 +137,9 @@ namespace TravelTipsAPI.Controllers
 
             Day day = daysService.FindDayById(id);
             var dayViewModel = await daysService.DeleteDay(day);
+            dayViewModel.TripAttractionOrders = taoViewModels;
 
-            var dayViewModels = daysService.GetDaysByTripId(dayViewModel.TripId);
-
-            return Ok(dayViewModels);
+            return Ok(dayViewModel);
         }
     }
 }

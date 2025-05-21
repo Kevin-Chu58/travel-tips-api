@@ -58,7 +58,6 @@ namespace TravelTipsAPI.Controllers
                     taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
                 }
 
-                day.TripAttractionOrderCount = taos.Count();
                 day.TripAttractionOrders = taoViewModels;
             }
 
@@ -130,7 +129,6 @@ namespace TravelTipsAPI.Controllers
                     taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
                 }
 
-                day.TripAttractionOrderCount = taos.Count();
                 day.TripAttractionOrders = taoViewModels;
             }
 
