@@ -61,8 +61,8 @@ namespace TravelTipsAPI.Authorization
                 return;
             }
 
-            // caching for easy reuse
-            context.HttpContext.Items.Add("user_id", UserId);
+            // caching for easy reuse, nothing happen if already exist
+            context.HttpContext.Items.TryAdd("user_id", UserId);
 
             if (Resource != Resources.NONE)
             {
