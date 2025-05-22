@@ -91,6 +91,10 @@ public class TripAttractionOrdersService(
         if (taoPostViewModel.EstimateTime <= 0)
             throw new Exception(Messages.EstimateTimeRestricted);
 
+        // validate estimate travel time
+        if (taoPostViewModel.EstimateTravelTime <= 0)
+            throw new Exception(Messages.EstimateTravelTimeRestricted);
+
         var taosInSameDay = context
             .TripAttractionOrders.Where(tao => tao.DayId == taoPostViewModel.DayId)
             .ToList();
@@ -128,9 +132,14 @@ public class TripAttractionOrdersService(
         if (taoPatchViewModel.EstimateTime <= 0)
             throw new Exception(Messages.EstimateTimeRestricted);
 
+        // validate estimate travel time
+        if (taoPatchViewModel.EstimateTravelTime <= 0)
+            throw new Exception(Messages.EstimateTravelTimeRestricted);
+
         tao.DayId = taoPatchViewModel.DayId ?? tao.DayId;
         tao.HighlightId = taoPatchViewModel.HighlightId ?? tao.HighlightId;
         tao.EstimateTime = taoPatchViewModel.EstimateTime ?? tao.EstimateTime;
+        tao.EstimateTravelTime = taoPatchViewModel.EstimateTravelTime ?? tao.EstimateTravelTime;
         tao.IsDrivePreferred = taoPatchViewModel.IsDrivePreferred ?? tao.IsDrivePreferred;
         tao.IsBikePreferred = taoPatchViewModel.IsBikePreferred ?? tao.IsBikePreferred;
         tao.IsOnFootPreferred = taoPatchViewModel.IsOnFootPreferred ?? tao.IsOnFootPreferred;

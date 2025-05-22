@@ -8,6 +8,7 @@
         public required AttractionViewModel Attraction { get; set; }
         public int EstimateTime { get; set; }
         public int CreatedBy { get; set; }
+        public int EstimateTravelTime { get; set; }
         public bool IsDrivePreferred { get; set; }
         public bool IsBikePreferred { get; set; }
         public bool IsOnFootPreferred { get; set; }

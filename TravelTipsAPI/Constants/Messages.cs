@@ -43,5 +43,7 @@
         public static readonly string TaorNotFound = "Trip Attraction Order Route not found.";
         public static readonly string NewOrderInvalid = "New order is invalid.";
         public static readonly string TaorExist = "Trip Attraction Order Route exists.";
+        public static readonly string EstimateTravelTimeRestricted =
+            "Estimate Travel Time should be positive.";
     }
 }

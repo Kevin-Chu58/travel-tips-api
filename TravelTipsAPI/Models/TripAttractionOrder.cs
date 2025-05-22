@@ -23,6 +23,8 @@ public partial class TripAttractionOrder
 
     public int HighlightId { get; set; }
 
+    public int EstimateTravelTime { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual Day Day { get; set; } = null!;

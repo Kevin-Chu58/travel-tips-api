@@ -8,6 +8,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int Order { get; set; }
         public int HighlightId { get; set; }
         public int EstimateTime { get; set; }
+        public int EstimateTravelTime { get; set; }
         public bool IsDrivePreferred { get; set; }
         public bool IsBikePreferred { get; set; }
         public bool IsOnFootPreferred { get; set; }
@@ -21,6 +22,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Order = Order,
                 HighlightId = HighlightId,
                 EstimateTime = EstimateTime,
+                EstimateTravelTime = EstimateTravelTime,
                 IsDrivePreferred = IsDrivePreferred,
                 IsBikePreferred = IsBikePreferred,
                 IsOnFootPreferred = IsOnFootPreferred,
