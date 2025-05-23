@@ -62,11 +62,17 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Attractions", "db_basic");
 
+            entity.HasIndex(e => e.Lat, "idx_attractions_Lat");
+
+            entity.HasIndex(e => e.Lng, "idx_attractions_Lng");
+
             entity.HasIndex(e => e.OsmId, "idx_attractions_osmId");
 
             entity.Property(e => e.Address)
                 .HasMaxLength(200)
                 .IsUnicode(false);
+            entity.Property(e => e.Lat).HasColumnType("decimal(9, 6)");
+            entity.Property(e => e.Lng).HasColumnType("decimal(9, 6)");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
                 .IsUnicode(false);
@@ -104,9 +110,16 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Highlights", "db_basic");
 
+            entity.HasIndex(e => e.IsDeprecated, "idx_highlights_IsDeprecated");
+
             entity.Property(e => e.Description)
                 .HasMaxLength(500)
                 .IsUnicode(false);
+
+            entity.HasOne(d => d.Attraction).WithMany(p => p.Highlights)
+                .HasForeignKey(d => d.AttractionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_attractions_highlights");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Highlights)
                 .HasForeignKey(d => d.CreatedBy)
@@ -142,12 +155,22 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("PreferRoutes", "db_basic");
 
-            entity.HasIndex(e => new { e.DepartOsmId, e.ArrivalOsmId }, "idx_prefer_routes_osmId");
+            entity.HasIndex(e => e.IsDeprecated, "idx_prefer_routes_IsDeprecated");
+
+            entity.HasOne(d => d.ArrivalAttraction).WithMany(p => p.PreferRouteArrivalAttractions)
+                .HasForeignKey(d => d.ArrivalAttractionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_attractions_prefer_routes_arrival");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.PreferRoutes)
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_prefer_routes");
+
+            entity.HasOne(d => d.DepartAttraction).WithMany(p => p.PreferRouteDepartAttractions)
+                .HasForeignKey(d => d.DepartAttractionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_attractions_prefer_routes_depart");
 
             entity.HasOne(d => d.Link).WithMany(p => p.PreferRoutes)
                 .HasForeignKey(d => d.LinkId)

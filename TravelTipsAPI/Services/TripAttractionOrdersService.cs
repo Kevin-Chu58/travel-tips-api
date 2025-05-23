@@ -365,6 +365,7 @@ public class TripAttractionOrdersService(
             ),
             EstimateTime = tao.EstimateTime,
             CreatedBy = tao.CreatedBy,
+            EstimateTravelTime = tao.EstimateTravelTime,
             IsDrivePreferred = tao.IsDrivePreferred,
             IsBikePreferred = tao.IsBikePreferred,
             IsOnFootPreferred = tao.IsOnFootPreferred,

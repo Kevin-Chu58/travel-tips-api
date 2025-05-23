@@ -14,6 +14,21 @@ namespace TravelTipsAPI.Services
     public class AttractionsService(TravelTipsContext context) : IAttractionsService
     {
         /// <summary>
+        /// Get an attraction by its id
+        /// </summary>
+        /// <param name="id">attraction id</param>
+        /// <returns>the attraction with this id</returns>
+        public Attraction GetAttractionById(int id)
+        {
+            var attraction = context.Attractions.Find(id);
+
+            if (attraction == null)
+                throw new Exception(Messages.AttractionNotFound);
+
+            return attraction;
+        }
+
+        /// <summary>
         /// Find a highlight by id
         /// </summary>
         /// <param name="id">highlight id</param>
@@ -93,6 +108,18 @@ namespace TravelTipsAPI.Services
             return myHighlightIds;
         }
 
+        public async Task<AttractionViewModel> PostNewAttractionAsync(
+            AttractionViewModel attraction
+        )
+        {
+            var newAttraction = (Attraction)attraction;
+
+            await context.Attractions.AddAsync(newAttraction);
+            await context.SaveChangesAsync();
+
+            return (AttractionViewModel)newAttraction;
+        }
+
         /// <summary>
         /// Create a new highlight
         /// </summary>
@@ -113,6 +140,16 @@ namespace TravelTipsAPI.Services
             // if exist, check whether is default
             if (attraction != null)
             {
+                // check if attraction has changed
+                var attractionViewModel = (AttractionViewModel)attractionPost;
+                var isDeprecated = HasAttractionChanged(attraction, attractionViewModel);
+
+                if (isDeprecated)
+                {
+                    PatchAttractionAsync(attraction, attractionViewModel);
+                    await PatchHighlightsDeprecated(attraction.Id);
+                }
+
                 // if attraction exists, then default highlight also exists because they are created together
                 var defaultHighlight = GetDefaultHighlight(attraction.Id);
 
@@ -160,6 +197,24 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
+        /// update the attraction information, does not save upon changes yet!
+        /// </summary>
+        /// <param name="attraction">attraction to be updated</param>
+        /// <param name="attractionViewModel">updated attraction info</param>
+        /// <returns>the updated attraction</returns>
+        public void PatchAttractionAsync(
+            Attraction attraction,
+            AttractionViewModel attractionViewModel
+        )
+        {
+            attraction.OsmId = attractionViewModel.OsmId;
+            attraction.Lng = attractionViewModel.Lng;
+            attraction.Lat = attractionViewModel.Lat;
+            attraction.Name = attractionViewModel.Name;
+            attraction.Address = attractionViewModel.Address;
+        }
+
+        /// <summary>
         /// Update a highlight you own
         /// </summary>
         /// <param name="highlight">highlight</param>
@@ -170,13 +225,46 @@ namespace TravelTipsAPI.Services
             AttractionPatchViewModel attractionPatch
         )
         {
+            // check if attraction has changed
+            var attraction = highlight.Attraction;
+            var attractionViewModel = (AttractionViewModel)attraction;
+            var isDeprecated = HasAttractionChanged(attraction, attractionViewModel);
+
+            if (isDeprecated)
+            {
+                PatchAttractionAsync(attraction, attractionViewModel);
+                await PatchHighlightsDeprecated(attraction.Id);
+            }
+
             // change highlight
             highlight.Description = attractionPatch.Description?.Trim() ?? highlight.Description;
             highlight.LinkId = attractionPatch.LinkId ?? highlight.LinkId;
+            highlight.IsDeprecated = false;
 
             await context.SaveChangesAsync();
 
             return ToAttractionViewModel(highlight);
+        }
+
+        /// <summary>
+        /// Mark all the highlights of a certain attraction to deprecated
+        /// </summary>
+        /// <param name="attractionId">attraction id</param>
+        /// <returns>the number of highlights marked as deprecated</returns>
+        public async Task<int> PatchHighlightsDeprecated(int attractionId)
+        {
+            var highlights = context.Highlights.Where(h =>
+                h.AttractionId == attractionId && h.IsDeprecated == false
+            );
+
+            foreach (var highlight in highlights)
+            {
+                highlight.IsDeprecated = true;
+            }
+
+            await context.SaveChangesAsync();
+
+            return highlights.Count();
         }
 
         /// <summary>
@@ -251,6 +339,18 @@ namespace TravelTipsAPI.Services
             attractionViewModel.LinkId = highlight.LinkId;
 
             return attractionViewModel;
+        }
+
+        public bool HasAttractionChanged(
+            Attraction attraction,
+            AttractionViewModel attractionViewModel
+        )
+        {
+            return attraction.OsmId != attractionViewModel.OsmId
+                || attraction.Lng != attractionViewModel.Lng
+                || attraction?.Lat != attractionViewModel.Lat
+                || attraction.Name != attractionViewModel.Name
+                || attraction.Address != attractionViewModel.Address;
         }
 
         private Highlight? GetDefaultHighlight(int attractionId)

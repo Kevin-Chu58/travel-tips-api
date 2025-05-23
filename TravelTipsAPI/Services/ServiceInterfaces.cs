@@ -53,6 +53,7 @@ namespace TravelTipsAPI.Services
 
         public interface IAttractionsService
         {
+            Attraction GetAttractionById(int id);
             Highlight FindHighlightById(int id);
             IEnumerable<AttractionViewModel> GetHighlightsByParams(
                 string? name,
@@ -60,20 +61,30 @@ namespace TravelTipsAPI.Services
                 int? ownerId
             );
             IEnumerable<int> GetMyHighlights(int id);
+            Task<AttractionViewModel> PostNewAttractionAsync(AttractionViewModel attraction);
             Task<AttractionViewModel> PostNewHighlightAsync(
                 int? createdBy,
                 AttractionPostViewModel newAttraction
+            );
+            void PatchAttractionAsync(
+                Attraction attraction,
+                AttractionViewModel attractionViewModel
             );
             Task<AttractionViewModel> PatchHighlightAsync(
                 Highlight highlight,
                 AttractionPatchViewModel attractionPatch
             );
+            Task<int> PatchHighlightsDeprecated(int attractionId);
             Task<AttractionViewModel> DeleteHighlightAsync(Highlight highlight);
             List<string> ValidatePost(AttractionPostViewModel newAttraction);
             List<string> ValidatePatch(AttractionPatchViewModel attraction);
             AttractionViewModel ToAttractionViewModel(
                 Highlight highlight,
                 Attraction? attraction = null
+            );
+            bool HasAttractionChanged(
+                Attraction attraction,
+                AttractionViewModel attractionViewModel
             );
         }
 
@@ -98,6 +109,7 @@ namespace TravelTipsAPI.Services
                 PreferRoute preferRoute,
                 PreferRoutePatchViewModel preferRoutePatch
             );
+            Task<int> PatchPreferRoutesDeprecated(int attractionId);
             Task<PreferRouteViewModel> DeletePreferRoute(PreferRoute preferRoute);
 
             // route types

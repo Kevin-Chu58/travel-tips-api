@@ -17,6 +17,7 @@ namespace TravelTipsAPI.Controllers
     [Route("api/[controller]")]
     public class PreferRoutesController(
         IPreferRoutesService preferRoutesService,
+        IAttractionsService attractionsService,
         ILinksService linksService
     ) : TravelTipsControllerBase
     {
@@ -111,6 +112,12 @@ namespace TravelTipsAPI.Controllers
             if (newPreferRoute.EstimateTime <= 0)
                 return BadRequest(Messages.EstimateTimeRestricted);
 
+            // check if attractions have changed
+            await UpdateIsDeprecated(
+                newPreferRoute.DepartAttraction,
+                newPreferRoute.ArrivalAttraction
+            );
+
             var preferRouteViewModel = await preferRoutesService.PostPreferRoutesAsync(
                 userId,
                 newPreferRoute
@@ -159,6 +166,12 @@ namespace TravelTipsAPI.Controllers
             // validate estimate time
             if (preferRoutePatch.EstimateTime <= 0)
                 return BadRequest(Messages.EstimateTimeRestricted);
+
+            // check if attractions have changed
+            await UpdateIsDeprecated(
+                preferRoutePatch.DepartAttraction,
+                preferRoutePatch.ArrivalAttraction
+            );
 
             var preferRoute = preferRoutesService.FindPreferRouteById(id);
 
@@ -271,6 +284,63 @@ namespace TravelTipsAPI.Controllers
             var routeTypeViewModel = await preferRoutesService.PatchRouteTypeAsync(routeType, name);
 
             return Ok(routeTypeViewModel);
+        }
+
+        private async Task UpdateIsDeprecated(
+            AttractionViewModel? departAttraction,
+            AttractionViewModel? arrivalAttraction
+        )
+        {
+            var isDeprecated = false;
+
+            // if depart attraction does not exist, create it
+            if (departAttraction != null)
+            {
+                try
+                {
+                    var attraction = attractionsService.GetAttractionById(
+                        departAttraction.Id ?? new int()
+                    );
+                    isDeprecated |= attractionsService.HasAttractionChanged(
+                        attraction,
+                        departAttraction
+                    );
+                    if (isDeprecated)
+                    {
+                        attractionsService.PatchAttractionAsync(attraction, departAttraction);
+                        await preferRoutesService.PatchPreferRoutesDeprecated(attraction.Id);
+                    }
+                }
+                catch (Exception)
+                {
+                    await attractionsService.PostNewAttractionAsync(departAttraction);
+                }
+            }
+
+            // if arrival attraction does not exist, create it
+            if (arrivalAttraction != null)
+            {
+                try
+                {
+                    var attraction = attractionsService.GetAttractionById(
+                        arrivalAttraction.Id ?? new int()
+                    );
+                    isDeprecated |= attractionsService.HasAttractionChanged(
+                        attraction,
+                        arrivalAttraction
+                    );
+
+                    if (isDeprecated)
+                    {
+                        attractionsService.PatchAttractionAsync(attraction, arrivalAttraction);
+                        await preferRoutesService.PatchPreferRoutesDeprecated(attraction.Id);
+                    }
+                }
+                catch (Exception)
+                {
+                    await attractionsService.PostNewAttractionAsync(arrivalAttraction);
+                }
+            }
         }
     }
 }

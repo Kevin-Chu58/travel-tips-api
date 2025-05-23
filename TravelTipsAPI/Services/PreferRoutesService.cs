@@ -9,7 +9,10 @@ namespace TravelTipsAPI.Services
     /// The service of Prefer Routes
     /// </summary>
     /// <param name="context">context</param>
-    public class PreferRoutesService(TravelTipsContext context) : IPreferRoutesService
+    public class PreferRoutesService(
+        TravelTipsContext context,
+        IAttractionsService attractionsService
+    ) : IPreferRoutesService
     {
         // prefer routes
 
@@ -32,16 +35,16 @@ namespace TravelTipsAPI.Services
         /// Ge a list of prefer routes by search params
         /// </summary>
         /// <param name="type">prefer route type</param>
-        /// <param name="departOsmId">prefer route depart osm id</param>
-        /// <param name="arrivalOsmId">prefer route arrival osm id</param>
+        /// <param name="departAttractionId">prefer route depart attraction id</param>
+        /// <param name="arrivalAttractionId">prefer route arrival attraction id</param>
         /// <param name="estimateTimeMin">prefer route min estimate time</param>
         /// <param name="estimateTimeMax">prefer route max estimate time</param>
         /// <param name="ownerId">user id</param>
         /// <returns>a list of prefer routes that satisfy the search params</returns>
         public IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
             int? type,
-            long? departOsmId,
-            long? arrivalOsmId,
+            long? departAttractionId,
+            long? arrivalAttractionId,
             int? estimateTimeMin,
             int? estimateTimeMax,
             int? ownerId
@@ -54,10 +57,14 @@ namespace TravelTipsAPI.Services
 
             if (type != null)
                 preferRoutes = preferRoutes.Where(pr => pr.Type == type);
-            if (departOsmId != null)
-                preferRoutes = preferRoutes.Where(pr => pr.DepartOsmId == departOsmId);
-            if (arrivalOsmId != null)
-                preferRoutes = preferRoutes.Where(pr => pr.ArrivalOsmId == arrivalOsmId);
+            if (departAttractionId != null)
+                preferRoutes = preferRoutes.Where(pr =>
+                    pr.DepartAttractionId == departAttractionId
+                );
+            if (arrivalAttractionId != null)
+                preferRoutes = preferRoutes.Where(pr =>
+                    pr.ArrivalAttractionId == arrivalAttractionId
+                );
             if (estimateTimeMin != null)
                 preferRoutes = preferRoutes.Where(pr => pr.EstimateTime >= estimateTimeMin);
             if (estimateTimeMax != null)
@@ -71,8 +78,10 @@ namespace TravelTipsAPI.Services
                 {
                     Id = pr.Id,
                     Type = (RouteTypeViewModel)FindRouteTypeById(pr.Type),
-                    DepartOsmId = pr.DepartOsmId,
-                    ArrivalOsmId = pr.ArrivalOsmId,
+                    DepartAttraction = (AttractionViewModel)
+                        attractionsService.GetAttractionById(pr.DepartAttractionId),
+                    ArrivalAttraction = (AttractionViewModel)
+                        attractionsService.GetAttractionById(pr.ArrivalAttractionId),
                     EstimateTime = pr.EstimateTime,
                     LinkId = pr.LinkId,
                     CreatedBy = pr.CreatedBy,
@@ -131,13 +140,14 @@ namespace TravelTipsAPI.Services
         )
         {
             preferRoute.Type = preferRoutePatchViewModel.Type ?? preferRoute.Type;
-            preferRoute.DepartOsmId =
-                preferRoutePatchViewModel.DepartOsmId ?? preferRoute.DepartOsmId;
-            preferRoute.ArrivalOsmId =
-                preferRoutePatchViewModel.ArrivalOsmId ?? preferRoute.ArrivalOsmId;
+            preferRoute.DepartAttractionId =
+                preferRoutePatchViewModel.DepartAttraction?.Id ?? preferRoute.DepartAttractionId;
+            preferRoute.ArrivalAttractionId =
+                preferRoutePatchViewModel.ArrivalAttraction?.Id ?? preferRoute.ArrivalAttractionId;
             preferRoute.EstimateTime =
                 preferRoutePatchViewModel.EstimateTime ?? preferRoute.EstimateTime;
             preferRoute.LinkId = preferRoutePatchViewModel.LinkId ?? preferRoute.LinkId;
+            preferRoute.IsDeprecated = false;
 
             await context.SaveChangesAsync();
 
@@ -145,6 +155,28 @@ namespace TravelTipsAPI.Services
             preferRouteViewModel.Type = (RouteTypeViewModel)FindRouteTypeById(preferRoute.Type);
 
             return preferRouteViewModel;
+        }
+
+        /// <summary>
+        /// mark prefer routes with a certain attraction to be deprecated
+        /// </summary>
+        /// <param name="attractionId">the attraction id</param>
+        /// <returns>the number of prefer routes deprecated</returns>
+        public async Task<int> PatchPreferRoutesDeprecated(int attractionId)
+        {
+            var preferRoutes = context.PreferRoutes.Where(pr =>
+                (pr.DepartAttractionId == attractionId || pr.ArrivalAttractionId == attractionId)
+                && pr.IsDeprecated == false
+            );
+
+            foreach (var preferRoute in preferRoutes)
+            {
+                preferRoute.IsDeprecated = true;
+            }
+
+            await context.SaveChangesAsync();
+
+            return preferRoutes.Count();
         }
 
         /// <summary>

@@ -15,6 +15,10 @@ public partial class Highlight
 
     public int? LinkId { get; set; }
 
+    public bool IsDeprecated { get; set; }
+
+    public virtual Attraction Attraction { get; set; } = null!;
+
     public virtual User? CreatedByNavigation { get; set; }
 
     public virtual Link? Link { get; set; }

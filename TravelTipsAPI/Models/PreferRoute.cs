@@ -11,15 +11,21 @@ public partial class PreferRoute
 
     public int CreatedBy { get; set; }
 
-    public long DepartOsmId { get; set; }
-
-    public long ArrivalOsmId { get; set; }
-
     public int EstimateTime { get; set; }
 
     public int? LinkId { get; set; }
 
+    public int DepartAttractionId { get; set; }
+
+    public int ArrivalAttractionId { get; set; }
+
+    public bool IsDeprecated { get; set; }
+
+    public virtual Attraction ArrivalAttraction { get; set; } = null!;
+
     public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual Attraction DepartAttraction { get; set; } = null!;
 
     public virtual Link? Link { get; set; }
 
