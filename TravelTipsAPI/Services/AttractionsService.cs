@@ -150,13 +150,20 @@ namespace TravelTipsAPI.Services
                     await PatchHighlightsDeprecated(attraction.Id);
                 }
 
-                // if attraction exists, then default highlight also exists because they are created together
+                // if attraction exists but default highlight does not, create new default highlight
                 var defaultHighlight = GetDefaultHighlight(attraction.Id);
+                if (defaultHighlight is null)
+                {
+                    defaultHighlight = attractionPost.ToHighlight(attraction.Id);
+
+                    await context.Highlights.AddAsync(defaultHighlight);
+                    await context.SaveChangesAsync();
+                }
 
                 // if is default, return default highlight
                 if (isDefault)
                 {
-                    return ToAttractionViewModel(defaultHighlight!, attraction);
+                    return ToAttractionViewModel(defaultHighlight, attraction);
                 }
                 // if is not default, create a custom highlight and return it
                 else
@@ -227,7 +234,7 @@ namespace TravelTipsAPI.Services
         {
             // check if attraction has changed
             var attraction = highlight.Attraction;
-            var attractionViewModel = (AttractionViewModel)attraction;
+            var attractionViewModel = (AttractionViewModel)attractionPatch;
             var isDeprecated = HasAttractionChanged(attraction, attractionViewModel);
 
             if (isDeprecated)
@@ -348,7 +355,7 @@ namespace TravelTipsAPI.Services
         {
             return attraction.OsmId != attractionViewModel.OsmId
                 || attraction.Lng != attractionViewModel.Lng
-                || attraction?.Lat != attractionViewModel.Lat
+                || attraction.Lat != attractionViewModel.Lat
                 || attraction.Name != attractionViewModel.Name
                 || attraction.Address != attractionViewModel.Address;
         }

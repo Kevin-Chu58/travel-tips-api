@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 
@@ -36,7 +37,19 @@ builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc(
+        "v1",
+        new OpenApiInfo
+        {
+            Title = "TravelTips API",
+            Version = "v0.1",
+            Description = "Updated version of My API",
+        }
+    );
+});
+;
 
 builder.Services.AddServices();
 

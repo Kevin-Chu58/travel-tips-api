@@ -3,14 +3,30 @@
     public class AttractionPatchViewModel
     {
         // attractions
-        public long? OsmId { get; set; }
-        public decimal? Lng { get; set; }
-        public decimal? Lat { get; set; }
-        public string? Name { get; set; }
-        public string? Address { get; set; }
+        public long OsmId { get; set; }
+        public decimal Lng { get; set; }
+        public decimal Lat { get; set; }
+        public required string Name { get; set; }
+        public required string Address { get; set; }
 
         // highlights
         public string? Description { get; set; }
         public int? LinkId { get; set; }
+
+        public static explicit operator AttractionViewModel(
+            AttractionPatchViewModel attractionPatch
+        )
+        {
+            var attractionViewModel = new AttractionViewModel
+            {
+                OsmId = attractionPatch.OsmId,
+                Lng = attractionPatch.Lng,
+                Lat = attractionPatch.Lat,
+                Name = attractionPatch.Name,
+                Address = attractionPatch.Address,
+            };
+
+            return attractionViewModel;
+        }
     }
 }
