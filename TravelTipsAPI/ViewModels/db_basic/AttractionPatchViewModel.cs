@@ -4,6 +4,7 @@
     {
         // attractions
         public long OsmId { get; set; }
+        public required string OsmType { get; set; }
         public decimal Lng { get; set; }
         public decimal Lat { get; set; }
         public required string Name { get; set; }
@@ -20,6 +21,7 @@
             var attractionViewModel = new AttractionViewModel
             {
                 OsmId = attractionPatch.OsmId,
+                OsmType = attractionPatch.OsmType,
                 Lng = attractionPatch.Lng,
                 Lat = attractionPatch.Lat,
                 Name = attractionPatch.Name,

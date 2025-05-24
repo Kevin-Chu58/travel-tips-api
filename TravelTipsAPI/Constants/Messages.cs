@@ -29,6 +29,7 @@
         // Attractions
         public static readonly string AttractionNotFound = "Attraction not found.";
         public static readonly string OsmIdRestricted = "Osm Id should be positive.";
+        public static readonly string OsmTypeInvalid = "Osm Type is invalid";
 
         // PreferRoutes
         public static readonly string PreferRouteNotFound = "Prefer Route not found.";

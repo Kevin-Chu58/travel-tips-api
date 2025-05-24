@@ -71,10 +71,13 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.Address)
                 .HasMaxLength(200)
                 .IsUnicode(false);
-            entity.Property(e => e.Lat).HasColumnType("decimal(9, 6)");
-            entity.Property(e => e.Lng).HasColumnType("decimal(9, 6)");
+            entity.Property(e => e.Lat).HasColumnType("decimal(10, 7)");
+            entity.Property(e => e.Lng).HasColumnType("decimal(10, 7)");
             entity.Property(e => e.Name)
                 .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.OsmType)
+                .HasMaxLength(8)
                 .IsUnicode(false);
         });
 

@@ -58,6 +58,7 @@ namespace TravelTipsAPI.Services
             IEnumerable<AttractionViewModel> GetHighlightsByParams(
                 string? name,
                 long? osmId,
+                string? osmType,
                 int? ownerId
             );
             IEnumerable<int> GetMyHighlights(int id);

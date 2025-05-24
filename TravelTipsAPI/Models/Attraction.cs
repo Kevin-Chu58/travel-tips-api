@@ -13,9 +13,11 @@ public partial class Attraction
 
     public long OsmId { get; set; }
 
-    public decimal Lng { get; set; }
+    public string OsmType { get; set; } = null!;
 
     public decimal Lat { get; set; }
+
+    public decimal Lng { get; set; }
 
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 

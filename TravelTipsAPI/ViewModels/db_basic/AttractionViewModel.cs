@@ -11,6 +11,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public decimal Lng { get; set; }
         public decimal Lat { get; set; }
         public long OsmId { get; set; }
+        public required string OsmType { get; set; }
 
         // highlights
         public string? Description { get; set; }
@@ -29,6 +30,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Lng = attraction.Lng,
                 Lat = attraction.Lat,
                 OsmId = attraction.OsmId,
+                OsmType = attraction.OsmType,
             };
 
             return attractionViewModel;
@@ -40,6 +42,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
             {
                 Id = attractionViewModel.Id ?? new int(),
                 OsmId = attractionViewModel.OsmId,
+                OsmType = attractionViewModel.OsmType,
                 Lng = attractionViewModel.Lng,
                 Lat = attractionViewModel.Lat,
                 Name = attractionViewModel.Name,

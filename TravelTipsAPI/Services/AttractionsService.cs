@@ -23,7 +23,7 @@ namespace TravelTipsAPI.Services
             var attraction = context.Attractions.Find(id);
 
             if (attraction == null)
-                throw new Exception(Messages.AttractionNotFound);
+                throw new FileNotFoundException(Messages.AttractionNotFound);
 
             return attraction;
         }
@@ -48,11 +48,13 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="name">name to search</param>
         /// <param name="osmId">osm id</param>
+        /// <param name="osmType">osm type</param>
         /// <param name="ownerId">user id</param>
         /// <returns>a list of highlights that satisfy the search params</returns>
         public IEnumerable<AttractionViewModel> GetHighlightsByParams(
             string? name,
             long? osmId,
+            string? osmType,
             int? ownerId
         )
         {
@@ -71,6 +73,8 @@ namespace TravelTipsAPI.Services
             }
             if (osmId != null)
                 attractions = attractions.Where(a => a.OsmId == osmId);
+            if (osmType != null)
+                attractions = attractions.Where(a => a.OsmType == osmType);
 
             foreach (var attraction in attractions)
             {
@@ -214,7 +218,6 @@ namespace TravelTipsAPI.Services
             AttractionViewModel attractionViewModel
         )
         {
-            attraction.OsmId = attractionViewModel.OsmId;
             attraction.Lng = attractionViewModel.Lng;
             attraction.Lat = attractionViewModel.Lat;
             attraction.Name = attractionViewModel.Name;
@@ -340,7 +343,9 @@ namespace TravelTipsAPI.Services
                 attraction ?? context.Attractions.First(a => a.Id == highlight.AttractionId);
             var attractionViewModel = (AttractionViewModel)_attraction!;
 
+            // highlights
             attractionViewModel.Id = highlight.Id;
+            attractionViewModel.IsDeprecated = highlight.IsDeprecated;
             attractionViewModel.Description = highlight.Description;
             attractionViewModel.CreatedBy = highlight.CreatedBy;
             attractionViewModel.LinkId = highlight.LinkId;
@@ -353,8 +358,7 @@ namespace TravelTipsAPI.Services
             AttractionViewModel attractionViewModel
         )
         {
-            return attraction.OsmId != attractionViewModel.OsmId
-                || attraction.Lng != attractionViewModel.Lng
+            return attraction.Lng != attractionViewModel.Lng
                 || attraction.Lat != attractionViewModel.Lat
                 || attraction.Name != attractionViewModel.Name
                 || attraction.Address != attractionViewModel.Address;

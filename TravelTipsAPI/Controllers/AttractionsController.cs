@@ -25,6 +25,7 @@ namespace TravelTipsAPI.Controllers
         /// </summary>
         /// <param name="name">attraction name</param>
         /// <param name="osmId">attraction osm id</param>
+        /// <param name="osmType">attraction osm type</param>
         /// <param name="timestamp">timestamp</param>
         /// <returns>a list of attractions that satisfy the condition</returns>
         [HttpGet]
@@ -33,10 +34,16 @@ namespace TravelTipsAPI.Controllers
         public ActionResult<AttractionSearchViewModel> GetAllAttractionsByParams(
             [FromQuery] string? name,
             long? osmId,
+            string? osmType,
             long timestamp
         )
         {
-            var attractionViewModels = attractionsService.GetHighlightsByParams(name, osmId, null);
+            var attractionViewModels = attractionsService.GetHighlightsByParams(
+                name,
+                osmId,
+                osmType,
+                null
+            );
 
             var attractionSearch = new AttractionSearchViewModel
             {
@@ -60,6 +67,7 @@ namespace TravelTipsAPI.Controllers
         public ActionResult<AttractionSearchViewModel> GetYourAttractionsByParams(
             [FromQuery] string? name,
             long? osmId,
+            string? osmType,
             long timestamp
         )
         {
@@ -68,6 +76,7 @@ namespace TravelTipsAPI.Controllers
             var attractionViewModels = attractionsService.GetHighlightsByParams(
                 name,
                 osmId,
+                osmType,
                 userId
             );
 
@@ -114,6 +123,10 @@ namespace TravelTipsAPI.Controllers
             if (newAttraction.OsmId <= 0)
                 return BadRequest(Messages.OsmIdRestricted);
 
+            // validate osm type
+            if (TypeEnums.OsmTypes.All.All(osmType => osmType != newAttraction.OsmType))
+                return BadRequest(Messages.OsmTypeInvalid);
+
             var attractionViewModel = await attractionsService.PostNewHighlightAsync(
                 userId,
                 newAttraction
@@ -155,6 +168,14 @@ namespace TravelTipsAPI.Controllers
                 var invalidInputs = string.Join(", ", invalidParams);
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
+
+            // validate osm id
+            if (attractionPatch.OsmId <= 0)
+                return BadRequest(Messages.OsmIdRestricted);
+
+            // validate osm type
+            if (TypeEnums.OsmTypes.All.All(osmType => osmType != attractionPatch.OsmType))
+                return BadRequest(Messages.OsmTypeInvalid);
 
             var attractionViewModel = await attractionsService.PatchHighlightAsync(
                 highlight,

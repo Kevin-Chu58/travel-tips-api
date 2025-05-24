@@ -113,10 +113,17 @@ namespace TravelTipsAPI.Controllers
                 return BadRequest(Messages.EstimateTimeRestricted);
 
             // check if attractions have changed
-            await UpdateIsDeprecated(
-                newPreferRoute.DepartAttraction,
-                newPreferRoute.ArrivalAttraction
-            );
+            try
+            {
+                await UpdateIsDeprecated(
+                    newPreferRoute.DepartAttraction,
+                    newPreferRoute.ArrivalAttraction
+                );
+            }
+            catch (BadHttpRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             var preferRouteViewModel = await preferRoutesService.PostPreferRoutesAsync(
                 userId,
@@ -168,10 +175,17 @@ namespace TravelTipsAPI.Controllers
                 return BadRequest(Messages.EstimateTimeRestricted);
 
             // check if attractions have changed
-            await UpdateIsDeprecated(
-                preferRoutePatch.DepartAttraction,
-                preferRoutePatch.ArrivalAttraction
-            );
+            try
+            {
+                await UpdateIsDeprecated(
+                    preferRoutePatch.DepartAttraction,
+                    preferRoutePatch.ArrivalAttraction
+                );
+            }
+            catch (BadHttpRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             var preferRoute = preferRoutesService.FindPreferRouteById(id);
 
@@ -298,6 +312,14 @@ namespace TravelTipsAPI.Controllers
             {
                 try
                 {
+                    // validate osm id
+                    if (departAttraction.OsmId <= 0)
+                        throw new BadHttpRequestException(Messages.OsmIdRestricted);
+
+                    // validate osm type
+                    if (TypeEnums.OsmTypes.All.All(osmType => osmType != departAttraction.OsmType))
+                        throw new BadHttpRequestException(Messages.OsmTypeInvalid);
+
                     var attraction = attractionsService.GetAttractionById(
                         departAttraction.Id ?? new int()
                     );
@@ -311,7 +333,7 @@ namespace TravelTipsAPI.Controllers
                         await preferRoutesService.PatchPreferRoutesDeprecated(attraction.Id);
                     }
                 }
-                catch (Exception)
+                catch (FileNotFoundException)
                 {
                     await attractionsService.PostNewAttractionAsync(departAttraction);
                 }
@@ -322,6 +344,14 @@ namespace TravelTipsAPI.Controllers
             {
                 try
                 {
+                    // validate osm id
+                    if (arrivalAttraction.OsmId <= 0)
+                        throw new BadHttpRequestException(Messages.OsmIdRestricted);
+
+                    // validate osm type
+                    if (TypeEnums.OsmTypes.All.All(osmType => osmType != arrivalAttraction.OsmType))
+                        throw new BadHttpRequestException(Messages.OsmTypeInvalid);
+
                     var attraction = attractionsService.GetAttractionById(
                         arrivalAttraction.Id ?? new int()
                     );
@@ -336,7 +366,7 @@ namespace TravelTipsAPI.Controllers
                         await preferRoutesService.PatchPreferRoutesDeprecated(attraction.Id);
                     }
                 }
-                catch (Exception)
+                catch (FileNotFoundException)
                 {
                     await attractionsService.PostNewAttractionAsync(arrivalAttraction);
                 }
