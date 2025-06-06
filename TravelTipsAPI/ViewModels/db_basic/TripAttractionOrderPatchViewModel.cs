@@ -3,6 +3,7 @@
     public class TripAttractionOrderPatchViewModel
     {
         public int? DayId { get; set; }
+        public int? Order { get; set; }
         public int? HighlightId { get; set; }
         public int? EstimateTime { get; set; }
         public int? EstimateTravelTime { get; set; }

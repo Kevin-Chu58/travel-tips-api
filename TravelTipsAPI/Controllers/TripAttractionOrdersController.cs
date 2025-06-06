@@ -89,7 +89,7 @@ namespace TravelTipsAPI.Controllers
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
         public async Task<
-            ActionResult<TripAttractionOrderViewModel>
+            ActionResult<IEnumerable<TripAttractionOrderViewModel>>
         > PostNewTripAttractionOrderAsync([FromBody] TripAttractionOrderPostViewModel newTao)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -97,8 +97,8 @@ namespace TravelTipsAPI.Controllers
             try
             {
                 var taoViewModel = await taosService.PostTripAttractionOrderAsync(userId, newTao);
-
-                return Ok(taoViewModel);
+                var taos = taosService.GetTripAttractionOrdersByDayId(taoViewModel.DayId);
+                return Ok(taos.Select(tao => taosService.ToViewModel(tao)).ToList());
             }
             catch (Exception ex)
             {
@@ -115,7 +115,9 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>> PatchTripAttractionOrderAsync(
+        public async Task<
+            ActionResult<IEnumerable<TripAttractionOrderViewModel>>
+        > PatchTripAttractionOrderAsync(
             int id,
             [FromBody] TripAttractionOrderPatchViewModel taoPatch
         )
@@ -126,7 +128,15 @@ namespace TravelTipsAPI.Controllers
             {
                 var taoViewModel = await taosService.PatchTripAttractionOrderAsync(tao, taoPatch);
 
-                return Ok(taoViewModel);
+                // if order is changed, also update the order
+                if (taoPatch.Order != null && taoPatch.Order != tao.Order)
+                {
+                    var taoViewModels = await taosService.SetOrderAsync(tao, (int)taoPatch.Order);
+                    return Ok(taoViewModels);
+                }
+
+                var taos = taosService.GetTripAttractionOrdersByDayId(taoViewModel.DayId);
+                return Ok(taos.Select(tao => taosService.ToViewModel(tao)).ToList());
             }
             catch (Exception ex)
             {

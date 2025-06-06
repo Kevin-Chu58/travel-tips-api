@@ -171,14 +171,19 @@ public class TripAttractionOrdersService(
             if (!isOrderValid)
                 throw new Exception(Messages.NewOrderInvalid);
 
-            // swap the index of tao
-            taosInSameDay.RemoveAt(tao.Order - 1);
+            // Remove the tao by ID instead of index to avoid mismatch
+            taosInSameDay.RemoveAll(t => t.Id == tao.Id);
+
+            // Clamp the newOrder within range
+            newOrder = Math.Max(1, Math.Min(newOrder, taosInSameDay.Count + 1));
+
+            // Insert at the correct position (newOrder is 1-based, so subtract 1)
             taosInSameDay.Insert(newOrder - 1, tao);
 
-            // reorganize taos in the same day
-            foreach (var (_tao, i) in taosInSameDay.Select((tao, i) => (tao, i)))
+            // Reassign orders starting from 1
+            for (int i = 0; i < taosInSameDay.Count; i++)
             {
-                _tao.Order = i + 1;
+                taosInSameDay[i].Order = i + 1;
             }
 
             await context.SaveChangesAsync();
