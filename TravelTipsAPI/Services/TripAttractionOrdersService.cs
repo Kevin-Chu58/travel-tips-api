@@ -136,7 +136,7 @@ public class TripAttractionOrdersService(
         if (taoPatchViewModel.EstimateTravelTime <= 0)
             throw new Exception(Messages.EstimateTravelTimeRestricted);
 
-        tao.DayId = taoPatchViewModel.DayId ?? tao.DayId;
+        tao.DayId = tao.DayId;
         tao.HighlightId = taoPatchViewModel.HighlightId ?? tao.HighlightId;
         tao.EstimateTime = taoPatchViewModel.EstimateTime ?? tao.EstimateTime;
         tao.EstimateTravelTime = taoPatchViewModel.EstimateTravelTime ?? tao.EstimateTravelTime;
@@ -161,8 +161,8 @@ public class TripAttractionOrdersService(
     )
     {
         var taosInSameDay = context
-            .TripAttractionOrders.Where(tao => tao.DayId == tao.DayId)
-            .OrderBy(tao => tao.Order)
+            .TripAttractionOrders.Where(_tao => _tao.DayId == tao.DayId)
+            .OrderBy(_tao => _tao.Order)
             .ToList();
 
         if (taosInSameDay.Count > 1)
