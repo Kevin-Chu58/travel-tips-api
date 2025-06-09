@@ -21,8 +21,8 @@ namespace TravelTipsAPI.Services
             IEnumerable<int> GetMyTripIds(int id);
             Task<TripViewModel> PostNewTripAsync(int createdBy, TripPostViewModel newTrip);
             Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
-            Task<int[]> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
-            Task<int[]> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
+            Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
+            Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
             Task<TripViewModel> UpdateLastUpdatedAtAsync(Trip trip);
             bool IsOwner(int id, int tripId);
             bool IsOwnerList(int id, int[] tripIds);

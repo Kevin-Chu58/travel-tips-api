@@ -39,17 +39,15 @@ namespace TravelTipsAPI.Services
 
             var tripViewModels = context
                 .Trips.Where(trip => trip.Name.ToLower().Contains(name) && trip.IsPublic == true)
-                .Select(trip => new TripViewModel
-                {
-                    Id = trip.Id,
-                    Name = trip.Name,
-                    Description = trip.Description,
-                    CreatedBy = trip.CreatedBy,
-                    CreatedAt = trip.CreatedAt,
-                    LastUpdatedAt = trip.LastUpdatedAt,
-                    NumDays = context.Days.Where(day => day.TripId == trip.Id).Count(),
-                })
+                .Select(trip => (TripViewModel)trip)
                 .ToList();
+
+            foreach (var tripViewModel in tripViewModels)
+            {
+                tripViewModel.NumDays = context
+                    .Days.Where(day => day.TripId == tripViewModel.Id)
+                    .Count();
+            }
 
             return tripViewModels;
         }
@@ -63,17 +61,15 @@ namespace TravelTipsAPI.Services
         {
             var yourTripViewModels = context
                 .Trips.Where(trip => trip.CreatedBy == id && trip.IsHidden == false)
-                .Select(trip => new TripViewModel
-                {
-                    Id = trip.Id,
-                    Name = trip.Name,
-                    Description = trip.Description,
-                    CreatedBy = trip.CreatedBy,
-                    CreatedAt = trip.CreatedAt,
-                    LastUpdatedAt = trip.LastUpdatedAt,
-                    NumDays = context.Days.Where(day => day.TripId == trip.Id).Count(),
-                })
+                .Select(trip => (TripViewModel)trip)
                 .ToList();
+
+            foreach (var tripViewModel in yourTripViewModels)
+            {
+                tripViewModel.NumDays = context
+                    .Days.Where(day => day.TripId == tripViewModel.Id)
+                    .Count();
+            }
 
             return yourTripViewModels;
         }
@@ -135,16 +131,16 @@ namespace TravelTipsAPI.Services
         /// <param name="tripIds">trip ids</param>
         /// <param name="isPublic">new is public status</param>
         /// <returns>the updated trip</returns>
-        public async Task<int[]> UpdateIsPublicAsync(int[] tripIds, bool isPublic)
+        public async Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic)
         {
-            int[] _tripIds = [];
+            var _tripIds = new List<int>();
             foreach (var tripId in tripIds)
             {
                 var trip = context.Trips.Find(tripId);
                 trip!.IsHidden = false;
                 trip.IsPublic = isPublic;
 
-                _tripIds.Append(tripId);
+                _tripIds.Add(tripId);
             }
 
             await context.SaveChangesAsync();
@@ -158,16 +154,16 @@ namespace TravelTipsAPI.Services
         /// <param name="id">trip id</param>
         /// <param name="isHidden">new is hidden status</param>
         /// <returns>the updated trip</returns>
-        public async Task<int[]> UpdateIsHiddenAsync(int[] tripIds, bool isHidden)
+        public async Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden)
         {
-            int[] _tripIds = [];
+            var _tripIds = new List<int>();
             foreach (var tripId in tripIds)
             {
                 var trip = context.Trips.Find(tripId);
                 trip!.IsHidden = isHidden;
                 trip.IsPublic = false; // when trashed, also make the trip private
 
-                _tripIds.Append(tripId);
+                _tripIds = [.. _tripIds, tripId];
             }
 
             await context.SaveChangesAsync();

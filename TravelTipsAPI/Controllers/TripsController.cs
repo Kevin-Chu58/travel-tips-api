@@ -217,7 +217,7 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("isPublic/{isPublic}")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<int[]>> UpdateTripIsPublic(
+        public async Task<ActionResult<List<int>>> UpdateTripIsPublic(
             bool isPublic,
             [FromBody] int[] tripIds
         )
@@ -244,7 +244,7 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("isHidden/{isHidden}")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<int[]>> UpdateTripIsHidden(
+        public async Task<ActionResult<List<int>>> UpdateTripIsHidden(
             bool isHidden,
             [FromBody] int[] tripIds
         )
