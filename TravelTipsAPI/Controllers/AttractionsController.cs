@@ -199,17 +199,23 @@ namespace TravelTipsAPI.Controllers
         /// <summary>
         /// Delete an existing attraction
         /// </summary>
-        /// <param name="id">the id of the attraction to be deleted</param>
         /// <returns>the attraction deleted</returns>
         [HttpDelete]
-        [Route("{id}")]
-        [IsOwner(Resource = Resources.ATTRACTIONS)]
-        public async Task<ActionResult<AttractionViewModel>> DeleteAttractionAsync(int id)
+        [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<int[]>> DeleteAttractionAsync([FromBody] int[] ids)
         {
-            var highlight = attractionsService.FindHighlightById(id);
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var attractionViewModel = await attractionsService.DeleteHighlightAsync(highlight);
-            return Ok(attractionViewModel);
+            // verify is the owner of all trip ids
+            var isOwnerList = attractionsService.IsOwnerList(userId, ids);
+            if (!isOwnerList)
+            {
+                return BadRequest(Messages.HighlightUnauthorized);
+            }
+
+            var idsDeleted = await attractionsService.DeleteHighlightAsync(ids);
+            return Ok(idsDeleted);
         }
     }
 }

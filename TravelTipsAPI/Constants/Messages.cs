@@ -26,8 +26,9 @@
         public static readonly string LinkNotFound = "Link not found.";
         public static readonly string LinkInvalid = "Link is invalid.";
 
-        // Attractions
+        // Attractions && Highlights
         public static readonly string AttractionNotFound = "Attraction not found.";
+        public static readonly string HighlightUnauthorized = "Highlight access unauthorized.";
         public static readonly string OsmIdRestricted = "Osm Id should be positive.";
         public static readonly string OsmTypeInvalid = "Osm Type is invalid";
 

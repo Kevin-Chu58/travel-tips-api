@@ -19,7 +19,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
         {
             var name = attraction.Name.Trim();
             var addresses = attraction.Address.Split(",");
-            var addressName = string.Join(", ", addresses[0..2]);
+            var count = Math.Min(addresses.Length, 2);
+            var addressName = string.Join(", ", addresses[..count]);
 
             var ahViewModel = new AttractionHighlightsViewModel
             {

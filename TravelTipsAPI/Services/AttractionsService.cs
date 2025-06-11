@@ -310,24 +310,35 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// Delete a highlight
         /// </summary>
-        /// <param name="highlight">the highlight to be deleted</param>
+        /// <param name="highlightIds">the highlight ids to be deleted</param>
         /// <returns>the deleted attraction</returns>
-        public async Task<AttractionViewModel> DeleteHighlightAsync(Highlight highlight)
+        public async Task<int[]> DeleteHighlightAsync(int[] highlightIds)
         {
             // replace all usage of this attraction with the default attraction
-            var defaultHighlight = GetDefaultHighlight(highlight.AttractionId);
-            var taos = context.TripAttractionOrders.Where(tao => tao.HighlightId == highlight.Id);
+            var highlights = context.Highlights.Where(h => highlightIds.Contains(h.Id)).ToList();
+            var defaultHighlights = GetDefaultHighlights(highlights);
 
-            foreach (var tao in taos)
+            foreach (var highlight in highlights)
             {
-                tao.HighlightId = defaultHighlight!.Id;
+                var taos = context.TripAttractionOrders.Where(tao =>
+                    tao.HighlightId == highlight.Id
+                );
+                var defaultHighlight = defaultHighlights.First(dh =>
+                    dh.AttractionId == highlight.AttractionId
+                );
+
+                foreach (var tao in taos)
+                {
+                    tao.HighlightId = defaultHighlight!.Id;
+                }
+
+                // delete the attraction
+                context.Highlights.Remove(highlight);
             }
 
-            // delete the attraction
-            context.Highlights.Remove(highlight);
             await context.SaveChangesAsync();
 
-            return ToAttractionViewModel(highlight);
+            return highlightIds;
         }
 
         /// <summary>
@@ -399,6 +410,29 @@ namespace TravelTipsAPI.Services
             return context.Highlights.FirstOrDefault(h =>
                 h.AttractionId == attractionId && h.CreatedBy == null
             );
+        }
+
+        private IEnumerable<Highlight?> GetDefaultHighlights(IEnumerable<Highlight> highlights)
+        {
+            var attractionIds = highlights.Select(h => h.AttractionId).Distinct().ToList();
+            return
+            [
+                .. context.Highlights.Where(h =>
+                    attractionIds.Contains(h.AttractionId) && h.CreatedBy == null
+                ),
+            ];
+        }
+
+        /// <summary>
+        /// Whether you are the owner of a list of highlights
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <param name="highlightIds">highlight ids</param>
+        /// <returns>true if the owner of all, false otherwise</returns>
+        public bool IsOwnerList(int id, int[] highlightIds)
+        {
+            var myHighlightIds = GetMyHighlights(id);
+            return highlightIds.All(tripId => myHighlightIds.Contains(tripId));
         }
     }
 }

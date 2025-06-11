@@ -77,7 +77,7 @@ namespace TravelTipsAPI.Services
                 AttractionPatchViewModel attractionPatch
             );
             Task<int> PatchHighlightsDeprecated(int attractionId);
-            Task<AttractionViewModel> DeleteHighlightAsync(Highlight highlight);
+            Task<int[]> DeleteHighlightAsync(int[] highlightIds);
             List<string> ValidatePost(AttractionPostViewModel newAttraction);
             List<string> ValidatePatch(AttractionPatchViewModel attraction);
             AttractionViewModel ToAttractionViewModel(
@@ -89,6 +89,7 @@ namespace TravelTipsAPI.Services
                 Attraction attraction,
                 AttractionViewModel attractionViewModel
             );
+            bool IsOwnerList(int id, int[] highlightIds);
         }
 
         public interface IPreferRoutesService
