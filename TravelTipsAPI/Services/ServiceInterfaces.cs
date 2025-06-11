@@ -84,6 +84,7 @@ namespace TravelTipsAPI.Services
                 Highlight highlight,
                 Attraction? attraction = null
             );
+            IEnumerable<AttractionHighlightsViewModel> GetAttractionHighlightsByUserId(int userId);
             bool HasAttractionChanged(
                 Attraction attraction,
                 AttractionViewModel attractionViewModel

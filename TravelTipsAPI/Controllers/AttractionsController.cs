@@ -89,6 +89,17 @@ namespace TravelTipsAPI.Controllers
             return Ok(attractionSearch);
         }
 
+        [HttpGet]
+        [Route("{id}")]
+        [AllowAnonymous]
+        public ActionResult<
+            IEnumerable<AttractionHighlightsViewModel>
+        > GetAttractionHighlightsByUserId(int id)
+        {
+            var ahViewModels = attractionsService.GetAttractionHighlightsByUserId(id);
+            return Ok(ahViewModels);
+        }
+
         /// <summary>
         /// Create a new attraction
         /// </summary>

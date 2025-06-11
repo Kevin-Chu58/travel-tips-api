@@ -98,6 +98,36 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
+        /// Get attraction highlights by user id
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>a list of attraction highlights owned by the user</returns>
+        public IEnumerable<AttractionHighlightsViewModel> GetAttractionHighlightsByUserId(int id)
+        {
+            var highlightViewModels = context
+                .Highlights.Where(h => h.CreatedBy == id)
+                .Select(h => (HighlightViewModel)h)
+                .ToList();
+
+            var attractionIds = highlightViewModels.Select(h => h.AttractionId).Distinct().ToList();
+
+            var ahViewModels = context
+                .Attractions.Where(a => attractionIds.Contains(a.Id))
+                .Select(a => (AttractionHighlightsViewModel)a)
+                .ToList();
+
+            foreach (var ahViewModel in ahViewModels)
+            {
+                ahViewModel.Highlights =
+                [
+                    .. highlightViewModels.Where(h => h.AttractionId == ahViewModel.Id),
+                ];
+            }
+
+            return ahViewModels;
+        }
+
+        /// <summary>
         /// Get my highlight ids
         /// </summary>
         /// <param name="id">user id</param>
