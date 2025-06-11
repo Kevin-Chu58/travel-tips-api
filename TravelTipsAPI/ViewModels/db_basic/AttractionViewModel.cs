@@ -1,4 +1,5 @@
-﻿using TravelTipsAPI.Models;
+﻿using Microsoft.IdentityModel.Tokens;
+using TravelTipsAPI.Models;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -21,11 +22,15 @@ namespace TravelTipsAPI.ViewModels.db_basic
 
         public static explicit operator AttractionViewModel(Attraction attraction)
         {
+            var name = attraction.Name.Trim();
+            var addresses = attraction.Address.Split(",");
+            var addressName = string.Join(", ", addresses[0..2]);
+
             var attractionViewModel = new AttractionViewModel
             {
                 // only fill in the info from Attraction, other info are filled by Highlight
                 Id = attraction.Id,
-                Name = attraction.Name.Trim(),
+                Name = name.IsNullOrEmpty() ? addressName : name,
                 Address = attraction.Address.Trim(),
                 Lng = attraction.Lng,
                 Lat = attraction.Lat,
