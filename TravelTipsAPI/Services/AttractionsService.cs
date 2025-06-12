@@ -35,7 +35,9 @@ namespace TravelTipsAPI.Services
         /// <returns>the highlight with the id</returns>
         public Highlight FindHighlightById(int id)
         {
-            var highlight = context.Highlights.Find(id);
+            var highlight = context
+                .Highlights.Include(h => h.Attraction)
+                .FirstOrDefault(h => h.Id == id);
 
             if (highlight == null)
                 throw new Exception(Messages.AttractionNotFound);

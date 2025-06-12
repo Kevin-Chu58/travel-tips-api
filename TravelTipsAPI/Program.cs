@@ -45,7 +45,7 @@ builder.Services.AddSwaggerGen(c =>
         {
             Title = "TravelTips API",
             Version = "v0.1",
-            Description = "Updated version of My API",
+            Description = "Updated version of TravelTips API",
         }
     );
 });

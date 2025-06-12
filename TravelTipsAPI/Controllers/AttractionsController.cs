@@ -170,8 +170,6 @@ namespace TravelTipsAPI.Controllers
             )
                 return Unauthorized(Messages.AccessDenied);
 
-            var highlight = attractionsService.FindHighlightById(id);
-
             // validate the inputs
             var invalidParams = attractionsService.ValidatePatch(attractionPatch);
             if (invalidParams.Count > 0)
@@ -187,6 +185,8 @@ namespace TravelTipsAPI.Controllers
             // validate osm type
             if (TypeEnums.OsmTypes.All.All(osmType => osmType != attractionPatch.OsmType))
                 return BadRequest(Messages.OsmTypeInvalid);
+
+            var highlight = attractionsService.FindHighlightById(id);
 
             var attractionViewModel = await attractionsService.PatchHighlightAsync(
                 highlight,
