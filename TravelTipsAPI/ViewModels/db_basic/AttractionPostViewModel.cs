@@ -4,26 +4,63 @@ namespace TravelTipsAPI.ViewModels.db_basic
 {
     public class AttractionPostViewModel
     {
+        // attractions
+        public long OsmId { get; set; }
+        public required string OsmType { get; set; }
+        public decimal Lng { get; set; }
+        public decimal Lat { get; set; }
         public required string Name { get; set; }
-        public string? Description { get; set; }
         public required string Address { get; set; }
-        public int OsmId { get; set; }
+
+        // highlights
+        public string? Description { get; set; }
         public int? LinkId { get; set; }
 
-        public Attraction ToAttraction(int createdBy)
+        public static explicit operator AttractionViewModel(AttractionPostViewModel model)
         {
-            var attraction = new Attraction
+            var attraction = new AttractionViewModel
             {
-                Id = new int(),
-                Name = Name,
-                Description = Description,
-                Address = Address,
-                OsmId = OsmId,
-                LinkId = LinkId,
-                CreatedBy = createdBy
+                OsmId = model.OsmId,
+                OsmType = model.OsmType,
+                Lng = model.Lng,
+                Lat = model.Lat,
+                Name = model.Name,
+                Address = model.Address,
             };
 
             return attraction;
+        }
+
+        public Attraction ToAttraction()
+        {
+            return new Attraction
+            {
+                Id = new int(),
+                Name = Name.Trim(),
+                Address = Address.Trim(),
+                Lng = Lng,
+                Lat = Lat,
+                OsmId = OsmId,
+                OsmType = OsmType,
+            };
+        }
+
+        public Highlight ToHighlight(int attractionId, int? createdBy = null)
+        {
+            var highlight = new Highlight
+            {
+                Id = new int(),
+                AttractionId = attractionId,
+                CreatedBy = createdBy,
+            };
+
+            if (createdBy != null)
+            {
+                highlight.Description = Description?.Trim();
+                highlight.LinkId = LinkId;
+            }
+
+            return highlight;
         }
     }
 }

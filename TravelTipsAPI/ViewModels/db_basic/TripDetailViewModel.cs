@@ -8,6 +8,6 @@
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
-        public required IEnumerable<SmallTripViewModel> SmallTrips { get; set; }
+        public required IEnumerable<DayViewModel> Days { get; set; }
     }
 }

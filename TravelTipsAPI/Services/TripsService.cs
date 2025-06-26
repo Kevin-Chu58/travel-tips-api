@@ -42,6 +42,13 @@ namespace TravelTipsAPI.Services
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
 
+            foreach (var tripViewModel in tripViewModels)
+            {
+                tripViewModel.NumDays = context
+                    .Days.Where(day => day.TripId == tripViewModel.Id)
+                    .Count();
+            }
+
             return tripViewModels;
         }
 
@@ -57,22 +64,29 @@ namespace TravelTipsAPI.Services
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
 
+            foreach (var tripViewModel in yourTripViewModels)
+            {
+                tripViewModel.NumDays = context
+                    .Days.Where(day => day.TripId == tripViewModel.Id)
+                    .Count();
+            }
+
             return yourTripViewModels;
         }
 
         /// <summary>
-        /// Get your trips' ids
+        /// Get my trips' ids
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>a list of the ids of trips you own</returns>
-        public IEnumerable<int> GetYourTripIds(int id)
+        /// <returns>a list of the ids of trips I own</returns>
+        public IEnumerable<int> GetMyTripIds(int id)
         {
-            var yourTripIds = context
+            var myTripIds = context
                 .Trips.Where(trip => trip.CreatedBy == id)
                 .Select(trip => trip.Id)
                 .ToList();
 
-            return yourTripIds;
+            return myTripIds;
         }
 
         /// <summary>
@@ -102,8 +116,8 @@ namespace TravelTipsAPI.Services
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch)
         {
-            trip.Name = tripPatch.Name ?? trip.Name;
-            trip.Description = tripPatch.Description ?? trip.Description;
+            trip.Name = tripPatch.Name?.Trim() ?? trip.Name;
+            trip.Description = tripPatch.Description?.Trim() ?? trip.Description;
             trip.LastUpdatedAt = DateTime.Now;
 
             await context.SaveChangesAsync();
@@ -114,17 +128,24 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// update the trip is public status
         /// </summary>
-        /// <param name="id">trip id</param>
+        /// <param name="tripIds">trip ids</param>
         /// <param name="isPublic">new is public status</param>
         /// <returns>the updated trip</returns>
-        public async Task<TripViewModel> UpdateIsPublicAsync(Trip trip, bool isPublic)
+        public async Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic)
         {
-            trip.IsHidden = false;
-            trip.IsPublic = isPublic;
+            var _tripIds = new List<int>();
+            foreach (var tripId in tripIds)
+            {
+                var trip = context.Trips.Find(tripId);
+                trip!.IsHidden = false;
+                trip.IsPublic = isPublic;
+
+                _tripIds.Add(tripId);
+            }
 
             await context.SaveChangesAsync();
 
-            return (TripViewModel)trip;
+            return _tripIds;
         }
 
         /// <summary>
@@ -133,14 +154,21 @@ namespace TravelTipsAPI.Services
         /// <param name="id">trip id</param>
         /// <param name="isHidden">new is hidden status</param>
         /// <returns>the updated trip</returns>
-        public async Task<TripViewModel> UpdateIsHiddenAsync(Trip trip, bool isHidden)
+        public async Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden)
         {
-            trip.IsHidden = isHidden;
-            trip.IsPublic = false; // when trashed, also make the trip private
+            var _tripIds = new List<int>();
+            foreach (var tripId in tripIds)
+            {
+                var trip = context.Trips.Find(tripId);
+                trip!.IsHidden = isHidden;
+                trip.IsPublic = false; // when trashed, also make the trip private
+
+                _tripIds = [.. _tripIds, tripId];
+            }
 
             await context.SaveChangesAsync();
 
-            return (TripViewModel)trip;
+            return _tripIds;
         }
 
         /// <summary>
@@ -162,11 +190,23 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="id">user id</param>
         /// <param name="tripId">trip id</param>
-        /// <returns>c</returns>
+        /// <returns>true if the owner, false otherwise</returns>
         public bool IsOwner(int id, int tripId)
         {
             var trip = context.Trips.Find(tripId);
             return trip?.CreatedBy == id;
+        }
+
+        /// <summary>
+        /// Whether you are the owner of a list of trips
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <param name="tripIds">trip ids</param>
+        /// <returns>true if the owner of all, false otherwise</returns>
+        public bool IsOwnerList(int id, int[] tripIds)
+        {
+            var myTripIds = GetMyTripIds(id);
+            return tripIds.All(tripId => myTripIds.Contains(tripId));
         }
 
         /// <summary>
@@ -186,11 +226,16 @@ namespace TravelTipsAPI.Services
             return invalidParams;
         }
 
+        /// <summary>
+        /// Check if trip's detail is valid
+        /// </summary>
+        /// <param name="trip">existing trip</param>
+        /// <returns>true if is valid, false otherwise</returns>
         public List<string> ValidatePatch(TripPatchViewModel trip)
         {
             var invalidParams = new List<string>();
 
-            if (trip.Name?.Length > 50)
+            if (trip.Name?.Length == 0 || trip.Name?.Length > 50)
                 invalidParams.Add("name");
             if (trip.Description?.Length > 500)
                 invalidParams.Add("description");

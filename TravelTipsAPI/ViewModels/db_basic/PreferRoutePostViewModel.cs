@@ -5,9 +5,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
     public class PreferRoutePostViewModel
     {
         public int Type { get; set; }
-        public required string Ref {  get; set; }
-        public int DepartOsmId { get; set; }
-        public int ArrivalOsmId { get; set; }
+        public required AttractionViewModel DepartAttraction { get; set; }
+        public required AttractionViewModel ArrivalAttraction { get; set; }
         public int EstimateTime { get; set; }
         public int? LinkId { get; set; }
 
@@ -17,12 +16,11 @@ namespace TravelTipsAPI.ViewModels.db_basic
             {
                 Id = new int(),
                 Type = Type,
-                Ref = Ref,
-                DepartOsmId = DepartOsmId,
-                ArrivalOsmId = ArrivalOsmId,
+                DepartAttractionId = DepartAttraction.Id ?? new int(),
+                ArrivalAttractionId = ArrivalAttraction.Id ?? new int(),
                 EstimateTime = EstimateTime,
                 LinkId = LinkId,
-                CreatedBy = createdBy
+                CreatedBy = createdBy,
             };
 
             return newPreferRoute;

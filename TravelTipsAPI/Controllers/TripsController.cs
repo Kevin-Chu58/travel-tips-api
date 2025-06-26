@@ -18,8 +18,11 @@ namespace TravelTipsAPI.Controllers
     /// <param name="tripsService">trips service</param>
     /// <param name="smallTripsService"></param>small trips service</param>
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService, ISmallTripsService smallTripsService)
-        : TravelTipsControllerBase
+    public class TripsController(
+        ITripsService tripsService,
+        IDaysService daysService,
+        ITripAttractionOrdersService tripAttractionOrdersService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get a public trip by its id
@@ -43,7 +46,20 @@ namespace TravelTipsAPI.Controllers
 
             TripViewModel tripViewModel = (TripViewModel)trip;
 
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
+            var days = daysService.GetDaysByTripId(id);
+
+            foreach (var day in days)
+            {
+                var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
+                var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+                foreach (var tao in taos)
+                {
+                    taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
+                }
+
+                day.TripAttractionOrders = taoViewModels;
+            }
 
             var tripDetailViewModel = new TripDetailViewModel
             {
@@ -53,44 +69,7 @@ namespace TravelTipsAPI.Controllers
                 CreatedBy = tripViewModel.CreatedBy,
                 CreatedAt = tripViewModel.CreatedAt,
                 LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
-            };
-
-            return Ok(tripDetailViewModel);
-        }
-
-        /// <summary>
-        /// Get your own trip by id
-        /// </summary>
-        /// <param name="id">trip id</param>
-        /// <returns>the trip you own</returns>
-        [HttpGet]
-        [Route("my/{id}")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public ActionResult<TripDetailViewModel> GetTripById(int id)
-        {
-            Trip trip;
-            try
-            {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(Messages.TripNotFound);
-            }
-            var tripViewModel = (TripViewModel)trip;
-
-            var smallTripViewModels = smallTripsService.GetSmallTripsByTripId(tripViewModel.Id);
-
-            var tripDetailViewModel = new TripDetailViewModel
-            {
-                Id = tripViewModel.Id,
-                Name = tripViewModel.Name,
-                Description = tripViewModel.Description,
-                CreatedBy = tripViewModel.CreatedBy,
-                CreatedAt = tripViewModel.CreatedAt,
-                LastUpdatedAt = tripViewModel.LastUpdatedAt,
-                SmallTrips = smallTripViewModels,
+                Days = days,
             };
 
             return Ok(tripDetailViewModel);
@@ -126,6 +105,48 @@ namespace TravelTipsAPI.Controllers
         }
 
         /// <summary>
+        /// Get your own trip by id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the trip you own</returns>
+        [HttpGet]
+        [Route("my/{id}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public ActionResult<TripDetailViewModel> GetTripById(int id)
+        {
+            Trip trip = tripsService.FindTripByParams(id);
+            var tripViewModel = (TripViewModel)trip;
+
+            var days = daysService.GetDaysByTripId(id, false);
+
+            foreach (var day in days)
+            {
+                var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
+                var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+                foreach (var tao in taos)
+                {
+                    taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
+                }
+
+                day.TripAttractionOrders = taoViewModels;
+            }
+
+            var tripDetailViewModel = new TripDetailViewModel
+            {
+                Id = tripViewModel.Id,
+                Name = tripViewModel.Name,
+                Description = tripViewModel.Description,
+                CreatedBy = tripViewModel.CreatedBy,
+                CreatedAt = tripViewModel.CreatedAt,
+                LastUpdatedAt = tripViewModel.LastUpdatedAt,
+                Days = days,
+            };
+
+            return Ok(tripDetailViewModel);
+        }
+
+        /// <summary>
         /// Post a new trip to db
         /// </summary>
         /// <param name="newTrip">a new trip to be posted</param>
@@ -155,7 +176,7 @@ namespace TravelTipsAPI.Controllers
         /// Update a trip's information
         /// </summary>
         /// <param name="id">the id of the trip</param>
-        /// <param name="tripPatchViewModel">the trip information to be updated</param>
+        /// <param name="tripPatch">the trip information to be updated</param>
         /// <returns>the updated trip</returns>
         [HttpPatch]
         [Route("{id}")]
@@ -175,6 +196,14 @@ namespace TravelTipsAPI.Controllers
                 return NotFound(ex.Message);
             }
 
+            // validate the inputs
+            var invalidParams = tripsService.ValidatePatch(tripPatch);
+            if (invalidParams.Count > 0)
+            {
+                var invalidInputs = string.Join(", ", invalidParams);
+                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
+            }
+
             var tripViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
             return Ok(tripViewModel);
         }
@@ -182,57 +211,55 @@ namespace TravelTipsAPI.Controllers
         /// <summary>
         /// Make the trip public or private
         /// </summary>
-        /// <param name="id">the id of the trip</param>
         /// <param name="isPublic">the published status</param>
+        /// <param name="tripIds">the ids of the list of trips</param>
         /// <returns>a trip with updated published status</returns>
         [HttpPatch]
-        [Route("{id}/isPublic")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(
-            int id,
-            [FromBody] bool isPublic
+        [Route("isPublic/{isPublic}")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<List<int>>> UpdateTripIsPublic(
+            bool isPublic,
+            [FromBody] int[] tripIds
         )
         {
-            Trip trip;
-            try
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // verify is the owner of all trip ids
+            var isOwnerList = tripsService.IsOwnerList(userId, tripIds);
+            if (!isOwnerList)
             {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
+                return BadRequest(Messages.TripUnauthorized);
             }
 
-            var tripViewModel = await tripsService.UpdateIsPublicAsync(trip, isPublic);
-            return Ok(tripViewModel);
+            var _tripIds = await tripsService.UpdateIsPublicAsync(tripIds, isPublic);
+            return Ok(_tripIds);
         }
 
         /// <summary>
         /// Make the trip trashed or untrashed
         /// </summary>
-        /// <param name="id">the id of the trip</param>
         /// <param name="isHidden">the trashed status</param>
+        /// <param name="tripIds">the ids of the list of trips</param>
         /// <returns>a trip with updated trashed status</returns>
         [HttpPatch]
-        [Route("{id}/isHidden")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> UpdateTripIsHidden(
-            int id,
-            [FromBody] bool isHidden
+        [Route("isHidden/{isHidden}")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<List<int>>> UpdateTripIsHidden(
+            bool isHidden,
+            [FromBody] int[] tripIds
         )
         {
-            Trip trip;
-            try
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // verify is the owner of all trip ids
+            var isOwnerList = tripsService.IsOwnerList(userId, tripIds);
+            if (!isOwnerList)
             {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
+                return BadRequest(Messages.TripUnauthorized);
             }
 
-            var tripViewModel = await tripsService.UpdateIsHiddenAsync(trip, isHidden);
-            return Ok(tripViewModel);
+            var _tripIds = await tripsService.UpdateIsHiddenAsync(tripIds, isHidden);
+            return Ok(_tripIds);
         }
     }
 }

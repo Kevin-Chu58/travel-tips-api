@@ -9,19 +9,19 @@ public partial class Attraction
 
     public string Name { get; set; } = null!;
 
-    public string? Description { get; set; }
-
     public string Address { get; set; } = null!;
 
-    public int CreatedBy { get; set; }
+    public decimal Lng { get; set; }
 
-    public int? LinkId { get; set; }
+    public decimal Lat { get; set; }
 
-    public int OsmId { get; set; }
+    public long OsmId { get; set; }
 
-    public virtual User CreatedByNavigation { get; set; } = null!;
+    public string OsmType { get; set; } = null!;
 
-    public virtual Link? Link { get; set; }
+    public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
-    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
+    public virtual ICollection<PreferRoute> PreferRouteArrivalAttractions { get; set; } = new List<PreferRoute>();
+
+    public virtual ICollection<PreferRoute> PreferRouteDepartAttractions { get; set; } = new List<PreferRoute>();
 }

@@ -13,6 +13,9 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int TripId { get; set; }
         public int CreatedBy { get; set; }
 
+        // details
+        public required IEnumerable<TripAttractionOrderViewModel> TripAttractionOrders { get; set; }
+
         public static explicit operator DayViewModel(Day day)
         {
             var dayViewModel = new DayViewModel
@@ -25,6 +28,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 IsOverNight = day.IsOverNight,
                 TripId = day.TripId,
                 CreatedBy = day.CreatedBy,
+                // details
+                TripAttractionOrders = [],
             };
 
             return dayViewModel;

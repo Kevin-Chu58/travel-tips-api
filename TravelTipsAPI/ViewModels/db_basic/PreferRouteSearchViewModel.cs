@@ -2,7 +2,7 @@
 {
     public class PreferRouteSearchViewModel
     {
-        public int TimeStamp { get; set; }
+        public long Timestamp { get; set; }
         public required IEnumerable<PreferRouteViewModel> PreferRoutes { get; set; }
     }
 }
