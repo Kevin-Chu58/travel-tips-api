@@ -31,10 +31,10 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="tripId">trip id</param>
         /// <returns>days with the trip id</returns>
-        public IEnumerable<DayViewModel> GetDaysByTripId(int tripId)
+        public IEnumerable<DayViewModel> GetDaysByTripId(int tripId, bool? isPublic = true)
         {
             var trip = context.Trips.Find(tripId);
-            if (trip?.IsPublic == false)
+            if (isPublic == true && trip?.IsPublic == false)
                 throw new Exception(Messages.TripNotFound);
 
             var dayViewModels = context

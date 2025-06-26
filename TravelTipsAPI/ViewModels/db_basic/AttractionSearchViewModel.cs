@@ -2,7 +2,7 @@
 {
     public class AttractionSearchViewModel
     {
-        public int Timestamp { get; set; }
+        public long Timestamp { get; set; }
         public required IEnumerable<AttractionViewModel> Attractions { get; set; }
     }
 }

@@ -45,16 +45,39 @@ namespace TravelTipsAPI.Controllers
         /// <summary>
         /// Get a trip attraction order you own by id
         /// </summary>
-        /// <param name="id">trip attraction order</param>
+        /// <param name="id">trip attraction order id</param>
         /// <returns>the trip attraction order with the id</returns>
         [HttpGet]
         [Route("my/{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public ActionResult<TripAttractionOrderViewModel> GetYourTripAttractionOrderById(int id)
+        public ActionResult<TripAttractionOrderViewModel> GetMyTripAttractionOrderById(int id)
         {
             var taoViewModel = taosService.FindTripAttractionOrderById(id);
 
             return Ok(taoViewModel);
+        }
+
+        /// <summary>
+        /// Get a list of trip attraction orders you own by day id
+        /// </summary>
+        /// <param name="id">day id</param>
+        /// <returns>a list of trip attraction orders of a day</returns>
+        [HttpGet]
+        [Route("my/day/{id}")]
+        [IsOwner(Resource = Resources.DAYS)]
+        public ActionResult<
+            IEnumerable<TripAttractionOrderViewModel>
+        > GetMyTripAttractionOrdersByDayId(int id)
+        {
+            var taos = taosService.GetTripAttractionOrdersByDayId(id);
+
+            var taoViewModels = new List<TripAttractionOrderViewModel>();
+            foreach (var tao in taos)
+            {
+                taoViewModels.Add(taosService.ToViewModel(tao));
+            }
+
+            return Ok(taoViewModels);
         }
 
         /// <summary>
@@ -66,7 +89,7 @@ namespace TravelTipsAPI.Controllers
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
         public async Task<
-            ActionResult<TripAttractionOrderViewModel>
+            ActionResult<IEnumerable<TripAttractionOrderViewModel>>
         > PostNewTripAttractionOrderAsync([FromBody] TripAttractionOrderPostViewModel newTao)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -74,8 +97,8 @@ namespace TravelTipsAPI.Controllers
             try
             {
                 var taoViewModel = await taosService.PostTripAttractionOrderAsync(userId, newTao);
-
-                return Ok(taoViewModel);
+                var taos = taosService.GetTripAttractionOrdersByDayId(taoViewModel.DayId);
+                return Ok(taos.Select(tao => taosService.ToViewModel(tao)).ToList());
             }
             catch (Exception ex)
             {
@@ -92,7 +115,9 @@ namespace TravelTipsAPI.Controllers
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>> PatchTripAttractionOrderAsync(
+        public async Task<
+            ActionResult<IEnumerable<TripAttractionOrderViewModel>>
+        > PatchTripAttractionOrderAsync(
             int id,
             [FromBody] TripAttractionOrderPatchViewModel taoPatch
         )
@@ -103,7 +128,15 @@ namespace TravelTipsAPI.Controllers
             {
                 var taoViewModel = await taosService.PatchTripAttractionOrderAsync(tao, taoPatch);
 
-                return Ok(taoViewModel);
+                // if order is changed, also update the order
+                if (taoPatch.Order != null && taoPatch.Order != tao.Order)
+                {
+                    var taoViewModels = await taosService.SetOrderAsync(tao, (int)taoPatch.Order);
+                    return Ok(taoViewModels);
+                }
+
+                var taos = taosService.GetTripAttractionOrdersByDayId(taoViewModel.DayId);
+                return Ok(taos.Select(tao => taosService.ToViewModel(tao)).ToList());
             }
             catch (Exception ex)
             {

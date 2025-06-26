@@ -21,10 +21,11 @@ namespace TravelTipsAPI.Services
             IEnumerable<int> GetMyTripIds(int id);
             Task<TripViewModel> PostNewTripAsync(int createdBy, TripPostViewModel newTrip);
             Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
-            Task<TripViewModel> UpdateIsPublicAsync(Trip trip, bool isPublic);
-            Task<TripViewModel> UpdateIsHiddenAsync(Trip trip, bool isHidden);
+            Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
+            Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
             Task<TripViewModel> UpdateLastUpdatedAtAsync(Trip trip);
             bool IsOwner(int id, int tripId);
+            bool IsOwnerList(int id, int[] tripIds);
             List<string> ValidatePost(TripPostViewModel newTrip);
             List<string> ValidatePatch(TripPatchViewModel trip);
         }
@@ -32,7 +33,7 @@ namespace TravelTipsAPI.Services
         public interface IDaysService
         {
             Day FindDayById(int id, bool? isPublic = null);
-            IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
+            IEnumerable<DayViewModel> GetDaysByTripId(int tripId, bool? isPublic = true);
             IEnumerable<int> GetMyDayIds(int id);
             Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
@@ -53,23 +54,42 @@ namespace TravelTipsAPI.Services
 
         public interface IAttractionsService
         {
-            Attraction FindAttractionById(int id);
-            IEnumerable<AttractionViewModel> GetAttractionsByParams(
+            Attraction GetAttractionById(int id);
+            Highlight FindHighlightById(int id);
+            IEnumerable<AttractionViewModel> GetHighlightsByParams(
                 string? name,
-                int? osmId,
+                long? osmId,
+                string? osmType,
                 int? ownerId
             );
-            IEnumerable<int> GetMyAttractions(int id);
-            Task<AttractionViewModel> PostNewAttractionAsync(
-                int createdBy,
+            IEnumerable<int> GetMyHighlights(int id);
+            Task<AttractionViewModel> PostNewAttractionAsync(AttractionViewModel attraction);
+            Task<AttractionViewModel> PostNewHighlightAsync(
+                int? createdBy,
                 AttractionPostViewModel newAttraction
             );
-            Task<AttractionViewModel> PatchAttractionAsync(
+            void PatchAttractionAsync(
                 Attraction attraction,
+                AttractionViewModel attractionViewModel
+            );
+            Task<AttractionViewModel> PatchHighlightAsync(
+                Highlight highlight,
                 AttractionPatchViewModel attractionPatch
             );
+            Task<int> PatchHighlightsDeprecated(int attractionId);
+            Task<int[]> DeleteHighlightAsync(int[] highlightIds);
             List<string> ValidatePost(AttractionPostViewModel newAttraction);
             List<string> ValidatePatch(AttractionPatchViewModel attraction);
+            AttractionViewModel ToAttractionViewModel(
+                Highlight highlight,
+                Attraction? attraction = null
+            );
+            IEnumerable<AttractionHighlightsViewModel> GetAttractionHighlightsByUserId(int userId);
+            bool HasAttractionChanged(
+                Attraction attraction,
+                AttractionViewModel attractionViewModel
+            );
+            bool IsOwnerList(int id, int[] highlightIds);
         }
 
         public interface IPreferRoutesService
@@ -78,8 +98,8 @@ namespace TravelTipsAPI.Services
             PreferRoute FindPreferRouteById(int id);
             IEnumerable<PreferRouteViewModel> GetPreferRoutesByParams(
                 int? type,
-                int? departOsmId,
-                int? arrivalOsmId,
+                long? departOsmId,
+                long? arrivalOsmId,
                 int? estimateTimeMin,
                 int? estimateTimeMax,
                 int? ownerId
@@ -93,6 +113,7 @@ namespace TravelTipsAPI.Services
                 PreferRoute preferRoute,
                 PreferRoutePatchViewModel preferRoutePatch
             );
+            Task<int> PatchPreferRoutesDeprecated(int attractionId);
             Task<PreferRouteViewModel> DeletePreferRoute(PreferRoute preferRoute);
 
             // route types

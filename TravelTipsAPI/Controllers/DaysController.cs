@@ -137,8 +137,6 @@ namespace TravelTipsAPI.Controllers
 
             Day day = daysService.FindDayById(id);
             var dayViewModel = await daysService.DeleteDay(day);
-
-            dayViewModel.TripAttractionOrderCount = taoViewModels.Count;
             dayViewModel.TripAttractionOrders = taoViewModels;
 
             return Ok(dayViewModel);

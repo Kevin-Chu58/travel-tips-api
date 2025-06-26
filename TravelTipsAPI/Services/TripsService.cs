@@ -42,6 +42,13 @@ namespace TravelTipsAPI.Services
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
 
+            foreach (var tripViewModel in tripViewModels)
+            {
+                tripViewModel.NumDays = context
+                    .Days.Where(day => day.TripId == tripViewModel.Id)
+                    .Count();
+            }
+
             return tripViewModels;
         }
 
@@ -56,6 +63,13 @@ namespace TravelTipsAPI.Services
                 .Trips.Where(trip => trip.CreatedBy == id && trip.IsHidden == false)
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
+
+            foreach (var tripViewModel in yourTripViewModels)
+            {
+                tripViewModel.NumDays = context
+                    .Days.Where(day => day.TripId == tripViewModel.Id)
+                    .Count();
+            }
 
             return yourTripViewModels;
         }
@@ -114,17 +128,24 @@ namespace TravelTipsAPI.Services
         /// <summary>
         /// update the trip is public status
         /// </summary>
-        /// <param name="id">trip id</param>
+        /// <param name="tripIds">trip ids</param>
         /// <param name="isPublic">new is public status</param>
         /// <returns>the updated trip</returns>
-        public async Task<TripViewModel> UpdateIsPublicAsync(Trip trip, bool isPublic)
+        public async Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic)
         {
-            trip.IsHidden = false;
-            trip.IsPublic = isPublic;
+            var _tripIds = new List<int>();
+            foreach (var tripId in tripIds)
+            {
+                var trip = context.Trips.Find(tripId);
+                trip!.IsHidden = false;
+                trip.IsPublic = isPublic;
+
+                _tripIds.Add(tripId);
+            }
 
             await context.SaveChangesAsync();
 
-            return (TripViewModel)trip;
+            return _tripIds;
         }
 
         /// <summary>
@@ -133,14 +154,21 @@ namespace TravelTipsAPI.Services
         /// <param name="id">trip id</param>
         /// <param name="isHidden">new is hidden status</param>
         /// <returns>the updated trip</returns>
-        public async Task<TripViewModel> UpdateIsHiddenAsync(Trip trip, bool isHidden)
+        public async Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden)
         {
-            trip.IsHidden = isHidden;
-            trip.IsPublic = false; // when trashed, also make the trip private
+            var _tripIds = new List<int>();
+            foreach (var tripId in tripIds)
+            {
+                var trip = context.Trips.Find(tripId);
+                trip!.IsHidden = isHidden;
+                trip.IsPublic = false; // when trashed, also make the trip private
+
+                _tripIds = [.. _tripIds, tripId];
+            }
 
             await context.SaveChangesAsync();
 
-            return (TripViewModel)trip;
+            return _tripIds;
         }
 
         /// <summary>
@@ -162,11 +190,23 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="id">user id</param>
         /// <param name="tripId">trip id</param>
-        /// <returns>c</returns>
+        /// <returns>true if the owner, false otherwise</returns>
         public bool IsOwner(int id, int tripId)
         {
             var trip = context.Trips.Find(tripId);
             return trip?.CreatedBy == id;
+        }
+
+        /// <summary>
+        /// Whether you are the owner of a list of trips
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <param name="tripIds">trip ids</param>
+        /// <returns>true if the owner of all, false otherwise</returns>
+        public bool IsOwnerList(int id, int[] tripIds)
+        {
+            var myTripIds = GetMyTripIds(id);
+            return tripIds.All(tripId => myTripIds.Contains(tripId));
         }
 
         /// <summary>
@@ -195,7 +235,7 @@ namespace TravelTipsAPI.Services
         {
             var invalidParams = new List<string>();
 
-            if (trip.Name?.Length > 50)
+            if (trip.Name?.Length == 0 || trip.Name?.Length > 50)
                 invalidParams.Add("name");
             if (trip.Description?.Length > 500)
                 invalidParams.Add("description");

@@ -25,6 +25,7 @@ namespace TravelTipsAPI.Controllers
         /// </summary>
         /// <param name="name">attraction name</param>
         /// <param name="osmId">attraction osm id</param>
+        /// <param name="osmType">attraction osm type</param>
         /// <param name="timestamp">timestamp</param>
         /// <returns>a list of attractions that satisfy the condition</returns>
         [HttpGet]
@@ -32,11 +33,17 @@ namespace TravelTipsAPI.Controllers
         [AllowAnonymous]
         public ActionResult<AttractionSearchViewModel> GetAllAttractionsByParams(
             [FromQuery] string? name,
-            int? osmId,
-            int timestamp
+            long? osmId,
+            string? osmType,
+            long timestamp
         )
         {
-            var attractionViewModels = attractionsService.GetAttractionsByParams(name, osmId, null);
+            var attractionViewModels = attractionsService.GetHighlightsByParams(
+                name,
+                osmId,
+                osmType,
+                null
+            );
 
             var attractionSearch = new AttractionSearchViewModel
             {
@@ -59,15 +66,17 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<AttractionSearchViewModel> GetYourAttractionsByParams(
             [FromQuery] string? name,
-            int? osmId,
-            int timestamp
+            long? osmId,
+            string? osmType,
+            long timestamp
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var attractionViewModels = attractionsService.GetAttractionsByParams(
+            var attractionViewModels = attractionsService.GetHighlightsByParams(
                 name,
                 osmId,
+                osmType,
                 userId
             );
 
@@ -78,6 +87,17 @@ namespace TravelTipsAPI.Controllers
             };
 
             return Ok(attractionSearch);
+        }
+
+        [HttpGet]
+        [Route("{id}")]
+        [AllowAnonymous]
+        public ActionResult<
+            IEnumerable<AttractionHighlightsViewModel>
+        > GetAttractionHighlightsByUserId(int id)
+        {
+            var ahViewModels = attractionsService.GetAttractionHighlightsByUserId(id);
+            return Ok(ahViewModels);
         }
 
         /// <summary>
@@ -114,7 +134,11 @@ namespace TravelTipsAPI.Controllers
             if (newAttraction.OsmId <= 0)
                 return BadRequest(Messages.OsmIdRestricted);
 
-            var attractionViewModel = await attractionsService.PostNewAttractionAsync(
+            // validate osm type
+            if (TypeEnums.OsmTypes.All.All(osmType => osmType != newAttraction.OsmType))
+                return BadRequest(Messages.OsmTypeInvalid);
+
+            var attractionViewModel = await attractionsService.PostNewHighlightAsync(
                 userId,
                 newAttraction
             );
@@ -146,8 +170,6 @@ namespace TravelTipsAPI.Controllers
             )
                 return Unauthorized(Messages.AccessDenied);
 
-            var attraction = attractionsService.FindAttractionById(id);
-
             // validate the inputs
             var invalidParams = attractionsService.ValidatePatch(attractionPatch);
             if (invalidParams.Count > 0)
@@ -160,12 +182,40 @@ namespace TravelTipsAPI.Controllers
             if (attractionPatch.OsmId <= 0)
                 return BadRequest(Messages.OsmIdRestricted);
 
-            var attractionViewModel = await attractionsService.PatchAttractionAsync(
-                attraction,
+            // validate osm type
+            if (TypeEnums.OsmTypes.All.All(osmType => osmType != attractionPatch.OsmType))
+                return BadRequest(Messages.OsmTypeInvalid);
+
+            var highlight = attractionsService.FindHighlightById(id);
+
+            var attractionViewModel = await attractionsService.PatchHighlightAsync(
+                highlight,
                 attractionPatch
             );
 
             return Ok(attractionViewModel);
+        }
+
+        /// <summary>
+        /// Delete an existing attraction
+        /// </summary>
+        /// <returns>the attraction deleted</returns>
+        [HttpDelete]
+        [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<int[]>> DeleteAttractionAsync([FromBody] int[] ids)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // verify is the owner of all trip ids
+            var isOwnerList = attractionsService.IsOwnerList(userId, ids);
+            if (!isOwnerList)
+            {
+                return BadRequest(Messages.HighlightUnauthorized);
+            }
+
+            var idsDeleted = await attractionsService.DeleteHighlightAsync(ids);
+            return Ok(idsDeleted);
         }
     }
 }

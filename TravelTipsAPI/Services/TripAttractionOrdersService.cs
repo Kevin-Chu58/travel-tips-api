@@ -13,7 +13,8 @@ using static TravelTipsAPI.Services.BasicSchema;
 /// <param name="context">travel tips context</param>
 public class TripAttractionOrdersService(
     TravelTipsContext context,
-    IPreferRoutesService preferRoutesService
+    IPreferRoutesService preferRoutesService,
+    IAttractionsService attractionsService
 ) : ITripAttractionOrdersService
 {
     // taos
@@ -57,11 +58,6 @@ public class TripAttractionOrdersService(
             .TripAttractionOrders.Where(tao => tao.DayId == dayId)
             .OrderBy(tao => tao.Order)
             .ToList();
-        //var taoViewModels = new List<TripAttractionOrderViewModel>();
-        //foreach (var tao in taos)
-        //{
-        //    taoViewModels.Add(ToViewModel(tao));
-        //}
         return taos;
     }
 
@@ -94,6 +90,10 @@ public class TripAttractionOrdersService(
         // validate estimate time
         if (taoPostViewModel.EstimateTime <= 0)
             throw new Exception(Messages.EstimateTimeRestricted);
+
+        // validate estimate travel time
+        if (taoPostViewModel.EstimateTravelTime <= 0)
+            throw new Exception(Messages.EstimateTravelTimeRestricted);
 
         var taosInSameDay = context
             .TripAttractionOrders.Where(tao => tao.DayId == taoPostViewModel.DayId)
@@ -132,9 +132,14 @@ public class TripAttractionOrdersService(
         if (taoPatchViewModel.EstimateTime <= 0)
             throw new Exception(Messages.EstimateTimeRestricted);
 
-        tao.DayId = taoPatchViewModel.DayId ?? tao.DayId;
-        tao.AttractionId = taoPatchViewModel.AttractionId ?? tao.AttractionId;
+        // validate estimate travel time
+        if (taoPatchViewModel.EstimateTravelTime <= 0)
+            throw new Exception(Messages.EstimateTravelTimeRestricted);
+
+        tao.DayId = tao.DayId;
+        tao.HighlightId = taoPatchViewModel.HighlightId ?? tao.HighlightId;
         tao.EstimateTime = taoPatchViewModel.EstimateTime ?? tao.EstimateTime;
+        tao.EstimateTravelTime = taoPatchViewModel.EstimateTravelTime ?? tao.EstimateTravelTime;
         tao.IsDrivePreferred = taoPatchViewModel.IsDrivePreferred ?? tao.IsDrivePreferred;
         tao.IsBikePreferred = taoPatchViewModel.IsBikePreferred ?? tao.IsBikePreferred;
         tao.IsOnFootPreferred = taoPatchViewModel.IsOnFootPreferred ?? tao.IsOnFootPreferred;
@@ -156,8 +161,8 @@ public class TripAttractionOrdersService(
     )
     {
         var taosInSameDay = context
-            .TripAttractionOrders.Where(tao => tao.DayId == tao.DayId)
-            .OrderBy(tao => tao.Order)
+            .TripAttractionOrders.Where(_tao => _tao.DayId == tao.DayId)
+            .OrderBy(_tao => _tao.Order)
             .ToList();
 
         if (taosInSameDay.Count > 1)
@@ -166,14 +171,19 @@ public class TripAttractionOrdersService(
             if (!isOrderValid)
                 throw new Exception(Messages.NewOrderInvalid);
 
-            // swap the index of tao
-            taosInSameDay.RemoveAt(tao.Order - 1);
+            // Remove the tao by ID instead of index to avoid mismatch
+            taosInSameDay.RemoveAll(t => t.Id == tao.Id);
+
+            // Clamp the newOrder within range
+            newOrder = Math.Max(1, Math.Min(newOrder, taosInSameDay.Count + 1));
+
+            // Insert at the correct position (newOrder is 1-based, so subtract 1)
             taosInSameDay.Insert(newOrder - 1, tao);
 
-            // reorganize taos in the same day
-            foreach (var (_tao, i) in taosInSameDay.Select((tao, i) => (tao, i)))
+            // Reassign orders starting from 1
+            for (int i = 0; i < taosInSameDay.Count; i++)
             {
-                _tao.Order = i + 1;
+                taosInSameDay[i].Order = i + 1;
             }
 
             await context.SaveChangesAsync();
@@ -355,9 +365,12 @@ public class TripAttractionOrdersService(
             Id = tao.Id,
             DayId = tao.DayId,
             Order = tao.Order,
-            AttractionId = tao.AttractionId,
+            Attraction = attractionsService.ToAttractionViewModel(
+                attractionsService.FindHighlightById(tao.HighlightId)
+            ),
             EstimateTime = tao.EstimateTime,
-            CreatedBy = tao.AttractionId,
+            CreatedBy = tao.CreatedBy,
+            EstimateTravelTime = tao.EstimateTravelTime,
             IsDrivePreferred = tao.IsDrivePreferred,
             IsBikePreferred = tao.IsBikePreferred,
             IsOnFootPreferred = tao.IsOnFootPreferred,

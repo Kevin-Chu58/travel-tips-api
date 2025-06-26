@@ -58,7 +58,6 @@ namespace TravelTipsAPI.Controllers
                     taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
                 }
 
-                day.TripAttractionOrderCount = taos.Count();
                 day.TripAttractionOrders = taoViewModels;
             }
 
@@ -118,7 +117,7 @@ namespace TravelTipsAPI.Controllers
             Trip trip = tripsService.FindTripByParams(id);
             var tripViewModel = (TripViewModel)trip;
 
-            var days = daysService.GetDaysByTripId(id);
+            var days = daysService.GetDaysByTripId(id, false);
 
             foreach (var day in days)
             {
@@ -130,7 +129,6 @@ namespace TravelTipsAPI.Controllers
                     taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
                 }
 
-                day.TripAttractionOrderCount = taos.Count();
                 day.TripAttractionOrders = taoViewModels;
             }
 
@@ -213,57 +211,55 @@ namespace TravelTipsAPI.Controllers
         /// <summary>
         /// Make the trip public or private
         /// </summary>
-        /// <param name="id">the id of the trip</param>
         /// <param name="isPublic">the published status</param>
+        /// <param name="tripIds">the ids of the list of trips</param>
         /// <returns>a trip with updated published status</returns>
         [HttpPatch]
-        [Route("{id}/isPublic")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> UpdateTripIsPublic(
-            int id,
-            [FromBody] bool isPublic
+        [Route("isPublic/{isPublic}")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<List<int>>> UpdateTripIsPublic(
+            bool isPublic,
+            [FromBody] int[] tripIds
         )
         {
-            Trip trip;
-            try
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // verify is the owner of all trip ids
+            var isOwnerList = tripsService.IsOwnerList(userId, tripIds);
+            if (!isOwnerList)
             {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
+                return BadRequest(Messages.TripUnauthorized);
             }
 
-            var tripViewModel = await tripsService.UpdateIsPublicAsync(trip, isPublic);
-            return Ok(tripViewModel);
+            var _tripIds = await tripsService.UpdateIsPublicAsync(tripIds, isPublic);
+            return Ok(_tripIds);
         }
 
         /// <summary>
         /// Make the trip trashed or untrashed
         /// </summary>
-        /// <param name="id">the id of the trip</param>
         /// <param name="isHidden">the trashed status</param>
+        /// <param name="tripIds">the ids of the list of trips</param>
         /// <returns>a trip with updated trashed status</returns>
         [HttpPatch]
-        [Route("{id}/isHidden")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> UpdateTripIsHidden(
-            int id,
-            [FromBody] bool isHidden
+        [Route("isHidden/{isHidden}")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<List<int>>> UpdateTripIsHidden(
+            bool isHidden,
+            [FromBody] int[] tripIds
         )
         {
-            Trip trip;
-            try
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // verify is the owner of all trip ids
+            var isOwnerList = tripsService.IsOwnerList(userId, tripIds);
+            if (!isOwnerList)
             {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
+                return BadRequest(Messages.TripUnauthorized);
             }
 
-            var tripViewModel = await tripsService.UpdateIsHiddenAsync(trip, isHidden);
-            return Ok(tripViewModel);
+            var _tripIds = await tripsService.UpdateIsHiddenAsync(tripIds, isHidden);
+            return Ok(_tripIds);
         }
     }
 }

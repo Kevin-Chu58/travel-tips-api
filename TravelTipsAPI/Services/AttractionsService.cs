@@ -14,30 +14,49 @@ namespace TravelTipsAPI.Services
     public class AttractionsService(TravelTipsContext context) : IAttractionsService
     {
         /// <summary>
-        /// Find an attraction by id
+        /// Get an attraction by its id
         /// </summary>
         /// <param name="id">attraction id</param>
-        /// <returns>the attraction with the id</returns>
-        public Attraction FindAttractionById(int id)
+        /// <returns>the attraction with this id</returns>
+        public Attraction GetAttractionById(int id)
         {
             var attraction = context.Attractions.Find(id);
 
             if (attraction == null)
-                throw new Exception(Messages.AttractionNotFound);
+                throw new FileNotFoundException(Messages.AttractionNotFound);
 
             return attraction;
         }
 
         /// <summary>
-        /// Get a list of attractions by search params
+        /// Find a highlight by id
+        /// </summary>
+        /// <param name="id">highlight id</param>
+        /// <returns>the highlight with the id</returns>
+        public Highlight FindHighlightById(int id)
+        {
+            var highlight = context
+                .Highlights.Include(h => h.Attraction)
+                .FirstOrDefault(h => h.Id == id);
+
+            if (highlight == null)
+                throw new Exception(Messages.AttractionNotFound);
+
+            return highlight;
+        }
+
+        /// <summary>
+        /// Get a list of highlights by search params
         /// </summary>
         /// <param name="name">name to search</param>
         /// <param name="osmId">osm id</param>
+        /// <param name="osmType">osm type</param>
         /// <param name="ownerId">user id</param>
-        /// <returns>a list of attractions that satisfy the search params</returns>
-        public IEnumerable<AttractionViewModel> GetAttractionsByParams(
+        /// <returns>a list of highlights that satisfy the search params</returns>
+        public IEnumerable<AttractionViewModel> GetHighlightsByParams(
             string? name,
-            int? osmId,
+            long? osmId,
+            string? osmType,
             int? ownerId
         )
         {
@@ -47,53 +66,89 @@ namespace TravelTipsAPI.Services
 
             IEnumerable<Attraction> attractions = context.Attractions.ToList();
 
-            if (name != null && name.Length < SearchConstraints.ATTRACTION_SEARCH_MIN_LENGTH)
+            if (name != null)
             {
-                attractions = [];
-            }
-            else
-            {
-                if (name != null)
+                if (name.Length < SearchConstraints.ATTRACTION_SEARCH_MIN_LENGTH)
+                    attractions = [];
+                else
                     attractions = attractions.Where(a => a.Name.ToLower().Contains(name));
             }
-
-            if (ownerId != null)
-                attractions = attractions.Where(a => a.CreatedBy == ownerId);
             if (osmId != null)
                 attractions = attractions.Where(a => a.OsmId == osmId);
+            if (osmType != null)
+                attractions = attractions.Where(a => a.OsmType == osmType);
 
-            attractionViewModels = attractions.Select(a => (AttractionViewModel)a).ToList();
+            foreach (var attraction in attractions)
+            {
+                var highlights = context.Highlights.Where(h => h.AttractionId == attraction.Id);
+
+                // filter by the createdBy param
+                if (ownerId != null)
+                    highlights = highlights.Where(h => h.CreatedBy == ownerId);
+
+                var viewModels = new List<AttractionViewModel>();
+
+                foreach (var highlight in highlights)
+                {
+                    viewModels.Add(ToAttractionViewModel(highlight, attraction));
+                }
+
+                attractionViewModels = [.. attractionViewModels, .. viewModels];
+            }
 
             return attractionViewModels;
         }
 
         /// <summary>
-        /// Get my attraction ids
+        /// Get attraction highlights by user id
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>a list of my attraction ids</returns>
-        public IEnumerable<int> GetMyAttractions(int id)
+        /// <returns>a list of attraction highlights owned by the user</returns>
+        public IEnumerable<AttractionHighlightsViewModel> GetAttractionHighlightsByUserId(int id)
         {
-            var myAttractionIds = context
-                .Attractions.Where(a => a.CreatedBy == id)
-                .Select(a => a.Id)
+            var highlightViewModels = context
+                .Highlights.Where(h => h.CreatedBy == id)
+                .Select(h => (HighlightViewModel)h)
                 .ToList();
 
-            return myAttractionIds;
+            var attractionIds = highlightViewModels.Select(h => h.AttractionId).Distinct().ToList();
+
+            var ahViewModels = context
+                .Attractions.Where(a => attractionIds.Contains(a.Id))
+                .Select(a => (AttractionHighlightsViewModel)a)
+                .ToList();
+
+            foreach (var ahViewModel in ahViewModels)
+            {
+                ahViewModel.Highlights =
+                [
+                    .. highlightViewModels.Where(h => h.AttractionId == ahViewModel.Id),
+                ];
+            }
+
+            return ahViewModels;
         }
 
         /// <summary>
-        /// Create a new attraction
+        /// Get my highlight ids
         /// </summary>
-        /// <param name="createdBy">user id</param>
-        /// <param name="attractionPost">new attraction</param>
-        /// <returns>the new attraction created</returns>
+        /// <param name="id">user id</param>
+        /// <returns>a list of my highlight ids</returns>
+        public IEnumerable<int> GetMyHighlights(int id)
+        {
+            var myHighlightIds = context
+                .Highlights.Where(h => h.CreatedBy == id)
+                .Select(h => h.Id)
+                .ToList();
+
+            return myHighlightIds;
+        }
+
         public async Task<AttractionViewModel> PostNewAttractionAsync(
-            int createdBy,
-            AttractionPostViewModel attractionPost
+            AttractionViewModel attraction
         )
         {
-            var newAttraction = attractionPost.ToAttraction(createdBy);
+            var newAttraction = (Attraction)attraction;
 
             await context.Attractions.AddAsync(newAttraction);
             await context.SaveChangesAsync();
@@ -102,25 +157,190 @@ namespace TravelTipsAPI.Services
         }
 
         /// <summary>
-        /// Update an attraction you own
+        /// Create a new highlight
         /// </summary>
-        /// <param name="attraction">attraction</param>
+        /// <param name="createdBy">user id</param>
+        /// <param name="attractionPost">new attraction</param>
+        /// <returns>the new attraction created</returns>
+        public async Task<AttractionViewModel> PostNewHighlightAsync(
+            int? createdBy,
+            AttractionPostViewModel attractionPost
+        )
+        {
+            // check if osmId exists
+            var attraction = context.Attractions.FirstOrDefault(
+                (a) => a.OsmId == attractionPost.OsmId
+            );
+            var isDefault = attractionPost.Description is null && attractionPost.LinkId is null;
+
+            // if exist, check whether is default
+            if (attraction != null)
+            {
+                // check if attraction has changed
+                var attractionViewModel = (AttractionViewModel)attractionPost;
+                var isDeprecated = HasAttractionChanged(attraction, attractionViewModel);
+
+                if (isDeprecated)
+                {
+                    PatchAttractionAsync(attraction, attractionViewModel);
+                    await PatchHighlightsDeprecated(attraction.Id);
+                }
+
+                // if attraction exists but default highlight does not, create new default highlight
+                var defaultHighlight = GetDefaultHighlight(attraction.Id);
+                if (defaultHighlight is null)
+                {
+                    defaultHighlight = attractionPost.ToHighlight(attraction.Id);
+
+                    await context.Highlights.AddAsync(defaultHighlight);
+                    await context.SaveChangesAsync();
+                }
+
+                // if is default, return default highlight
+                if (isDefault)
+                {
+                    return ToAttractionViewModel(defaultHighlight, attraction);
+                }
+                // if is not default, create a custom highlight and return it
+                else
+                {
+                    var newHighlight = attractionPost.ToHighlight(attraction.Id, createdBy);
+
+                    await context.Highlights.AddAsync(newHighlight);
+                    await context.SaveChangesAsync();
+
+                    return ToAttractionViewModel(newHighlight, attraction);
+                }
+            }
+            // if does not exist, create the attraction first
+            else
+            {
+                var newAttraction = attractionPost.ToAttraction();
+                await context.Attractions.AddAsync(newAttraction);
+                await context.SaveChangesAsync();
+
+                var newDefaultHighlight = attractionPost.ToHighlight(newAttraction.Id);
+                await context.Highlights.AddAsync(newDefaultHighlight);
+
+                Highlight highlight;
+
+                if (isDefault)
+                {
+                    highlight = newDefaultHighlight;
+                }
+                else
+                {
+                    highlight = attractionPost.ToHighlight(newAttraction.Id, createdBy);
+                    await context.Highlights.AddAsync(highlight);
+                }
+
+                await context.SaveChangesAsync();
+                return ToAttractionViewModel(highlight, newAttraction);
+            }
+        }
+
+        /// <summary>
+        /// update the attraction information, does not save upon changes yet!
+        /// </summary>
+        /// <param name="attraction">attraction to be updated</param>
+        /// <param name="attractionViewModel">updated attraction info</param>
+        /// <returns>the updated attraction</returns>
+        public void PatchAttractionAsync(
+            Attraction attraction,
+            AttractionViewModel attractionViewModel
+        )
+        {
+            attraction.Lng = attractionViewModel.Lng;
+            attraction.Lat = attractionViewModel.Lat;
+            attraction.Name = attractionViewModel.Name;
+            attraction.Address = attractionViewModel.Address;
+        }
+
+        /// <summary>
+        /// Update a highlight you own
+        /// </summary>
+        /// <param name="highlight">highlight</param>
         /// <param name="attractionPatch">attraction detail be updated</param>
         /// <returns>the attraction up to date</returns>
-        public async Task<AttractionViewModel> PatchAttractionAsync(
-            Attraction attraction,
+        public async Task<AttractionViewModel> PatchHighlightAsync(
+            Highlight highlight,
             AttractionPatchViewModel attractionPatch
         )
         {
-            attraction.Name = attractionPatch.Name?.Trim() ?? attraction.Name;
-            attraction.Description = attractionPatch.Description?.Trim() ?? attraction.Description;
-            attraction.Address = attractionPatch.Address?.Trim() ?? attraction.Address;
-            attraction.OsmId = attractionPatch.OsmId ?? attraction.OsmId;
-            attraction.LinkId = attractionPatch.LinkId ?? attraction.LinkId;
+            // check if attraction has changed
+            var attraction = highlight.Attraction;
+            var attractionViewModel = (AttractionViewModel)attractionPatch;
+            var isDeprecated = HasAttractionChanged(attraction, attractionViewModel);
+
+            if (isDeprecated)
+            {
+                PatchAttractionAsync(attraction, attractionViewModel);
+                await PatchHighlightsDeprecated(attraction.Id);
+            }
+
+            // change highlight
+            highlight.Description = attractionPatch.Description?.Trim() ?? highlight.Description;
+            highlight.LinkId = attractionPatch.LinkId ?? highlight.LinkId;
+            highlight.IsDeprecated = false;
 
             await context.SaveChangesAsync();
 
-            return (AttractionViewModel)attraction;
+            return ToAttractionViewModel(highlight);
+        }
+
+        /// <summary>
+        /// Mark all the highlights of a certain attraction to deprecated
+        /// </summary>
+        /// <param name="attractionId">attraction id</param>
+        /// <returns>the number of highlights marked as deprecated</returns>
+        public async Task<int> PatchHighlightsDeprecated(int attractionId)
+        {
+            var highlights = context.Highlights.Where(h =>
+                h.AttractionId == attractionId && h.IsDeprecated == false
+            );
+
+            foreach (var highlight in highlights)
+            {
+                highlight.IsDeprecated = true;
+            }
+
+            await context.SaveChangesAsync();
+
+            return highlights.Count();
+        }
+
+        /// <summary>
+        /// Delete a highlight
+        /// </summary>
+        /// <param name="highlightIds">the highlight ids to be deleted</param>
+        /// <returns>the deleted attraction</returns>
+        public async Task<int[]> DeleteHighlightAsync(int[] highlightIds)
+        {
+            // replace all usage of this attraction with the default attraction
+            var highlights = context.Highlights.Where(h => highlightIds.Contains(h.Id)).ToList();
+            var defaultHighlights = GetDefaultHighlights(highlights);
+
+            foreach (var highlight in highlights)
+            {
+                var taos = context.TripAttractionOrders.Where(tao =>
+                    tao.HighlightId == highlight.Id
+                );
+                var defaultHighlight = defaultHighlights.First(dh =>
+                    dh.AttractionId == highlight.AttractionId
+                );
+
+                foreach (var tao in taos)
+                {
+                    tao.HighlightId = defaultHighlight!.Id;
+                }
+
+                // delete the attraction
+                context.Highlights.Remove(highlight);
+            }
+
+            await context.SaveChangesAsync();
+
+            return highlightIds;
         }
 
         /// <summary>
@@ -136,7 +356,7 @@ namespace TravelTipsAPI.Services
                 invalidParams.Add("name");
             if (newAttraction.Description?.Length > 500)
                 invalidParams.Add("description");
-            if (newAttraction.Address.Length > 100)
+            if (newAttraction.Address.Length > 200)
                 invalidParams.Add("address");
 
             return invalidParams;
@@ -151,14 +371,70 @@ namespace TravelTipsAPI.Services
         {
             var invalidParams = new List<string>();
 
-            if (attraction.Name?.Length > 50)
-                invalidParams.Add("name");
             if (attraction.Description?.Length > 500)
                 invalidParams.Add("description");
-            if (attraction.Address?.Length > 100)
-                invalidParams.Add("address");
 
             return invalidParams;
+        }
+
+        public AttractionViewModel ToAttractionViewModel(
+            Highlight highlight,
+            Attraction? attraction = null
+        )
+        {
+            var _attraction =
+                attraction ?? context.Attractions.First(a => a.Id == highlight.AttractionId);
+            var attractionViewModel = (AttractionViewModel)_attraction!;
+
+            // highlights
+            attractionViewModel.Id = highlight.Id;
+            attractionViewModel.IsDeprecated = highlight.IsDeprecated;
+            attractionViewModel.Description = highlight.Description;
+            attractionViewModel.CreatedBy = highlight.CreatedBy;
+            attractionViewModel.LinkId = highlight.LinkId;
+
+            return attractionViewModel;
+        }
+
+        public bool HasAttractionChanged(
+            Attraction attraction,
+            AttractionViewModel attractionViewModel
+        )
+        {
+            return attraction.Lng != attractionViewModel.Lng
+                || attraction.Lat != attractionViewModel.Lat
+                || attraction.Name != attractionViewModel.Name
+                || attraction.Address != attractionViewModel.Address;
+        }
+
+        private Highlight? GetDefaultHighlight(int attractionId)
+        {
+            return context.Highlights.FirstOrDefault(h =>
+                h.AttractionId == attractionId && h.CreatedBy == null
+            );
+        }
+
+        private IEnumerable<Highlight?> GetDefaultHighlights(IEnumerable<Highlight> highlights)
+        {
+            var attractionIds = highlights.Select(h => h.AttractionId).Distinct().ToList();
+            return
+            [
+                .. context.Highlights.Where(h =>
+                    attractionIds.Contains(h.AttractionId) && h.CreatedBy == null
+                ),
+            ];
+        }
+
+        /// <summary>
+        /// Whether you are the owner of a list of highlights
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <param name="highlightIds">highlight ids</param>
+        /// <returns>true if the owner of all, false otherwise</returns>
+        public bool IsOwnerList(int id, int[] highlightIds)
+        {
+            var myHighlightIds = GetMyHighlights(id);
+            return highlightIds.All(tripId => myHighlightIds.Contains(tripId));
         }
     }
 }

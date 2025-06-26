@@ -61,8 +61,8 @@ namespace TravelTipsAPI.Authorization
                 return;
             }
 
-            // caching for easy reuse
-            context.HttpContext.Items.Add("user_id", UserId);
+            // caching for easy reuse, nothing happen if already exist
+            context.HttpContext.Items.TryAdd("user_id", UserId);
 
             if (Resource != Resources.NONE)
             {
@@ -100,7 +100,7 @@ namespace TravelTipsAPI.Authorization
                     return yourLinks.Any(linkId => linkId == ResourceId);
 
                 case Resources.ATTRACTIONS:
-                    yourAttractions = _attractionsService.GetMyAttractions(UserId);
+                    yourAttractions = _attractionsService.GetMyHighlights(UserId);
                     return yourAttractions.Any(aId => aId == ResourceId);
 
                 case Resources.PREFER_ROUTES:

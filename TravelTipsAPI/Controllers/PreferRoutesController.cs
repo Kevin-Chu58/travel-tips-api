@@ -17,6 +17,7 @@ namespace TravelTipsAPI.Controllers
     [Route("api/[controller]")]
     public class PreferRoutesController(
         IPreferRoutesService preferRoutesService,
+        IAttractionsService attractionsService,
         ILinksService linksService
     ) : TravelTipsControllerBase
     {
@@ -38,12 +39,12 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<PreferRouteSearchViewModel> GetPreferRoutesByParams(
             [FromQuery] int? type,
-            int? departOsmId,
-            int? arrivalOsmId,
+            long? departOsmId,
+            long? arrivalOsmId,
             int? estimateTimeMin,
             int? estimateTimeMax,
             bool? isOwner,
-            int timestamp
+            long timestamp
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -111,6 +112,19 @@ namespace TravelTipsAPI.Controllers
             if (newPreferRoute.EstimateTime <= 0)
                 return BadRequest(Messages.EstimateTimeRestricted);
 
+            // check if attractions have changed
+            try
+            {
+                await UpdateIsDeprecated(
+                    newPreferRoute.DepartAttraction,
+                    newPreferRoute.ArrivalAttraction
+                );
+            }
+            catch (BadHttpRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
             var preferRouteViewModel = await preferRoutesService.PostPreferRoutesAsync(
                 userId,
                 newPreferRoute
@@ -159,6 +173,19 @@ namespace TravelTipsAPI.Controllers
             // validate estimate time
             if (preferRoutePatch.EstimateTime <= 0)
                 return BadRequest(Messages.EstimateTimeRestricted);
+
+            // check if attractions have changed
+            try
+            {
+                await UpdateIsDeprecated(
+                    preferRoutePatch.DepartAttraction,
+                    preferRoutePatch.ArrivalAttraction
+                );
+            }
+            catch (BadHttpRequestException ex)
+            {
+                return BadRequest(ex.Message);
+            }
 
             var preferRoute = preferRoutesService.FindPreferRouteById(id);
 
@@ -271,6 +298,79 @@ namespace TravelTipsAPI.Controllers
             var routeTypeViewModel = await preferRoutesService.PatchRouteTypeAsync(routeType, name);
 
             return Ok(routeTypeViewModel);
+        }
+
+        private async Task UpdateIsDeprecated(
+            AttractionViewModel? departAttraction,
+            AttractionViewModel? arrivalAttraction
+        )
+        {
+            var isDeprecated = false;
+
+            // if depart attraction does not exist, create it
+            if (departAttraction != null)
+            {
+                try
+                {
+                    // validate osm id
+                    if (departAttraction.OsmId <= 0)
+                        throw new BadHttpRequestException(Messages.OsmIdRestricted);
+
+                    // validate osm type
+                    if (TypeEnums.OsmTypes.All.All(osmType => osmType != departAttraction.OsmType))
+                        throw new BadHttpRequestException(Messages.OsmTypeInvalid);
+
+                    var attraction = attractionsService.GetAttractionById(
+                        departAttraction.Id ?? new int()
+                    );
+                    isDeprecated |= attractionsService.HasAttractionChanged(
+                        attraction,
+                        departAttraction
+                    );
+                    if (isDeprecated)
+                    {
+                        attractionsService.PatchAttractionAsync(attraction, departAttraction);
+                        await preferRoutesService.PatchPreferRoutesDeprecated(attraction.Id);
+                    }
+                }
+                catch (FileNotFoundException)
+                {
+                    await attractionsService.PostNewAttractionAsync(departAttraction);
+                }
+            }
+
+            // if arrival attraction does not exist, create it
+            if (arrivalAttraction != null)
+            {
+                try
+                {
+                    // validate osm id
+                    if (arrivalAttraction.OsmId <= 0)
+                        throw new BadHttpRequestException(Messages.OsmIdRestricted);
+
+                    // validate osm type
+                    if (TypeEnums.OsmTypes.All.All(osmType => osmType != arrivalAttraction.OsmType))
+                        throw new BadHttpRequestException(Messages.OsmTypeInvalid);
+
+                    var attraction = attractionsService.GetAttractionById(
+                        arrivalAttraction.Id ?? new int()
+                    );
+                    isDeprecated |= attractionsService.HasAttractionChanged(
+                        attraction,
+                        arrivalAttraction
+                    );
+
+                    if (isDeprecated)
+                    {
+                        attractionsService.PatchAttractionAsync(attraction, arrivalAttraction);
+                        await preferRoutesService.PatchPreferRoutesDeprecated(attraction.Id);
+                    }
+                }
+                catch (FileNotFoundException)
+                {
+                    await attractionsService.PostNewAttractionAsync(arrivalAttraction);
+                }
+            }
         }
     }
 }

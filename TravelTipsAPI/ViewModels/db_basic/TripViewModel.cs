@@ -10,6 +10,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastUpdatedAt { get; set; }
+        public bool IsPublic { get; set; }
+        public int? NumDays { get; set; }
 
         public static explicit operator TripViewModel(Trip trip)
         {
@@ -21,6 +23,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 CreatedBy = trip.CreatedBy,
                 CreatedAt = trip.CreatedAt,
                 LastUpdatedAt = trip.LastUpdatedAt,
+                IsPublic = trip.IsPublic,
             };
         }
     }

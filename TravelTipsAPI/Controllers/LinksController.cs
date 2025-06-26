@@ -28,7 +28,7 @@ namespace TravelTipsAPI.Controllers
         [IsOwner(Resource = Resources.NONE)]
         public ActionResult<LinkSearchViewModel> GetLinkSearchByName(
             [FromQuery] string name,
-            int timestamp
+            long timestamp
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
