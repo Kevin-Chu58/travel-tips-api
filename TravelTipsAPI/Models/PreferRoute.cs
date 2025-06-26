@@ -9,17 +9,17 @@ public partial class PreferRoute
 
     public int Type { get; set; }
 
-    public int CreatedBy { get; set; }
-
-    public int EstimateTime { get; set; }
-
-    public int? LinkId { get; set; }
+    public bool IsDeprecated { get; set; }
 
     public int DepartAttractionId { get; set; }
 
     public int ArrivalAttractionId { get; set; }
 
-    public bool IsDeprecated { get; set; }
+    public int CreatedBy { get; set; }
+
+    public int EstimateTime { get; set; }
+
+    public int? LinkId { get; set; }
 
     public virtual Attraction ArrivalAttraction { get; set; } = null!;
 

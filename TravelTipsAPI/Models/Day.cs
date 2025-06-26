@@ -15,11 +15,11 @@ public partial class Day
 
     public TimeOnly End { get; set; }
 
-    public int TripId { get; set; }
-
     public bool IsOverNight { get; set; }
 
     public int CreatedBy { get; set; }
+
+    public int TripId { get; set; }
 
     public virtual User CreatedByNavigation { get; set; } = null!;
 

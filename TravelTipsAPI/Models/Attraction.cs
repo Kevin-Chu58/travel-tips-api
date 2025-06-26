@@ -11,13 +11,13 @@ public partial class Attraction
 
     public string Address { get; set; } = null!;
 
-    public long OsmId { get; set; }
-
-    public string OsmType { get; set; } = null!;
+    public decimal Lng { get; set; }
 
     public decimal Lat { get; set; }
 
-    public decimal Lng { get; set; }
+    public long OsmId { get; set; }
+
+    public string OsmType { get; set; } = null!;
 
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 

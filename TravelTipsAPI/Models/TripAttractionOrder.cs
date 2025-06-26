@@ -11,19 +11,19 @@ public partial class TripAttractionOrder
 
     public int Order { get; set; }
 
+    public int HighlightId { get; set; }
+
     public int EstimateTime { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public int EstimateTravelTime { get; set; }
 
     public bool IsDrivePreferred { get; set; }
 
     public bool IsBikePreferred { get; set; }
 
     public bool IsOnFootPreferred { get; set; }
-
-    public int CreatedBy { get; set; }
-
-    public int HighlightId { get; set; }
-
-    public int EstimateTravelTime { get; set; }
 
     public virtual User CreatedByNavigation { get; set; } = null!;
 
