@@ -27,7 +27,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish -c Release --property PublishDir="${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -38,11 +38,6 @@ jobs:
   deploy:
     runs-on: windows-latest
     needs: build
-    env:
-      SQLCONNSTR_TravelTips: ${{ secrets.SQLCONNSTR_TravelTips }}
-    environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
     permissions:
       id-token: write #This is required for requesting the JWT
       contents: read #This is required for actions/checkout
@@ -56,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_13BAB2D5627C45EBB7E6C937C4EB9E7C }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_9C251825D8A84CAEAFACDBB063CA6771 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C080153E1F14480DBB79EED918DB0B02 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_45ED1A2A219C4883BEDCE3655D6B95B1 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_5CA53DAB07284624A99341C12A3E4082 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_58B4F7F82D26480B9A11CE62FD4F8B41 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -67,3 +62,4 @@ jobs:
           app-name: 'travel-tips-api'
           slot-name: 'Production'
           package: .
+          
