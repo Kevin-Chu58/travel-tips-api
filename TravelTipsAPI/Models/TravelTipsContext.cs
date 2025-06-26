@@ -293,7 +293,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D93091EB9").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D9087D44E").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
