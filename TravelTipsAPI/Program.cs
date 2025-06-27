@@ -54,16 +54,16 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddServices();
 
 // Add CORS policy
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(
-        "AllowLocalhost5173",
-        policy =>
-        {
-            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod();
-        }
-    );
-});
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy(
+//        "AllowLocalhost5173",
+//        policy =>
+//        {
+//            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod();
+//        }
+//    );
+//});
 
 var app = builder.Build();
 
@@ -74,7 +74,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowLocalhost5173");
+//app.UseCors("AllowLocalhost5173");
 
 app.UseHttpsRedirection();
 
