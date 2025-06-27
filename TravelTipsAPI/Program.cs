@@ -54,6 +54,20 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddServices();
 
 // Add CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        "AllowProduction",
+        policy =>
+        {
+            policy
+                .WithOrigins("https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net")
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+        }
+    );
+});
+
 //builder.Services.AddCors(options =>
 //{
 //    options.AddPolicy(
@@ -73,6 +87,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors("AllowProduction");
 
 //app.UseCors("AllowLocalhost5173");
 
