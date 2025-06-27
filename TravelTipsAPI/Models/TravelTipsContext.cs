@@ -229,7 +229,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("TripAttractionOrders", "db_basic");
 
-            entity.HasIndex(e => new { e.DayId, e.Order }, "unique_day_order").IsUnique();
+            entity.HasIndex(e => new { e.DayId, e.Order }, "idx_tao_day_order");
 
             entity.Property(e => e.IsBikePreferred).HasDefaultValue(true);
             entity.Property(e => e.IsDrivePreferred).HasDefaultValue(true);
