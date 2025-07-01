@@ -61,7 +61,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins("https://ashy-cliff-021632a1e.2.azurestaticapps.net")
+                .WithOrigins("https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net")
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
