@@ -8,10 +8,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public required string Username { get; set; }
         public required string Email { get; set; }
 
-        public static explicit operator UserViewModel?(User? user)
+        public static explicit operator UserViewModel(User user)
         {
-            if (user == null) return null;
-
             var userViewModel = new UserViewModel
             {
                 Id = user.Id,

@@ -320,7 +320,7 @@ namespace TravelTipsAPI.Controllers
                     if (TypeEnums.OsmTypes.All.All(osmType => osmType != departAttraction.OsmType))
                         throw new BadHttpRequestException(Messages.OsmTypeInvalid);
 
-                    var attraction = attractionsService.GetAttractionById(
+                    var attraction = attractionsService.FindAttractionById(
                         departAttraction.Id ?? new int()
                     );
                     isDeprecated |= attractionsService.HasAttractionChanged(
@@ -352,7 +352,7 @@ namespace TravelTipsAPI.Controllers
                     if (TypeEnums.OsmTypes.All.All(osmType => osmType != arrivalAttraction.OsmType))
                         throw new BadHttpRequestException(Messages.OsmTypeInvalid);
 
-                    var attraction = attractionsService.GetAttractionById(
+                    var attraction = attractionsService.FindAttractionById(
                         arrivalAttraction.Id ?? new int()
                     );
                     isDeprecated |= attractionsService.HasAttractionChanged(

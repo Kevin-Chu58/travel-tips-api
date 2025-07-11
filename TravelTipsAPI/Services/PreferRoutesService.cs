@@ -79,9 +79,9 @@ namespace TravelTipsAPI.Services
                     Id = pr.Id,
                     Type = (RouteTypeViewModel)FindRouteTypeById(pr.Type),
                     DepartAttraction = (AttractionViewModel)
-                        attractionsService.GetAttractionById(pr.DepartAttractionId),
+                        attractionsService.FindAttractionById(pr.DepartAttractionId),
                     ArrivalAttraction = (AttractionViewModel)
-                        attractionsService.GetAttractionById(pr.ArrivalAttractionId),
+                        attractionsService.FindAttractionById(pr.ArrivalAttractionId),
                     EstimateTime = pr.EstimateTime,
                     LinkId = pr.LinkId,
                     CreatedBy = pr.CreatedBy,

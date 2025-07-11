@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using TravelTipsAPI.Middleware;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Services;
 
@@ -10,8 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddDbContext<TravelTipsContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
-//options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
 );
 
 // Add authentication to the container.
@@ -57,27 +58,19 @@ builder.Services.AddServices();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
-        "AllowProduction",
+        "AllowAllKnownOrigins",
         policy =>
         {
             policy
-                .WithOrigins("https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net")
+                .WithOrigins(
+                    "https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net",
+                    "http://localhost:5173"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
     );
 });
-
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy(
-//        "AllowLocalhost5173",
-//        policy =>
-//        {
-//            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod();
-//        }
-//    );
-//});
 
 var app = builder.Build();
 
@@ -88,13 +81,15 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowProduction");
-
-//app.UseCors("AllowLocalhost5173");
+app.UseCors("AllowAllKnownOrigins");
 
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+// middleware
+app.UseMiddleware<EnsureUserMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();

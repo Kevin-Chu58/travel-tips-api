@@ -20,6 +20,22 @@ namespace TravelTipsAPI.Controllers
         ILinksService linksService
     ) : TravelTipsControllerBase
     {
+        [HttpGet]
+        [Route("v2/{id}")]
+        [AllowAnonymous]
+        public ActionResult<Attraction2ViewModel> GetAttractionById(int id)
+        {
+            try
+            {
+                var attraction = attractionsService.FindAttractionById(id);
+                return Ok((Attraction2ViewModel)attraction);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
         /// <summary>
         /// Get the search result contains a list of attractions with filter params
         /// </summary>

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
@@ -16,11 +17,14 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="id">user id</param>
         /// <returns>the user with the id, return null if not found</returns>
-        public UserViewModel? GetUserById(int id)
+        public User GetUserById(int id)
         {
             var user = context.Users.Find(id);
 
-            return (UserViewModel)user;
+            if (user == null)
+                throw new Exception(Messages.UserNotFound);
+
+            return user;
         }
 
         /// <summary>
@@ -28,21 +32,11 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="userId">auth0 id</param>
         /// <returns>the user with the auth0 id</returns>
-        public async Task<UserViewModel> GetUserByUserId(string userId)
+        public User? GetUserByUserId(string userId)
         {
             var user = context.Users.FirstOrDefault(user => user.UserId == userId);
 
-            UserViewModel userViewModel;
-            if (user == null) 
-            { 
-                userViewModel = await PostNewUserAsync(userId);
-            }
-            else
-            {
-                userViewModel = (UserViewModel)user;
-            }
-
-            return userViewModel;
+            return user;
         }
 
         /// <summary>
@@ -67,7 +61,10 @@ namespace TravelTipsAPI.Services
         /// <param name="id">user id</param>
         /// <param name="userPatchViewModel">user information to update</param>
         /// <returns>the update user with rhe id</returns>
-        public async Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel userPatchViewModel)
+        public async Task<UserViewModel> UpdateUserAsync(
+            int id,
+            UserPatchViewModel userPatchViewModel
+        )
         {
             var user = context.Users.Find(id) ?? throw UserIdNotFoundException(id);
             user.Email = userPatchViewModel.Email ?? user.Email;
@@ -76,7 +73,7 @@ namespace TravelTipsAPI.Services
 
             return (UserViewModel)user;
         }
-        
+
         /// <summary>
         /// Get the exception of user id not found
         /// </summary>

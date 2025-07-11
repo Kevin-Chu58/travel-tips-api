@@ -18,7 +18,7 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="id">attraction id</param>
         /// <returns>the attraction with this id</returns>
-        public Attraction GetAttractionById(int id)
+        public Attraction FindAttractionById(int id)
         {
             var attraction = context.Attractions.Find(id);
 
@@ -127,6 +127,35 @@ namespace TravelTipsAPI.Services
             }
 
             return ahViewModels;
+        }
+
+        /// <summary>
+        /// Get attraction highlights by attraction id
+        /// </summary>
+        /// <param name="id">attraction id</param>
+        /// <param name="userId">user id</param>
+        /// <returns>an attraction highlights owned by the user</returns>
+        public AttractionHighlightsViewModel GetAttractionHighlightsByAttractionId(
+            int id,
+            int userId
+        )
+        {
+            var highlightViewModels = context
+                .Highlights.Where(h => h.AttractionId == id && h.CreatedBy == userId)
+                .Select(h => (HighlightViewModel)h)
+                .ToList();
+
+            var ahViewModel = context
+                .Attractions.Where(a => a.Id == id)
+                .Select(a => (AttractionHighlightsViewModel)a)
+                .FirstOrDefault();
+
+            if (ahViewModel == null)
+                throw new FileNotFoundException(Messages.AttractionNotFound);
+
+            ahViewModel.Highlights = [.. highlightViewModels];
+
+            return ahViewModel;
         }
 
         /// <summary>
@@ -371,7 +400,7 @@ namespace TravelTipsAPI.Services
         {
             var invalidParams = new List<string>();
 
-            if (attraction.Description?.Length > 500)
+            if (attraction.Description?.Length > 1000)
                 invalidParams.Add("description");
 
             return invalidParams;

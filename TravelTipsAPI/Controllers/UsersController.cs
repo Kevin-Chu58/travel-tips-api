@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
+using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Services;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -20,21 +21,19 @@ namespace TravelTipsAPI.Controllers
         /// <returns>user basic information of the current user</returns>
         [HttpGet]
         [Route("me")]
-        public async Task<ActionResult<UserViewModel>> GetCurrentUserAsync()
+        [IsOwner(Resource = Resources.NONE)]
+        public ActionResult<UserViewModel> GetCurrentUser()
         {
             try
             {
-                // Get Auth0 UserId
-                string? userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (userId == null)
-                    return NotFound(Messages.UserIdNotFound);
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                UserViewModel userViewModel = await usersService.GetUserByUserId(userId);
-                return Ok(userViewModel);
+                var user = usersService.GetUserById(userId);
+                return Ok((UserViewModel)user);
             }
             catch (Exception ex)
             {
-                return BadRequest(new { Message = ex.Message, Stacktrace = ex.StackTrace });
+                return BadRequest(ex.Message);
             }
         }
     }

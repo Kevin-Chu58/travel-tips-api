@@ -7,8 +7,8 @@ namespace TravelTipsAPI.Services
     {
         public interface IUsersService
         {
-            UserViewModel? GetUserById(int id);
-            Task<UserViewModel> GetUserByUserId(string userId);
+            User GetUserById(int id);
+            User? GetUserByUserId(string userId);
             Task<UserViewModel> PostNewUserAsync(string userId);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
         }
@@ -54,7 +54,7 @@ namespace TravelTipsAPI.Services
 
         public interface IAttractionsService
         {
-            Attraction GetAttractionById(int id);
+            Attraction FindAttractionById(int id);
             Highlight FindHighlightById(int id);
             IEnumerable<AttractionViewModel> GetHighlightsByParams(
                 string? name,
@@ -90,6 +90,12 @@ namespace TravelTipsAPI.Services
                 AttractionViewModel attractionViewModel
             );
             bool IsOwnerList(int id, int[] highlightIds);
+        }
+
+        public interface IHighlightsService
+        {
+            Highlight FindHighlightById(int id);
+            IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId);
         }
 
         public interface IPreferRoutesService

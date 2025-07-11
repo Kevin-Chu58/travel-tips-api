@@ -25,8 +25,9 @@ namespace TravelTipsAPI.Authorization
             _userRolesService =
                 context.HttpContext.RequestServices.GetRequiredService<IUserRolesService>();
 
-            var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
+            var auth0Id =
+                context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             var isAuthorized = UserHasRole(Role);
             if (!isAuthorized)
