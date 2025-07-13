@@ -9,7 +9,7 @@ namespace TravelTipsAPI.Services
         {
             User GetUserById(int id);
             User? GetUserByUserId(string userId);
-            Task<UserViewModel> PostNewUserAsync(string userId);
+            Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
         }
 
@@ -96,6 +96,14 @@ namespace TravelTipsAPI.Services
         {
             Highlight FindHighlightById(int id);
             IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId);
+            HighlightViewModel GetHighlightViewModel(Highlight highlight);
+            IEnumerable<int> GetMyHighlights(int id);
+            Task<HighlightViewModel> PostNewHighlightAsync(
+                HighlightPostViewModel newHighlight,
+                int userId
+            );
+            Task<HighlightViewModel> UpdateHighlightAsync(Highlight highlight, string description);
+            Task<HighlightViewModel> DeleteHighlightAsync(Highlight highlight);
         }
 
         public interface IPreferRoutesService

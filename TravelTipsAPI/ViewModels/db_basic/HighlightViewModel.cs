@@ -8,7 +8,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int AttractionId { get; set; }
         public bool IsDeprecated { get; set; }
         public string? Description { get; set; }
-        public int? CreatedBy { get; set; }
+        public UserViewModel? CreatedBy { get; set; }
         public int? LinkId { get; set; }
 
         public static explicit operator HighlightViewModel(Highlight highlight)
@@ -19,7 +19,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 AttractionId = highlight.AttractionId,
                 IsDeprecated = highlight.IsDeprecated,
                 Description = highlight.Description,
-                CreatedBy = highlight.CreatedBy,
                 LinkId = highlight.LinkId,
             };
 

@@ -1,5 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.BasicSchema;
@@ -23,13 +26,66 @@ namespace TravelTipsAPI.Controllers
         [HttpGet]
         [Route("{id}")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<Highlight>> GetHighlightsByAttractionId(
+        public ActionResult<IEnumerable<HighlightViewModel>> GetHighlightsByAttractionId(
             int id,
             [FromQuery] int? userId
         )
         {
             var highlights = highlightsService.GetHighlightsByParams(id, userId);
-            return Ok(highlights.Select(h => (HighlightViewModel)h).ToList());
+            var highlightViewModels = highlights
+                .Select(h => highlightsService.GetHighlightViewModel(h))
+                .ToList();
+            return Ok(highlightViewModels);
+        }
+
+        [HttpPost]
+        [Route("")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<HighlightViewModel>> PostHighlightAsync(
+            [FromBody] HighlightPostViewModel newHighlight
+        )
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var highlightViewModel = await highlightsService.PostNewHighlightAsync(
+                newHighlight,
+                userId
+            );
+            return Ok(highlightViewModel);
+        }
+
+        /// <summary>
+        /// Update a highlight description
+        /// </summary>
+        /// <param name="id">highlight id</param>
+        /// <param name="description">highlight description to be updated</param>
+        /// <returns>update highlight</returns>
+        [HttpPatch]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.HIGHLIGHTS)]
+        public async Task<ActionResult<HighlightViewModel>> PatchHighlightAsync(
+            int id,
+            [FromBody] string description
+        )
+        {
+            var highlight = highlightsService.FindHighlightById(id);
+            var highlightViewModel = await highlightsService.UpdateHighlightAsync(
+                highlight,
+                description
+            );
+
+            return Ok(highlightViewModel);
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.HIGHLIGHTS)]
+        public async Task<ActionResult<HighlightViewModel>> DeleteHighlightAsync(int id)
+        {
+            var highlight = highlightsService.FindHighlightById(id);
+            var highlightViewModel = await highlightsService.DeleteHighlightAsync(highlight);
+
+            return Ok(highlightViewModel);
         }
     }
 }

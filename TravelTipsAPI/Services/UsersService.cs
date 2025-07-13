@@ -44,10 +44,9 @@ namespace TravelTipsAPI.Services
         /// </summary>
         /// <param name="userId">auth0 id</param>
         /// <returns>the new user with the auth0 id</returns>
-        public async Task<UserViewModel> PostNewUserAsync(string userId)
+        public async Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost)
         {
-            var userPostViewModel = new UserPostViewModel { UserId = userId };
-            var newUser = userPostViewModel.ToUser();
+            var newUser = userPost.ToUser();
 
             await context.Users.AddAsync(newUser);
             await context.SaveChangesAsync();

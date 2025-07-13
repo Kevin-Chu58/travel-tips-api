@@ -6,16 +6,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
     {
         public int Id { get; set; }
         public required string Username { get; set; }
-        public required string Email { get; set; }
 
         public static explicit operator UserViewModel(User user)
         {
-            var userViewModel = new UserViewModel
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-            };
+            var userViewModel = new UserViewModel { Id = user.Id, Username = user.Username };
 
             return userViewModel;
         }
