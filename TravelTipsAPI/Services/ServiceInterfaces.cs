@@ -56,7 +56,7 @@ namespace TravelTipsAPI.Services
         {
             Attraction FindAttractionById(int id);
             Highlight FindHighlightById(int id);
-            IEnumerable<AttractionViewModel> GetHighlightsByParams(
+            IEnumerable<Attraction2ViewModel> GetAttractionsByParams(
                 string? name,
                 long? osmId,
                 string? osmType,

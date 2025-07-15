@@ -16,6 +16,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public decimal Lat { get; set; }
         public long OsmId { get; set; }
         public required string OsmType { get; set; }
+        public int? NumHighlights { get; set; }
 
         public static explicit operator Attraction2ViewModel(Attraction attraction)
         {

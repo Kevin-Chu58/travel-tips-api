@@ -42,32 +42,24 @@ namespace TravelTipsAPI.Controllers
         /// <param name="name">attraction name</param>
         /// <param name="osmId">attraction osm id</param>
         /// <param name="osmType">attraction osm type</param>
-        /// <param name="timestamp">timestamp</param>
         /// <returns>a list of attractions that satisfy the condition</returns>
         [HttpGet]
-        [Route("")]
+        [Route("v2")]
         [AllowAnonymous]
-        public ActionResult<AttractionSearchViewModel> GetAllAttractionsByParams(
+        public ActionResult<IEnumerable<Attraction2ViewModel>> GetAllAttractionsByParams(
             [FromQuery] string? name,
             long? osmId,
-            string? osmType,
-            long timestamp
+            string? osmType
         )
         {
-            var attractionViewModels = attractionsService.GetHighlightsByParams(
+            var attractionViewModels = attractionsService.GetAttractionsByParams(
                 name,
                 osmId,
                 osmType,
                 null
             );
 
-            var attractionSearch = new AttractionSearchViewModel
-            {
-                Timestamp = timestamp,
-                Attractions = attractionViewModels,
-            };
-
-            return Ok(attractionSearch);
+            return Ok(attractionViewModels);
         }
 
         /// <summary>
@@ -75,34 +67,26 @@ namespace TravelTipsAPI.Controllers
         /// </summary>
         /// <param name="name">attraction name</param>
         /// <param name="osmId">attraction osm id</param>
-        /// <param name="timestamp">timestamp</param>
         /// <returns>a list of attractions that satisfy the condition</returns>
         [HttpGet]
-        [Route("my")]
+        [Route("v2/my")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<AttractionSearchViewModel> GetYourAttractionsByParams(
+        public ActionResult<IEnumerable<Attraction2ViewModel>> GetMyAttractionsByParams(
             [FromQuery] string? name,
             long? osmId,
-            string? osmType,
-            long timestamp
+            string? osmType
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var attractionViewModels = attractionsService.GetHighlightsByParams(
+            var attractionViewModels = attractionsService.GetAttractionsByParams(
                 name,
                 osmId,
                 osmType,
                 userId
             );
 
-            var attractionSearch = new AttractionSearchViewModel
-            {
-                Timestamp = timestamp,
-                Attractions = attractionViewModels,
-            };
-
-            return Ok(attractionSearch);
+            return Ok(attractionViewModels);
         }
 
         [HttpGet]

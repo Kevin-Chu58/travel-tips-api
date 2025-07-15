@@ -53,7 +53,7 @@ namespace TravelTipsAPI.Services
         /// <param name="osmType">osm type</param>
         /// <param name="ownerId">user id</param>
         /// <returns>a list of highlights that satisfy the search params</returns>
-        public IEnumerable<AttractionViewModel> GetHighlightsByParams(
+        public IEnumerable<Attraction2ViewModel> GetAttractionsByParams(
             string? name,
             long? osmId,
             string? osmType,
@@ -62,9 +62,7 @@ namespace TravelTipsAPI.Services
         {
             name = name?.Trim().ToLower();
 
-            var attractionViewModels = new List<AttractionViewModel>();
-
-            IEnumerable<Attraction> attractions = context.Attractions.ToList();
+            IEnumerable<Attraction> attractions = [.. context.Attractions];
 
             if (name != null)
             {
@@ -78,23 +76,26 @@ namespace TravelTipsAPI.Services
             if (osmType != null)
                 attractions = attractions.Where(a => a.OsmType == osmType);
 
-            foreach (var attraction in attractions)
+            // get the number of highlights of each attraction
+            var attractionViewModels = attractions.Select(a => (Attraction2ViewModel)a).ToList();
+
+            foreach (var attraction in attractionViewModels)
             {
                 var highlights = context.Highlights.Where(h => h.AttractionId == attraction.Id);
+                int numHighlights;
 
-                // filter by the createdBy param
-                if (ownerId != null)
-                    highlights = highlights.Where(h => h.CreatedBy == ownerId);
+                if (ownerId is null)
+                    numHighlights = highlights.Count();
+                else
+                    numHighlights = highlights.Where(h => h.CreatedBy == ownerId).Count();
 
-                var viewModels = new List<AttractionViewModel>();
-
-                foreach (var highlight in highlights)
-                {
-                    viewModels.Add(ToAttractionViewModel(highlight, attraction));
-                }
-
-                attractionViewModels = [.. attractionViewModels, .. viewModels];
+                attraction.NumHighlights = numHighlights;
             }
+
+            // if looking for highlights written by a particular user,
+            // filter out all attractions with no highlights
+            if (ownerId != null)
+                attractionViewModels = [.. attractionViewModels.Where(a => a.NumHighlights > 0)];
 
             return attractionViewModels;
         }
