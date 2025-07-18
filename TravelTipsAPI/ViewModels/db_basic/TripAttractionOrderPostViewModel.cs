@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {

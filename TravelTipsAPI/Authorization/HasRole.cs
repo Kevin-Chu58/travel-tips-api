@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
-using static TravelTipsAPI.Services.BasicSchema;
-using static TravelTipsAPI.Services.RoleSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 
 namespace TravelTipsAPI.Authorization
 {

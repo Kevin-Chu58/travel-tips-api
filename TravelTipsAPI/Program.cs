@@ -2,18 +2,24 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using StackExchange.Redis;
+using TravelTipsAPI.Clients;
+using TravelTipsAPI.HereMapServices;
 using TravelTipsAPI.Middleware;
-using TravelTipsAPI.Models;
-using TravelTipsAPI.Services;
+using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Services.Auth0Services;
+using TravelTipsAPI.Services.NominatimServices;
+using TravelTipsAPI.Services.TravelTipsServices;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddDbContext<TravelTipsContext>(options =>
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
-);
+builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
+{
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+});
 
 // Add authentication to the container.
 
@@ -32,8 +38,7 @@ builder
         };
     });
 
-// Add services to the container.
-
+// Add Controllers
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -50,9 +55,15 @@ builder.Services.AddSwaggerGen(c =>
         }
     );
 });
-;
 
+// Add Services
 builder.Services.AddServices();
+builder.Services.AddAuth0Services();
+builder.Services.AddNominatimServices();
+builder.Services.AddHereMapServices();
+
+// Add Middleware
+builder.Services.AddScoped<EnsureUserMiddleware>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>
@@ -72,6 +83,13 @@ builder.Services.AddCors(options =>
     );
 });
 
+builder.Services.AddSingleton(sp =>
+{
+    var baseUrl = builder.Configuration["Upstash:Domain"];
+    var token = builder.Configuration["Upstash:Token"];
+    return new UpstashHttpClient(baseUrl!, token!);
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -87,8 +105,14 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
-// middleware
-app.UseMiddleware<EnsureUserMiddleware>();
+// Use Middleware
+app.Use(
+    async (context, next) =>
+    {
+        var ensureUser = context.RequestServices.GetRequiredService<EnsureUserMiddleware>();
+        await ensureUser.InvokeAsync(context, next);
+    }
+);
 
 app.UseAuthorization();
 

@@ -1,50 +1,48 @@
-﻿using System.Security.Claims;
-using TravelTipsAPI.ViewModels.db_basic;
-using static TravelTipsAPI.Services.BasicSchema;
+﻿using Microsoft.EntityFrameworkCore;
+using TravelTipsAPI.Models;
+using TravelTipsAPI.Models.TravelTipsModels;
+using static TravelTipsAPI.Services.Auth0Services.Auth0Schema;
 
 namespace TravelTipsAPI.Middleware
 {
-    public class EnsureUserMiddleware
+    public class EnsureUserMiddleware : IMiddleware
     {
-        private readonly RequestDelegate _next;
+        private readonly IAuth0Service _auth0Service;
+        private readonly IDbContextFactory<TravelTipsContext> _dbFactory;
 
-        public EnsureUserMiddleware(RequestDelegate next)
+        public EnsureUserMiddleware(
+            IAuth0Service auth0Service,
+            IDbContextFactory<TravelTipsContext> dbFactory
+        )
         {
-            _next = next;
+            _auth0Service = auth0Service;
+            _dbFactory = dbFactory;
         }
 
-        public async Task InvokeAsync(HttpContext context, IUsersService usersService)
+        public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            var user = context.User;
-            var auth0Id = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var auth0UserInfo = await _auth0Service.GetUserInfoAsync();
 
-            if (!string.IsNullOrEmpty(auth0Id))
+            if (auth0UserInfo != null && !string.IsNullOrEmpty(auth0UserInfo.Sub))
             {
-                var _user = usersService.GetUserByUserId(auth0Id);
-                if (_user == null)
+                using var db = _dbFactory.CreateDbContext();
+
+                var user = await db.Users.FirstOrDefaultAsync(u => u.UserId == auth0UserInfo.Sub);
+                if (user == null)
                 {
-                    // Full name (optional, often present)
-                    var fullName = user.FindFirst("name")?.Value ?? "";
-                    if (fullName.Length > 20)
-                        fullName = "";
-
-                    // Email
-                    var email = user.FindFirst("email")?.Value ?? "";
-                    if (email.Length > 50)
-                        email = "";
-
-                    var userPost = new UserPostViewModel
+                    var userPost = new User
                     {
-                        UserId = auth0Id,
-                        Username = fullName,
-                        Email = email,
+                        UserId = auth0UserInfo.Sub,
+                        Username = auth0UserInfo.Name ?? "",
+                        Email = auth0UserInfo.Email ?? "",
                     };
 
-                    await usersService.PostNewUserAsync(userPost);
+                    db.Users.Add(userPost);
+                    await db.SaveChangesAsync();
                 }
             }
 
-            await _next(context);
+            await next(context);
         }
     }
 }

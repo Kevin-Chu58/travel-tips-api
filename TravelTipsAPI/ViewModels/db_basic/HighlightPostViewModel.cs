@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -6,7 +6,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
     {
         public int AttractionId { get; set; }
         public required string Description { get; set; }
-        public int? LinkId { get; set; }
 
         public Highlight ToHighlight(int createdBy)
         {
@@ -14,10 +13,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
             {
                 Id = new int(),
                 AttractionId = AttractionId,
-                IsDeprecated = false,
                 Description = Description,
                 CreatedBy = createdBy,
-                LinkId = LinkId,
             };
 
             return highlight;

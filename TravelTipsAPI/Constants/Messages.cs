@@ -51,5 +51,11 @@
         public static readonly string TaorExist = "Trip Attraction Order Route exists.";
         public static readonly string EstimateTravelTimeRestricted =
             "Estimate Travel Time should be positive.";
+
+        // Nominatim
+        public static readonly string OsmEntityNotFound = "Location not found.";
+
+        // HereMap
+        public static readonly string HereMapPlaceNotFound = "Location not found.";
     }
 }

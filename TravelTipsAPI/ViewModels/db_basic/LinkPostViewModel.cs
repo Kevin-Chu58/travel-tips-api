@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -14,7 +14,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Id = new int(),
                 Name = Name,
                 Url = Url,
-                CreatedBy = createdBy
+                CreatedBy = createdBy,
             };
 
             return link;

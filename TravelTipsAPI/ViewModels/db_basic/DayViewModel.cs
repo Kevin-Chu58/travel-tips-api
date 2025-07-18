@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -14,7 +14,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int CreatedBy { get; set; }
 
         // details
-        public required IEnumerable<TripAttractionOrderViewModel> TripAttractionOrders { get; set; }
+        //public required IEnumerable<TripAttractionOrderViewModel> TripAttractionOrders { get; set; }
 
         public static explicit operator DayViewModel(Day day)
         {
@@ -29,7 +29,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 TripId = day.TripId,
                 CreatedBy = day.CreatedBy,
                 // details
-                TripAttractionOrders = [],
+                //TripAttractionOrders = [],
             };
 
             return dayViewModel;
