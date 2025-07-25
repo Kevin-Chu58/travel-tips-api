@@ -19,6 +19,8 @@ public partial class User
 
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
+    public virtual ICollection<Image> Images { get; set; } = new List<Image>();
+
     public virtual ICollection<Link> Links { get; set; } = new List<Link>();
 
     public virtual ICollection<PreferRoute> PreferRoutes { get; set; } = new List<PreferRoute>();

@@ -25,6 +25,10 @@ public partial class TripAttractionOrder
 
     public bool IsOnFootPreferred { get; set; }
 
+    public int AttractionId { get; set; }
+
+    public virtual Attraction Attraction { get; set; } = null!;
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual Day Day { get; set; } = null!;

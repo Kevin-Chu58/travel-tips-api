@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Security.Claims;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
@@ -11,7 +12,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Trips
     /// </summary>
     /// <param name="context">context</param>
-    public class TripsService(TravelTipsContext context) : ITripsService
+    public class TripsService(
+        TravelTipsContext context,
+        IUsersService usersService,
+        IConfiguration config,
+        FirebaseStorageUploader uploader
+    ) : ITripsService
     {
         /// <summary>
         /// Return a trip with id from db
@@ -29,16 +35,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Get trips by its name
+        /// Get trips by its title
         /// </summary>
-        /// <param name="name">name</param>
-        /// <returns>trips contain the name</returns>
-        public IEnumerable<TripViewModel> GetTripsByName(string name)
+        /// <param name="title">title</param>
+        /// <returns>trips contain the title</returns>
+        public IEnumerable<TripViewModel> GetTripsByTitle(string title)
         {
-            name = name.Trim().ToLower();
+            title = title.Trim().ToLower();
 
             var tripViewModels = context
-                .Trips.Where(trip => trip.Name.ToLower().Contains(name) && trip.IsPublic == true)
+                .Trips.Where(trip => trip.Title.ToLower().Contains(title) && trip.IsPublic == true)
                 .Select(trip => (TripViewModel)trip)
                 .ToList();
 
@@ -61,15 +67,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var yourTripViewModels = context
                 .Trips.Where(trip => trip.CreatedBy == id && trip.IsHidden == false)
-                .Select(trip => (TripViewModel)trip)
+                .Select(trip => new TripViewModel
+                {
+                    Id = trip.Id,
+                    Title = trip.Title,
+                    Description = trip.Description,
+                    CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
+                    CreatedAt = trip.CreatedAt,
+                    IsPublic = trip.IsPublic,
+                    NumDays = context.Days.Where(day => day.TripId == trip.Id).Count(),
+                })
                 .ToList();
-
-            foreach (var tripViewModel in yourTripViewModels)
-            {
-                tripViewModel.NumDays = context
-                    .Days.Where(day => day.TripId == tripViewModel.Id)
-                    .Count();
-            }
 
             return yourTripViewModels;
         }
@@ -93,19 +101,31 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Create a new trip
         /// </summary>
         /// <param name="createBy">the user id created the new trip</param>
-        /// <param name="tripPostViewModel">the details of the new trip</param>
+        /// <param name="title">the new trip title</param>
         /// <returns>the new trip</returns>
-        public async Task<TripViewModel> PostNewTripAsync(
-            int createBy,
-            TripPostViewModel tripPostViewModel
-        )
+        public async Task<TripViewModel> PostNewTripAsync(int createBy, string title)
         {
-            var newTrip = tripPostViewModel.ToTrip(createBy);
+            var newTrip = new Trip
+            {
+                Title = title,
+                CreatedBy = createBy,
+                CreatedAt = DateTime.Now,
+            };
 
             await context.Trips.AddAsync(newTrip);
             await context.SaveChangesAsync();
 
             return (TripViewModel)newTrip;
+        }
+
+        public async Task UploadImageAsync(Stream stream, int userId, string? fileName)
+        {
+            await uploader.UploadFileAsync(
+                stream,
+                "image/jpeg",
+                config["Firebase:BucketName"]!,
+                "uploads/" + userId + "/image.jpg"
+            );
         }
 
         /// <summary>
@@ -116,9 +136,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>the updated trip</returns>
         public async Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch)
         {
-            trip.Name = tripPatch.Name?.Trim() ?? trip.Name;
+            trip.Title = tripPatch.Title?.Trim() ?? trip.Title;
             trip.Description = tripPatch.Description?.Trim() ?? trip.Description;
-            trip.LastUpdatedAt = DateTime.Now;
 
             await context.SaveChangesAsync();
 
@@ -172,20 +191,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Update the last updated at time
-        /// </summary>
-        /// <param name="id">trip id</param>
-        /// <returns>the updated trip</returns>
-        public async Task<TripViewModel> UpdateLastUpdatedAtAsync(Trip trip)
-        {
-            trip.LastUpdatedAt = DateTime.Now;
-
-            await context.SaveChangesAsync();
-
-            return (TripViewModel)trip;
-        }
-
-        /// <summary>
         /// Whether you are the owner of the trip
         /// </summary>
         /// <param name="id">user id</param>
@@ -212,16 +217,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Check if new trip's detail is valid
         /// </summary>
-        /// <param name="newTrip">new trip</param>
+        /// <param name="name">new trip name</param>
         /// <returns>true if is valid, false otherwise</returns>
-        public List<string> ValidatePost(TripPostViewModel newTrip)
+        public List<string> ValidatePost(string name)
         {
             var invalidParams = new List<string>();
 
-            if (newTrip.Name.Length > 50)
+            if (name.Length > 50)
                 invalidParams.Add("name");
-            if (newTrip.Description?.Length > 500)
-                invalidParams.Add("description");
 
             return invalidParams;
         }
@@ -235,7 +238,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var invalidParams = new List<string>();
 
-            if (trip.Name?.Length == 0 || trip.Name?.Length > 50)
+            if (trip.Title?.Length == 0 || trip.Title?.Length > 50)
                 invalidParams.Add("name");
             if (trip.Description?.Length > 500)
                 invalidParams.Add("description");

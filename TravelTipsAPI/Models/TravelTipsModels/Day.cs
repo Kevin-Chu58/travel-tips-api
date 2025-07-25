@@ -7,8 +7,6 @@ public partial class Day
 {
     public int Id { get; set; }
 
-    public string? Name { get; set; }
-
     public string? Description { get; set; }
 
     public TimeOnly Start { get; set; }
@@ -20,6 +18,8 @@ public partial class Day
     public int CreatedBy { get; set; }
 
     public int TripId { get; set; }
+
+    public string? Title { get; set; }
 
     public virtual User CreatedByNavigation { get; set; } = null!;
 

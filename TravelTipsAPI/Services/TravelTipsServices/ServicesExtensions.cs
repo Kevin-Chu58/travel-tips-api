@@ -1,5 +1,6 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
@@ -22,6 +23,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             //services.AddScoped<ITripAttractionOrdersService, TripAttractionOrdersService>();
             // user role schema
             services.AddScoped<IUserRolesService, UserRolesService>();
+            // image schema
+            services.AddScoped<IImagesService, ImagesService>();
 
             return services;
         }

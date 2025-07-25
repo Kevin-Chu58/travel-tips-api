@@ -5,7 +5,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
     public class DayViewModel
     {
         public int Id { get; set; }
-        public string? Name { get; set; }
+        public string? Title { get; set; }
         public string? Description { get; set; }
         public TimeOnly Start { get; set; }
         public TimeOnly End { get; set; }
@@ -21,7 +21,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
             var dayViewModel = new DayViewModel
             {
                 Id = day.Id,
-                Name = day.Name,
+                Title = day.Title,
                 Description = day.Description,
                 Start = day.Start,
                 End = day.End,

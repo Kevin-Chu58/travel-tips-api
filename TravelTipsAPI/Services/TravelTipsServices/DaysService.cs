@@ -90,7 +90,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>the updated day</returns>
         public async Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch)
         {
-            day.Name = dayPatch.Name?.Trim() ?? day.Name;
+            day.Title = dayPatch.Title?.Trim() ?? day.Title;
             day.Description = dayPatch.Description?.Trim() ?? day.Description;
             day.Start = dayPatch.Start ?? day.Start;
             day.End = dayPatch.End ?? day.End;
@@ -131,7 +131,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var invalidParams = new List<string>();
 
-            if (newDay.Name?.Length > 50)
+            if (newDay.Title?.Length > 50)
                 invalidParams.Add("name");
             if (newDay.Description?.Length > 500)
                 invalidParams.Add("description");
@@ -148,7 +148,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var invalidParams = new List<string>();
 
-            if (day.Name?.Length > 50)
+            if (day.Title?.Length > 50)
                 invalidParams.Add("name");
             if (day.Description?.Length > 500)
                 invalidParams.Add("description");

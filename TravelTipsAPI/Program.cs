@@ -1,15 +1,22 @@
+using System.Text.Json;
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+using FirebaseAdmin.Auth.Multitenancy;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using StackExchange.Redis;
 using TravelTipsAPI.Clients;
+using TravelTipsAPI.Firebase;
 using TravelTipsAPI.HereMapServices;
 using TravelTipsAPI.Middleware;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.Auth0Services;
+using TravelTipsAPI.Services.AzureKeyVaultServices;
 using TravelTipsAPI.Services.NominatimServices;
 using TravelTipsAPI.Services.TravelTipsServices;
+using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +68,28 @@ builder.Services.AddServices();
 builder.Services.AddAuth0Services();
 builder.Services.AddNominatimServices();
 builder.Services.AddHereMapServices();
+
+// get the firebase config and register it
+var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];
+
+var tenantId = builder.Configuration["Azure:TenantId"];
+var clientId = builder.Configuration["Azure:ClientId"];
+var clientSecret = builder.Configuration["Azure:ClientSecret"];
+
+var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+
+builder.Services.AddSingleton<IKeyVaultService>(sp =>
+{
+    return new KeyVaultService(keyVaultUrl!, credential);
+});
+
+var keyVaultService = new KeyVaultService(keyVaultUrl!, credential);
+
+string jsonSecret = await keyVaultService.GetJsonSecretAsync(
+    builder.Configuration["AzureKeyVault:FirebaseKey"]!
+);
+FirebaseInitializer.InitFirebase(jsonSecret);
+builder.Services.AddSingleton(new FirebaseStorageUploader(jsonSecret));
 
 // Add Middleware
 builder.Services.AddScoped<EnsureUserMiddleware>();

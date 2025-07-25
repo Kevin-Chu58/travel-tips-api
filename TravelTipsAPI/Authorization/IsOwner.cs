@@ -1,13 +1,7 @@
-﻿using System.Collections.Generic;
-using System.Drawing.Text;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models;
-using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
 namespace TravelTipsAPI.Authorization

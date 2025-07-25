@@ -34,4 +34,6 @@ public partial class Attraction
     public virtual ICollection<PreferRoute> PreferRouteArrivalAttractions { get; set; } = new List<PreferRoute>();
 
     public virtual ICollection<PreferRoute> PreferRouteDepartAttractions { get; set; } = new List<PreferRoute>();
+
+    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 }

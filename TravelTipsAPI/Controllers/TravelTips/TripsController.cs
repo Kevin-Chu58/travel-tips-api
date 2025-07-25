@@ -1,13 +1,13 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_image;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -20,8 +20,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
     [Route("api/[controller]")]
     public class TripsController(
         ITripsService tripsService,
-        IDaysService daysService
-    //ITripAttractionOrdersService tripAttractionOrdersService
+        IDaysService daysService,
+        //ITripAttractionOrdersService tripAttractionOrdersService
+        IImagesService imagesService
     ) : TravelTipsControllerBase
     {
         /// <summary>
@@ -64,11 +65,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var tripDetailViewModel = new TripDetailViewModel
             {
                 Id = tripViewModel.Id,
-                Name = tripViewModel.Name,
+                Title = tripViewModel.Title,
                 Description = tripViewModel.Description,
                 CreatedBy = tripViewModel.CreatedBy,
                 CreatedAt = tripViewModel.CreatedAt,
-                LastUpdatedAt = tripViewModel.LastUpdatedAt,
                 Days = days,
             };
 
@@ -76,16 +76,16 @@ namespace TravelTipsAPI.Controllers.TravelTips
         }
 
         /// <summary>
-        /// Get trips by name
+        /// Get trips by title
         /// </summary>
-        /// <param name="name">the name of the trips</param>
-        /// <returns>a list of trips that includes the name</returns>
+        /// <param name="title">the title of the trips</param>
+        /// <returns>a list of trips that includes the title</returns>
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<TripViewModel>> GetTripsByName([FromQuery] string name)
+        public ActionResult<IEnumerable<TripViewModel>> GetTripsByTitle([FromQuery] string title)
         {
-            var tripViewModels = tripsService.GetTripsByName(name);
+            var tripViewModels = tripsService.GetTripsByTitle(title);
             return Ok(tripViewModels);
         }
 
@@ -135,11 +135,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var tripDetailViewModel = new TripDetailViewModel
             {
                 Id = tripViewModel.Id,
-                Name = tripViewModel.Name,
+                Title = tripViewModel.Title,
                 Description = tripViewModel.Description,
                 CreatedBy = tripViewModel.CreatedBy,
                 CreatedAt = tripViewModel.CreatedAt,
-                LastUpdatedAt = tripViewModel.LastUpdatedAt,
                 Days = days,
             };
 
@@ -152,24 +151,40 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <param name="newTrip">a new trip to be posted</param>
         /// <returns>the new trip posted to db</returns>
         [HttpPost]
-        [Route("")]
+        [Route("{name}")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<TripViewModel>> PostNewTrip(
-            [FromBody] TripPostViewModel newTrip
-        )
+        public async Task<ActionResult<TripViewModel>> PostNewTrip(string name)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            // validate the inputs
-            var invalidParams = tripsService.ValidatePost(newTrip);
+            // validate the trip name
+            var invalidParams = tripsService.ValidatePost(name);
             if (invalidParams.Count > 0)
             {
                 var invalidInputs = string.Join(", ", invalidParams);
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
-            var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip);
+            var tripViewModel = await tripsService.PostNewTripAsync(userId, name);
             return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
+        }
+
+        [HttpPost]
+        [Route("{id}/image/{imageId}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<ImageRelationViewModel>> UploadImage(int id, int imageId)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // validate the user ownership on the image
+            var ownership = imagesService.IsOwner(userId, imageId);
+
+            if (!ownership)
+                return Forbid(Messages.ImageUnauthorized);
+
+            var imageRelation = await imagesService.AttachImageToTrip(userId, imageId);
+
+            return Ok(imageRelation);
         }
 
         /// <summary>

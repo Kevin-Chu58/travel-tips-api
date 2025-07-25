@@ -52,6 +52,12 @@
         public static readonly string EstimateTravelTimeRestricted =
             "Estimate Travel Time should be positive.";
 
+        // Images
+        public static readonly string ImageUploadFailed =
+            "There's a problem when uploading the image.";
+        public static readonly string ImageUnauthorized = "Image access unauthorized.";
+        public static readonly string ImageStreamEmpty = "Uploaded image stream is empty.";
+
         // Nominatim
         public static readonly string OsmEntityNotFound = "Location not found.";
 

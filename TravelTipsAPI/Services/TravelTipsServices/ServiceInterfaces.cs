@@ -1,5 +1,7 @@
-﻿using TravelTipsAPI.Models.TravelTipsModels;
+﻿using Microsoft.AspNetCore.Mvc;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_image;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -16,17 +18,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ITripsService
         {
             Trip FindTripByParams(int id, bool? isPublic = null);
-            IEnumerable<TripViewModel> GetTripsByName(string name);
+            IEnumerable<TripViewModel> GetTripsByTitle(string title);
             IEnumerable<TripViewModel> GetTripsByUserId(int id);
             IEnumerable<int> GetMyTripIds(int id);
-            Task<TripViewModel> PostNewTripAsync(int createdBy, TripPostViewModel newTrip);
+            Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
-            Task<TripViewModel> UpdateLastUpdatedAtAsync(Trip trip);
             bool IsOwner(int id, int tripId);
             bool IsOwnerList(int id, int[] tripIds);
-            List<string> ValidatePost(TripPostViewModel newTrip);
+            List<string> ValidatePost(string name);
             List<string> ValidatePatch(TripPatchViewModel trip);
         }
 
@@ -186,6 +187,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IUserRolesService
         {
             bool IsAdmin(int userId);
+        }
+    }
+
+    public class ImageSchema
+    {
+        public interface IImagesService
+        {
+            Task<ImageViewModel> PostNewImageAsync(
+                Stream stream,
+                string contentType,
+                int userId,
+                string? name
+            );
+            Task<ImageRelationViewModel> AttachImageToTrip(int userId, int tripId);
+            Boolean IsOwner(int userId, int imageId);
         }
     }
 }
