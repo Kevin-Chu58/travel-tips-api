@@ -14,9 +14,21 @@ namespace TravelTipsAPI.Firebase
             string objectName
         )
         {
-            var storageClient = await StorageClient.CreateAsync(credential);
+            try
+            {
+                var storageClient = await StorageClient.CreateAsync(credential);
 
-            await storageClient.UploadObjectAsync(bucketName, objectName, contentType, fileStream);
+                await storageClient.UploadObjectAsync(
+                    bucketName,
+                    objectName,
+                    contentType,
+                    fileStream
+                );
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
     }
 }

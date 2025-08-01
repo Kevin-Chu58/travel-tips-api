@@ -19,10 +19,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Trip FindTripByParams(int id, bool? isPublic = null);
             IEnumerable<TripViewModel> GetTripsByTitle(string title);
+            TripViewModel GetTripByTripId(int id);
             IEnumerable<TripViewModel> GetTripsByUserId(int id);
             IEnumerable<int> GetMyTripIds(int id);
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
-            Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
+            Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
             bool IsOwner(int id, int tripId);
@@ -194,13 +195,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         public interface IImagesService
         {
+            Task<ImageViewModel> GetImageById(int id);
+            IEnumerable<int> GetImageIdsByUserId(int id);
+            IEnumerable<int> GetImageIdsByTripId(int id);
             Task<ImageViewModel> PostNewImageAsync(
                 Stream stream,
                 string contentType,
                 int userId,
                 string? name
             );
-            Task<ImageRelationViewModel> AttachImageToTrip(int userId, int tripId);
+            Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
+            Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);
             Boolean IsOwner(int userId, int imageId);
         }
     }

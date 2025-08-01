@@ -7,6 +7,7 @@ namespace TravelTipsAPI.ViewModels.db_image
         public int Id { get; set; }
         public required Guid Guid { get; set; }
         public string? Name { get; set; }
+        public string? Url { get; set; }
         public int CreatedBy { get; set; }
 
         public static explicit operator ImageViewModel(Image image)

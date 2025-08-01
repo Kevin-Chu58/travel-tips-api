@@ -1,8 +1,4 @@
-using System.Text.Json;
 using Azure.Identity;
-using Azure.Security.KeyVault.Secrets;
-using FirebaseAdmin.Auth.Multitenancy;
-using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;

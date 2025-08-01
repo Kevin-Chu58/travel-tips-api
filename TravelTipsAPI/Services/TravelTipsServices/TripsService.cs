@@ -12,12 +12,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Trips
     /// </summary>
     /// <param name="context">context</param>
-    public class TripsService(
-        TravelTipsContext context,
-        IUsersService usersService,
-        IConfiguration config,
-        FirebaseStorageUploader uploader
-    ) : ITripsService
+    public class TripsService(TravelTipsContext context, IUsersService usersService) : ITripsService
     {
         /// <summary>
         /// Return a trip with id from db
@@ -28,7 +23,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var trip = context.Trips.Find(id);
 
-            if (trip is null || isPublic != null && trip.IsPublic != isPublic)
+            if (trip is null || (isPublic != null && trip.IsPublic != isPublic))
                 throw new Exception(Messages.TripNotFound);
 
             return trip;
@@ -56,6 +51,27 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
 
             return tripViewModels;
+        }
+
+        /// <summary>
+        /// Get a trip by trip id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the trip view model</returns>
+        public TripViewModel GetTripByTripId(int id)
+        {
+            var trip = context.Trips.First(trip => trip.Id == id);
+
+            return new TripViewModel
+            {
+                Id = trip.Id,
+                Title = trip.Title,
+                Description = trip.Description,
+                CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
+                CreatedAt = trip.CreatedAt,
+                IsPublic = trip.IsPublic,
+                NumDays = context.Days.Count(day => day.TripId == trip.Id),
+            };
         }
 
         /// <summary>
@@ -118,30 +134,23 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return (TripViewModel)newTrip;
         }
 
-        public async Task UploadImageAsync(Stream stream, int userId, string? fileName)
-        {
-            await uploader.UploadFileAsync(
-                stream,
-                "image/jpeg",
-                config["Firebase:BucketName"]!,
-                "uploads/" + userId + "/image.jpg"
-            );
-        }
-
         /// <summary>
         /// update the trip detail by its id
         /// </summary>
         /// <param name="trip">trip</param>
         /// <param name="tripPatch">trip detail to update</param>
         /// <returns>the updated trip</returns>
-        public async Task<TripViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch)
+        public async Task<TripPatchViewModel> PatchTripAsync(
+            Trip trip,
+            TripPatchViewModel tripPatch
+        )
         {
             trip.Title = tripPatch.Title?.Trim() ?? trip.Title;
             trip.Description = tripPatch.Description?.Trim() ?? trip.Description;
 
             await context.SaveChangesAsync();
 
-            return (TripViewModel)trip;
+            return tripPatch;
         }
 
         /// <summary>
@@ -240,8 +249,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             if (trip.Title?.Length == 0 || trip.Title?.Length > 50)
                 invalidParams.Add("name");
-            if (trip.Description?.Length > 500)
-                invalidParams.Add("description");
 
             return invalidParams;
         }

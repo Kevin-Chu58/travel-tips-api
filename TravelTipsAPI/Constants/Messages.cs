@@ -53,10 +53,16 @@
             "Estimate Travel Time should be positive.";
 
         // Images
+        public static readonly string ImageNotFound = "Image not found.";
+        public static readonly string ImageMaxAttached = "Maximum number of images attached.";
         public static readonly string ImageUploadFailed =
             "There's a problem when uploading the image.";
         public static readonly string ImageUnauthorized = "Image access unauthorized.";
         public static readonly string ImageStreamEmpty = "Uploaded image stream is empty.";
+
+        // - trip image
+        public static readonly string ImageTripAttached = "Image is attached on trip.";
+        public static readonly string ImageTripDetached = "Image is not attached on trip.";
 
         // Nominatim
         public static readonly string OsmEntityNotFound = "Location not found.";

@@ -112,12 +112,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my/{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public ActionResult<TripDetailViewModel> GetTripById(int id)
+        public ActionResult<TripViewModel> GetTripById(int id)
         {
-            Trip trip = tripsService.FindTripByParams(id);
-            var tripViewModel = (TripViewModel)trip;
+            var tripViewModel = tripsService.GetTripByTripId(id);
 
-            var days = daysService.GetDaysByTripId(id, false);
+            return Ok(tripViewModel);
+
+            //var days = daysService.GetDaysByTripId(id, false);
 
             //foreach (var day in days)
             //{
@@ -132,23 +133,21 @@ namespace TravelTipsAPI.Controllers.TravelTips
             //    day.TripAttractionOrders = taoViewModels;
             //}
 
-            var tripDetailViewModel = new TripDetailViewModel
-            {
-                Id = tripViewModel.Id,
-                Title = tripViewModel.Title,
-                Description = tripViewModel.Description,
-                CreatedBy = tripViewModel.CreatedBy,
-                CreatedAt = tripViewModel.CreatedAt,
-                Days = days,
-            };
-
-            return Ok(tripDetailViewModel);
+            //var tripDetailViewModel = new TripDetailViewModel
+            //{
+            //    Id = tripViewModel.Id,
+            //    Title = tripViewModel.Title,
+            //    Description = tripViewModel.Description,
+            //    CreatedBy = tripViewModel.CreatedBy,
+            //    CreatedAt = tripViewModel.CreatedAt,
+            //    Days = days,
+            //};
         }
 
         /// <summary>
         /// Post a new trip to db
         /// </summary>
-        /// <param name="newTrip">a new trip to be posted</param>
+        /// <param name="name">a new trip title</param>
         /// <returns>the new trip posted to db</returns>
         [HttpPost]
         [Route("{name}")]
@@ -169,24 +168,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
             return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
         }
 
-        [HttpPost]
-        [Route("{id}/image/{imageId}")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<ImageRelationViewModel>> UploadImage(int id, int imageId)
-        {
-            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
-            // validate the user ownership on the image
-            var ownership = imagesService.IsOwner(userId, imageId);
-
-            if (!ownership)
-                return Forbid(Messages.ImageUnauthorized);
-
-            var imageRelation = await imagesService.AttachImageToTrip(userId, imageId);
-
-            return Ok(imageRelation);
-        }
-
         /// <summary>
         /// Update a trip's information
         /// </summary>
@@ -196,7 +177,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<TripViewModel>> PatchTrip(
+        public async Task<ActionResult<TripPatchViewModel>> PatchTrip(
             int id,
             [FromBody] TripPatchViewModel tripPatch
         )
@@ -219,8 +200,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
             }
 
-            var tripViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
-            return Ok(tripViewModel);
+            var tripPatchViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
+            return Ok(tripPatchViewModel);
         }
 
         /// <summary>
@@ -275,6 +256,109 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             var _tripIds = await tripsService.UpdateIsHiddenAsync(tripIds, isHidden);
             return Ok(_tripIds);
+        }
+
+        /// <summary>
+        /// Get a list of images by trip id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>a list of images attached to the trips</returns>
+        [HttpGet]
+        [Route("{id}/images")]
+        [AllowAnonymous]
+        [SetUserId]
+        public async Task<ActionResult<IEnumerable<ImageViewModel>>> GetImagesByTripId(int id)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            try
+            {
+                var trip = tripsService.FindTripByParams(id);
+
+                if (trip.IsPublic == false && userId != trip.CreatedBy)
+                {
+                    return Forbid(Messages.TripUnauthorized);
+                }
+
+                var imageIds = imagesService.GetImageIdsByTripId(id);
+
+                var imageViewModels = new List<ImageViewModel>();
+                foreach (var imageId in imageIds)
+                {
+                    // Await one at a time to avoid DbContext concurrency issues
+                    var img = await imagesService.GetImageById(imageId);
+                    imageViewModels.Add(img);
+                }
+
+                return Ok(imageViewModels);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// attach image to a trip
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <param name="imageId">iamge id</param>
+        /// <returns>an image relation with trip</returns>
+        [HttpPost]
+        [Route("{id}/image/{imageId}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<ImageRelationViewModel>> AttachImage(int id, int imageId)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // validate the user ownership on the image
+            var ownership = imagesService.IsOwner(userId, imageId);
+
+            if (!ownership)
+                return Forbid(Messages.ImageUnauthorized);
+
+            // check if maximum 4 images have already been attached to the tip
+            var maxCount = 4;
+            var imageCount = imagesService.GetImageIdsByTripId(id).Count();
+
+            if (imageCount >= maxCount)
+            {
+                return Forbid(Messages.ImageMaxAttached);
+            }
+
+            var imageRelation = await imagesService.AttachImageToTrip(imageId, id);
+
+            return Ok(imageRelation);
+        }
+
+        /// <summary>
+        /// detach image from a trip
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <param name="imageId">image id</param>
+        /// <returns>the removed image relation with trip</returns>
+        [HttpDelete]
+        [Route("{id}/image/{imageId}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<ImageRelationViewModel>> DetachImage(int id, int imageId)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // validate the user ownership on the image
+            var ownership = imagesService.IsOwner(userId, imageId);
+
+            if (!ownership)
+                return Forbid(Messages.ImageUnauthorized);
+
+            try
+            {
+                var tripImage = await imagesService.DetachImageFromTrip(imageId, id);
+                return Ok(tripImage);
+            }
+            catch (Exception ex)
+            {
+                return Forbid(ex.Message);
+            }
         }
     }
 }

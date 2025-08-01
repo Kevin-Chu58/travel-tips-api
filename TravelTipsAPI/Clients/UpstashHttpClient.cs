@@ -1,5 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
+using Newtonsoft.Json.Linq;
+using TravelTipsAPI.Constants;
 
 namespace TravelTipsAPI.Clients
 {
@@ -22,8 +24,11 @@ namespace TravelTipsAPI.Clients
 
         public async Task<string?> GetAsync(string key)
         {
-            var url = $"{_baseUrl}/GET/{key}";
+            var safeKey = Uri.EscapeDataString(key);
+
+            var url = $"{_baseUrl}/GET/{safeKey}";
             var response = await _client.GetAsync(url);
+
             if (!response.IsSuccessStatusCode)
                 return null;
 
@@ -34,23 +39,32 @@ namespace TravelTipsAPI.Clients
 
         public async Task SetAsync(string key, string value)
         {
-            var url = $"{_baseUrl}/SET/{key}/{value}";
+            var safeKey = Uri.EscapeDataString(key);
+            var safeValue = Uri.EscapeDataString(value);
+
+            var url = $"{_baseUrl}/SET/{safeKey}/{safeValue}";
             var response = await _client.PostAsync(url, null);
             response.EnsureSuccessStatusCode();
         }
 
         public async Task<bool> SetWithExpiryAsync(string key, string value, int seconds)
         {
+            var safeKey = Uri.EscapeDataString(key);
+            var safeValue = Uri.EscapeDataString(value);
+
             var response = await _client.PostAsync(
-                $"{_baseUrl}/SET/{key}/{value}?EX={seconds}",
+                $"{_baseUrl}/SET/{safeKey}/{safeValue}?EX={seconds}",
                 null
             );
+
             return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> DeleteKeyAsync(string key)
         {
-            var response = await _client.PostAsync($"{_baseUrl}/DEL/{key}", null);
+            var safeKey = Uri.EscapeDataString(key);
+
+            var response = await _client.PostAsync($"{_baseUrl}/DEL/{safeKey}", null);
             return response.IsSuccessStatusCode;
         }
 

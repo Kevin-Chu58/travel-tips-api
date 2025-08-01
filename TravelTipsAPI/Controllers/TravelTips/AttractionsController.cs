@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
@@ -82,17 +83,17 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.NONE)]
         public async Task<ActionResult<Attraction2ViewModel>> PostNewAttraction(string hereId)
         {
-            Attraction2ViewModel attractionViewModel;
+            Attraction attraction;
             try
             {
-                var attraction = attractionsService.FindAttractionByHereId(hereId);
-                attractionViewModel = (Attraction2ViewModel)attraction;
+                attraction = attractionsService.FindAttractionByHereId(hereId);
             }
             catch (Exception)
             {
-                var attraction = await attractionsService.PostNewAttractionAsync(hereId);
-                attractionViewModel = (Attraction2ViewModel)attraction;
+                attraction = await attractionsService.PostNewAttractionAsync(hereId);
             }
+
+            var attractionViewModel = (Attraction2ViewModel)attraction;
 
             return Ok(attractionViewModel);
         }

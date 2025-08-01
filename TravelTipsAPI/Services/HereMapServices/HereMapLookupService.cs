@@ -36,9 +36,10 @@ namespace TravelTipsAPI.Services.HereMapServices
         public async Task<Attraction> LookupPlaceByIdAsync(string hereId)
         {
             HerePlace? result;
+            var key = $"{hereId}:v{CacheVersion.HereMap_Version}";
 
             // check cache first, if does not exist, send request to HereMap API
-            var cacheJson = await cache.GetAsync(hereId);
+            var cacheJson = await cache.GetAsync(key);
             if (cacheJson != null)
             {
                 result = JsonSerializer.Deserialize<HerePlace>(cacheJson);
@@ -65,7 +66,7 @@ namespace TravelTipsAPI.Services.HereMapServices
             {
                 // cache if exists
                 string jsonString = JsonSerializer.Serialize(result);
-                await cache.SetWithExpiryAsync(hereId, jsonString, Time.WEEK_2);
+                await cache.SetWithExpiryAsync(key, jsonString, Time.WEEK_2);
             }
 
             return ModelUtils.ToAttraction(result);
