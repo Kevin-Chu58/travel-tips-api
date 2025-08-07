@@ -15,66 +15,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// The controller of Trips
     /// </summary>
     /// <param name="tripsService">trips service</param>
-    /// <param name="daysService">days service</param>
-    /// <param name="tripAttractionOrdersService">taos service</param>
+    /// <param name="imagesService">images service</param>
     [Route("api/[controller]")]
-    public class TripsController(
-        ITripsService tripsService,
-        IDaysService daysService,
-        //ITripAttractionOrdersService tripAttractionOrdersService
-        IImagesService imagesService
-    ) : TravelTipsControllerBase
+    public class TripsController(ITripsService tripsService, IImagesService imagesService)
+        : TravelTipsControllerBase
     {
-        /// <summary>
-        /// Get a public trip by its id
-        /// </summary>
-        /// <param name="id">the id of a trip</param>
-        /// <returns>a trip with that id, Not Found otherwise</returns>
-        [HttpGet]
-        [Route("{id}")]
-        [AllowAnonymous]
-        public ActionResult<TripDetailViewModel> GetPublicTripById(int id)
-        {
-            Trip trip;
-            try
-            {
-                trip = tripsService.FindTripByParams(id, true);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
-            }
-
-            TripViewModel tripViewModel = (TripViewModel)trip;
-
-            var days = daysService.GetDaysByTripId(id);
-
-            //foreach (var day in days)
-            //{
-            //    var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
-            //    var taoViewModels = new List<TripAttractionOrderViewModel>();
-
-            //    foreach (var tao in taos)
-            //    {
-            //        taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
-            //    }
-
-            //    day.TripAttractionOrders = taoViewModels;
-            //}
-
-            var tripDetailViewModel = new TripDetailViewModel
-            {
-                Id = tripViewModel.Id,
-                Title = tripViewModel.Title,
-                Description = tripViewModel.Description,
-                CreatedBy = tripViewModel.CreatedBy,
-                CreatedAt = tripViewModel.CreatedAt,
-                Days = days,
-            };
-
-            return Ok(tripDetailViewModel);
-        }
-
         /// <summary>
         /// Get trips by title
         /// </summary>
@@ -87,6 +32,27 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var tripViewModels = tripsService.GetTripsByTitle(title);
             return Ok(tripViewModels);
+        }
+
+        /// <summary>
+        /// Get a public trip by its id
+        /// </summary>
+        /// <param name="id">the id of a trip</param>
+        /// <returns>a trip with that id, Not Found otherwise</returns>
+        [HttpGet]
+        [Route("{id}")]
+        [AllowAnonymous]
+        public ActionResult<TripViewModel> GetPublicTripById(int id)
+        {
+            try
+            {
+                var tripViewModel = tripsService.GetTripByTripId(id);
+                return Ok(tripViewModel);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         /// <summary>
@@ -115,33 +81,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         public ActionResult<TripViewModel> GetTripById(int id)
         {
             var tripViewModel = tripsService.GetTripByTripId(id);
-
             return Ok(tripViewModel);
-
-            //var days = daysService.GetDaysByTripId(id, false);
-
-            //foreach (var day in days)
-            //{
-            //    var taos = tripAttractionOrdersService.GetTripAttractionOrdersByDayId(day.Id);
-            //    var taoViewModels = new List<TripAttractionOrderViewModel>();
-
-            //    foreach (var tao in taos)
-            //    {
-            //        taoViewModels.Add(tripAttractionOrdersService.ToViewModel(tao));
-            //    }
-
-            //    day.TripAttractionOrders = taoViewModels;
-            //}
-
-            //var tripDetailViewModel = new TripDetailViewModel
-            //{
-            //    Id = tripViewModel.Id,
-            //    Title = tripViewModel.Title,
-            //    Description = tripViewModel.Description,
-            //    CreatedBy = tripViewModel.CreatedBy,
-            //    CreatedAt = tripViewModel.CreatedAt,
-            //    Days = days,
-            //};
         }
 
         /// <summary>

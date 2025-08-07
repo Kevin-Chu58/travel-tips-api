@@ -5,13 +5,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
     public class TripAttractionOrderPostViewModel
     {
         public int DayId { get; set; }
-        public int Order { get; set; }
-        public int HighlightId { get; set; }
-        public int EstimateTime { get; set; }
-        public int EstimateTravelTime { get; set; }
-        public bool IsDrivePreferred { get; set; }
-        public bool IsBikePreferred { get; set; }
-        public bool IsOnFootPreferred { get; set; }
+        public int AttractionId { get; set; }
+        public int? HighlightId { get; set; }
+        public TimeOnly Start { get; set; }
+        public TimeOnly End { get; set; }
 
         public TripAttractionOrder ToTripAttractionOrder(int createdBy)
         {
@@ -19,13 +16,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
             {
                 Id = new int(),
                 DayId = DayId,
-                Order = Order,
+                AttractionId = AttractionId,
                 HighlightId = HighlightId,
-                EstimateTime = EstimateTime,
-                EstimateTravelTime = EstimateTravelTime,
-                IsDrivePreferred = IsDrivePreferred,
-                IsBikePreferred = IsBikePreferred,
-                IsOnFootPreferred = IsOnFootPreferred,
+                Start = Start,
+                End = End,
                 CreatedBy = createdBy,
             };
 

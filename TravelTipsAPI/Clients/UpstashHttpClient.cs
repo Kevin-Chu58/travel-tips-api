@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Newtonsoft.Json.Linq;
 using TravelTipsAPI.Constants;
 
@@ -70,6 +71,7 @@ namespace TravelTipsAPI.Clients
 
         private class RedisResult
         {
+            [JsonPropertyName("result")]
             public string? Result { get; set; }
         }
     }

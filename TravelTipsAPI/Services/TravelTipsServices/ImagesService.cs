@@ -180,7 +180,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return (ImageRelationViewModel)tripImage;
         }
 
-        public Boolean IsOwner(int userId, int imageId)
+        public bool IsOwner(int userId, int imageId)
         {
             var image = context.Images.FirstOrDefault(i =>
                 i.Id == imageId && i.CreatedBy == userId

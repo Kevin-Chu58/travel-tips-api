@@ -16,6 +16,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Id = highlight.Id,
                 AttractionId = highlight.AttractionId,
                 Description = highlight.Description,
+                CreatedBy =
+                    highlight.CreatedByNavigation != null
+                        ? (UserViewModel)highlight.CreatedByNavigation
+                        : null,
             };
 
             return highlightViewModel;

@@ -17,11 +17,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public interface ITripsService
         {
+            IEnumerable<int> GetMyTripIds(int id);
             Trip FindTripByParams(int id, bool? isPublic = null);
             IEnumerable<TripViewModel> GetTripsByTitle(string title);
             TripViewModel GetTripByTripId(int id);
             IEnumerable<TripViewModel> GetTripsByUserId(int id);
-            IEnumerable<int> GetMyTripIds(int id);
+            Trip? GetTripByDayId(int dayId);
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
@@ -34,14 +35,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public interface IDaysService
         {
-            Day FindDayById(int id, bool? isPublic = null);
-            IEnumerable<DayViewModel> GetDaysByTripId(int tripId, bool? isPublic = true);
             IEnumerable<int> GetMyDayIds(int id);
-            Task<DayViewModel> PostNewDayAsync(int createdBy, DayPostViewModel newDay);
+            Day FindDayById(int id, bool? isPublic = null);
+            IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
+            Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId, string? title);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
             Task<DayViewModel> DeleteDay(Day day);
-            List<string> ValidatePost(DayPostViewModel newDay);
-            List<string> ValidatePatch(DayPatchViewModel day);
         }
 
         public interface ILinksService
@@ -61,34 +60,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<Attraction2ViewModel> GetAttractionsByParams(string? title, int? ownerId);
             IEnumerable<int> GetMyHighlights(int id);
             Task<Attraction> PostNewAttractionAsync(string hereId);
-
-            //Task<AttractionViewModel> PostNewAttractionAsync(AttractionViewModel attraction);
-            //Task<AttractionViewModel> PostNewHighlightAsync(
-            //    int? createdBy,
-            //    AttractionPostViewModel newAttraction
-            //);
-            //void PatchAttractionAsync(
-            //    Attraction attraction,
-            //    AttractionViewModel attractionViewModel
-            //);
-            //Task<AttractionViewModel> PatchHighlightAsync(
-            //    Highlight highlight,
-            //    AttractionPatchViewModel attractionPatch
-            //);
-            //Task<int> PatchHighlightsDeprecated(int attractionId);
-            //Task<int[]> DeleteHighlightAsync(int[] highlightIds);
-            //List<string> ValidatePost(AttractionPostViewModel newAttraction);
-            //List<string> ValidatePatch(AttractionPatchViewModel attraction);
-            //AttractionViewModel ToAttractionViewModel(
-            //    Highlight highlight,
-            //    Attraction? attraction = null
-            //);
-            //IEnumerable<AttractionHighlightsViewModel> GetAttractionHighlightsByUserId(int userId);
-            //bool HasAttractionChanged(
-            //    Attraction attraction,
-            //    AttractionViewModel attractionViewModel
-            //);
-            //bool IsOwnerList(int id, int[] highlightIds);
         }
 
         public interface IHighlightsService
@@ -140,8 +111,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         //    List<string> ValidateNameChange(string name);
         //}
 
-        //public interface ITripAttractionOrdersService
-        //{
+        public interface ITripAttractionOrdersService
+        {
+            IEnumerable<int> GetMyTaos(int id);
+            TripAttractionOrder? FindTaoById(int id);
+            IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId);
+            Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
+            Task<int> PatchTao(TripAttractionOrderPatchViewModel taoPatch, TripAttractionOrder tao);
+            Task<int> DeleteTaoById(TripAttractionOrder tao);
+            Task<int> DeleteTaosByDayId(int dayId);
+            void IsTimeValid(TimeOnly time);
+            void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId);
+        }
         //    // taos
         //    TripAttractionOrder FindTripAttractionOrderById(int id, bool? isPublic = null);
         //    IEnumerable<TripAttractionOrder> GetTripAttractionOrdersByDayId(int dayId);
@@ -206,7 +187,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
             Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);
-            Boolean IsOwner(int userId, int imageId);
+            bool IsOwner(int userId, int imageId);
         }
     }
 }

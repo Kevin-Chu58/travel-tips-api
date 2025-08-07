@@ -15,6 +15,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     public class TripsService(TravelTipsContext context, IUsersService usersService) : ITripsService
     {
         /// <summary>
+        /// Get my trips' ids
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>a list of the ids of trips I own</returns>
+        public IEnumerable<int> GetMyTripIds(int id)
+        {
+            var myTripIds = context
+                .Trips.Where(trip => trip.CreatedBy == id)
+                .Select(trip => trip.Id)
+                .ToList();
+
+            return myTripIds;
+        }
+
+        /// <summary>
         /// Return a trip with id from db
         /// </summary>
         /// <param name="id">trip id</param>
@@ -98,19 +113,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return yourTripViewModels;
         }
 
-        /// <summary>
-        /// Get my trips' ids
-        /// </summary>
-        /// <param name="id">user id</param>
-        /// <returns>a list of the ids of trips I own</returns>
-        public IEnumerable<int> GetMyTripIds(int id)
+        public Trip? GetTripByDayId(int dayId)
         {
-            var myTripIds = context
-                .Trips.Where(trip => trip.CreatedBy == id)
-                .Select(trip => trip.Id)
-                .ToList();
+            var day = context.Days.FirstOrDefault(d => d.Id == dayId);
 
-            return myTripIds;
+            if (day is null)
+                return null;
+
+            return day.Trip;
         }
 
         /// <summary>

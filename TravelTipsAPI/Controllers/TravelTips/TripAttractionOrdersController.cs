@@ -1,22 +1,171 @@
-﻿//using System.Reflection;
-//using Microsoft.AspNetCore.Authorization;
-//using Microsoft.AspNetCore.Mvc;
-//using TravelTipsAPI.Authorization;
-//using TravelTipsAPI.Constants;
-//using TravelTipsAPI.Models.TravelTipsModels;
-//using TravelTipsAPI.ViewModels.db_basic;
-//using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+﻿using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
-//namespace TravelTipsAPI.Controllers.TravelTips
-//{
-//    /// <summary>
-//    /// The controller of Trip Attraction Orders
-//    /// </summary>
-//    /// <param name="taosService">trip attraction orders service</param>
-//    [Route("api/[controller]")]
-//    public class TripAttractionOrdersController(ITripAttractionOrdersService taosService)
-//        : TravelTipsControllerBase
-//    {
+namespace TravelTipsAPI.Controllers.TravelTips
+{
+    /// <summary>
+    /// The controller of Trip Attraction Orders
+    /// </summary>
+    /// <param name="taosService">trip attraction orders service</param>
+    [Route("api/[controller]")]
+    public class TripAttractionOrdersController(
+        ITripAttractionOrdersService taosService,
+        ITripsService tripsService
+    ) : TravelTipsControllerBase
+    {
+        /// <summary>
+        /// Get a list of tao by day id
+        /// </summary>
+        /// <param name="id">day id</param>
+        /// <returns>a list of tao on that day</returns>
+        [HttpGet]
+        [Route("day/{id}")]
+        [AllowAnonymous]
+        [SetUserId]
+        public ActionResult<TripAttractionOrderViewModel> GetTaosByDayId(int id)
+        {
+            // check if the trip is public or the user is the owner
+            var trip = tripsService.GetTripByDayId(id);
+
+            if (trip is null)
+            {
+                return NotFound(Messages.DayNotFound);
+            }
+
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            if ((trip.IsPublic || trip.CreatedBy == userId) && !trip.IsHidden)
+            {
+                var taoViewModels = taosService.GetTaosByDayId(id);
+                return Ok(taoViewModels);
+            }
+            else
+            {
+                return Forbid(Messages.TripUnauthorized);
+            }
+        }
+
+        /// <summary>
+        /// create a new tao under day id
+        /// </summary>
+        /// <param name="id">day id</param>
+        /// <param name="newTao">new tao</param>
+        /// <returns>the new tao id</returns>
+        [HttpPost]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.DAYS)]
+        public async Task<ActionResult<int>> CreateNewTao(
+            int id,
+            [FromBody] TripAttractionOrderPostViewModel newTao
+        )
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            try
+            {
+                // check time is valid
+                taosService.IsTimeValid(newTao.Start);
+                taosService.IsTimeValid(newTao.End);
+
+                // check tao has conflict
+                taosService.IsTaoConflicted(newTao.Start, newTao.End, id);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            try
+            {
+                var taoId = await taosService.PostTao(newTao, userId);
+
+                return Ok(taoId);
+            }
+            catch (Exception ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// update an existing tao
+        /// </summary>
+        /// <param name="id">tao id</param>
+        /// <param name="taoPatch">tao details to be updated</param>
+        /// <returns>updated tao</returns>
+        [HttpPatch]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
+        public async Task<ActionResult<int>> UpdateTao(
+            int id,
+            [FromBody] TripAttractionOrderPatchViewModel taoPatch
+        )
+        {
+            var tao = taosService.FindTaoById(id);
+
+            if (tao is null)
+                return NotFound(Messages.TaoNotFound);
+
+            try
+            {
+                // check time is valid
+                if (taoPatch.Start != null)
+                    taosService.IsTimeValid((TimeOnly)taoPatch.Start);
+
+                if (taoPatch.End != null)
+                    taosService.IsTimeValid((TimeOnly)taoPatch.End);
+
+                // check tao has conflict
+                taosService.IsTaoConflicted(
+                    taoPatch.Start ?? tao.Start,
+                    taoPatch.End ?? tao.End,
+                    id
+                );
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+
+            try
+            {
+                var taoId = await taosService.PatchTao(taoPatch, tao);
+
+                return Ok(taoId);
+            }
+            catch (Exception ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Delete tao by its id
+        /// </summary>
+        /// <param name="id">tao id</param>
+        /// <returns>deleted tao id</returns>
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
+        public async Task<ActionResult<int>> DeleteTaosById(int id)
+        {
+            var tao = taosService.FindTaoById(id);
+
+            var taoId = await taosService.DeleteTaoById(tao!);
+
+            return Ok(taoId);
+        }
+
+        // TODO - no http delete route on day id (delete on day id is used in delete day route)
+        //      - only http delete route on tao id (individually)
+    }
+}
 //        // taos
 
 //        /// <summary>

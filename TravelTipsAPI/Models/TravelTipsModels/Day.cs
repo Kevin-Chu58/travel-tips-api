@@ -9,10 +9,6 @@ public partial class Day
 
     public string? Description { get; set; }
 
-    public TimeOnly Start { get; set; }
-
-    public TimeOnly End { get; set; }
-
     public bool IsOverNight { get; set; }
 
     public int CreatedBy { get; set; }

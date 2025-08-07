@@ -1,23 +1,175 @@
-﻿//namespace TravelTipsAPI.Services.TravelTipsServices;
+﻿namespace TravelTipsAPI.Services.TravelTipsServices;
 
-//using System.Collections.Generic;
-//using System.Threading.Tasks;
-//using TravelTipsAPI.Constants;
-//using TravelTipsAPI.Models.TravelTipsModels;
-//using TravelTipsAPI.ViewModels.db_basic;
-//using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
-///// <summary>
-///// The service of Trip Attraction Orders
-///// </summary>
-///// <param name="context">travel tips context</param>
-//public class TripAttractionOrdersService(
-//    TravelTipsContext context,
-//    IPreferRoutesService preferRoutesService,
-//    IAttractionsService attractionsService
-//) : ITripAttractionOrdersService
-//{
-//    // taos
+/// <summary>
+/// The service of Trip Attraction Orders
+/// </summary>
+/// <param name="context">travel tips context</param>
+public class TripAttractionOrdersService(
+    TravelTipsContext context
+//IPreferRoutesService preferRoutesService,
+) : ITripAttractionOrdersService
+{
+    /// <summary>
+    /// Get all your trip attraction order ids
+    /// </summary>
+    /// <param name="id">user id</param>
+    /// <returns>a list of your trip attraction order ids</returns>
+    public IEnumerable<int> GetMyTaos(int id)
+    {
+        var myTaoIds = context
+            .TripAttractionOrders.Where(tao => tao.CreatedBy == id)
+            .Select(tao => tao.Id)
+            .ToList();
+
+        return myTaoIds;
+    }
+
+    /// <summary>
+    /// Find tao by id
+    /// </summary>
+    /// <param name="id">tao id</param>
+    /// <returns>tao</returns>
+    public TripAttractionOrder? FindTaoById(int id)
+    {
+        var tao = context.TripAttractionOrders.FirstOrDefault(tao => tao.Id == id);
+
+        return tao;
+    }
+
+    /// <summary>
+    /// Get a list of taos by day id
+    /// </summary>
+    /// <param name="dayId">day id</param>
+    /// <returns>a list of taos in the day</returns>
+    public IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId)
+    {
+        var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
+
+        var taoViewModels = taos.Select(tao => new TripAttractionOrderViewModel
+            {
+                Id = tao.Id,
+                DayId = dayId,
+                Start = tao.Start,
+                End = tao.End,
+                CreatedBy = tao.CreatedBy,
+                Attraction = (Attraction2ViewModel)tao.Attraction,
+                Highlight = tao.Highlight != null ? (HighlightViewModel)tao.Highlight : null,
+            })
+            .OrderBy(t => t.Start)
+            .ToList();
+
+        return taoViewModels;
+    }
+
+    /// <summary>
+    /// Create a new tao
+    /// </summary>
+    /// <param name="newTao">new tao</param>
+    /// <param name="userId">user id</param>
+    /// <returns>the new tao id</returns>
+    public async Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId)
+    {
+        var tao = newTao.ToTripAttractionOrder(userId);
+
+        await context.TripAttractionOrders.AddAsync(tao);
+        await context.SaveChangesAsync();
+
+        return tao.Id;
+    }
+
+    /// <summary>
+    /// Update tao with updated tao details
+    /// </summary>
+    /// <param name="taoPatch">tao details to be updated</param>
+    /// <param name="id">tao id</param>
+    /// <returns>the updated tao id</returns>
+    public async Task<int> PatchTao(
+        TripAttractionOrderPatchViewModel taoPatch,
+        TripAttractionOrder tao
+    )
+    {
+        tao!.AttractionId = taoPatch.AttractionId ?? tao.AttractionId;
+        tao.HighlightId = taoPatch.HighlightId ?? tao.HighlightId;
+        tao.DayId = taoPatch.DayId ?? tao.DayId;
+        tao.Start = taoPatch.Start ?? tao.Start;
+        tao.End = taoPatch?.End ?? tao.End;
+
+        await context.SaveChangesAsync();
+
+        return tao.Id;
+    }
+
+    /// <summary>
+    /// Delete a tao by tao id
+    /// </summary>
+    /// <param name="tao">tao</param>
+    /// <returns>deleted tao id</returns>
+    public async Task<int> DeleteTaoById(TripAttractionOrder tao)
+    {
+        context.TripAttractionOrders.Remove(tao);
+        await context.SaveChangesAsync();
+
+        return tao.Id;
+    }
+
+    /// <summary>
+    /// Delete a list of taos by day id
+    /// </summary>
+    /// <param name="dayId">day id</param>
+    /// <returns></returns>
+    public async Task<int> DeleteTaosByDayId(int dayId)
+    {
+        var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
+
+        context.TripAttractionOrders.RemoveRange(taos);
+        await context.SaveChangesAsync();
+
+        return taos.Count;
+    }
+
+    /// <summary>
+    /// Check if time is aligned to a 15-minute interval
+    /// </summary>
+    /// <param name="time">start/end time</param>
+    public void IsTimeValid(TimeOnly time)
+    {
+        if (time.Minute % 15 == 0)
+            return;
+
+        throw new Exception(Messages.TaoTimeInvalid);
+    }
+
+    /// <summary>
+    /// Check if tao start and end time overlaps with other taos in the same day
+    /// </summary>
+    /// <param name="start">start time</param>
+    /// <param name="end">end time</param>
+    /// <param name="dayId">day id</param>
+    public void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId)
+    {
+        var existingTaos = context
+            .TripAttractionOrders.Where(tao => tao.DayId == dayId)
+            .Select(tao => new { tao.Start, tao.End })
+            .ToList();
+
+        foreach (var tao in existingTaos)
+        {
+            if (start < tao.End && tao.Start < end)
+            {
+                // Overlap detected
+                throw new Exception(Messages.TaoTimeConflicted);
+            }
+        }
+        return; // No overlaps
+    }
+}
 
 //    /// <summary>
 //    /// Get a trip attraction order
@@ -60,22 +212,6 @@
 //            .ToList();
 //        return taos;
 //    }
-
-//    /// <summary>
-//    /// Get all your trip attraction order ids
-//    /// </summary>
-//    /// <param name="id">user id</param>
-//    /// <returns>a list of your trip attraction order ids</returns>
-//    public IEnumerable<int> GetMyTripAttractionOrders(int id)
-//    {
-//        var myTaoIds = context
-//            .TripAttractionOrders.Where(tao => tao.CreatedBy == id)
-//            .Select(tao => tao.Id)
-//            .ToList();
-
-//        return myTaoIds;
-//    }
-
 //    /// <summary>
 //    /// Create a new trip attraction order
 //    /// </summary>

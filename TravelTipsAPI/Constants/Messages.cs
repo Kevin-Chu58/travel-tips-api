@@ -19,9 +19,12 @@
 
         // Days
         public static readonly string DayNotFound = "Day not found.";
-        public static readonly string Day24HourRestricted = "Start time cannot equal to End time.";
-        public static readonly string DayStartsBeforeEndRestricted =
-            "A Day starts before another ends.";
+        public static readonly string DayUnauthorized = "Day access unauthorized.";
+        public static readonly string DayInputInvalid = "Day input is invalid.";
+
+        //public static readonly string Day24HourRestricted = "Start time cannot equal to End time.";
+        //public static readonly string DayStartsBeforeEndRestricted =
+        //    "A Day starts before another ends.";
 
         // Links
         public static readonly string LinkNotFound = "Link not found.";
@@ -45,12 +48,16 @@
         public static readonly string PreferRouteInUse = "Prefer Route in use.";
 
         // TripAttractionOrders
-        public static readonly string TaoNotFound = "Trip Attraction Order not found.";
-        public static readonly string TaorNotFound = "Trip Attraction Order Route not found.";
-        public static readonly string NewOrderInvalid = "New order is invalid.";
-        public static readonly string TaorExist = "Trip Attraction Order Route exists.";
-        public static readonly string EstimateTravelTimeRestricted =
-            "Estimate Travel Time should be positive.";
+        public static readonly string TaoNotFound = "Event not found.";
+        public static readonly string TaoTimeInvalid =
+            "Event time is not aligned to 15-minute interval.";
+        public static readonly string TaoTimeConflicted = "Event time has time conflict.";
+
+        //public static readonly string TaorNotFound = "Trip Attraction Order Route not found.";
+        //public static readonly string NewOrderInvalid = "New order is invalid.";
+        //public static readonly string TaorExist = "Trip Attraction Order Route exists.";
+        //public static readonly string EstimateTravelTimeRestricted =
+        //    "Estimate Travel Time should be positive.";
 
         // Images
         public static readonly string ImageNotFound = "Image not found.";

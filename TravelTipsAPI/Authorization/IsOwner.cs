@@ -24,7 +24,7 @@ namespace TravelTipsAPI.Authorization
         private IHighlightsService _highlightsService;
 
         //private IPreferRoutesService _preferRoutesService;
-        //private ITripAttractionOrdersService _tripAttractionOrdersService;
+        private ITripAttractionOrdersService _tripAttractionOrdersService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -43,8 +43,8 @@ namespace TravelTipsAPI.Authorization
                 context.HttpContext.RequestServices.GetRequiredService<IHighlightsService>();
             //_preferRoutesService =
             //    context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
-            //_tripAttractionOrdersService =
-            //    context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
+            _tripAttractionOrdersService =
+                context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
 
             var auth0Id =
                 context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
@@ -111,11 +111,9 @@ namespace TravelTipsAPI.Authorization
                 //    myPreferRoutes = _preferRoutesService.GetMyPreferRoutes(UserId);
                 //    return myPreferRoutes.Any(prId => prId == ResourceId);
 
-                //case Resources.TRIP_ATTRACTION_ORDERS:
-                //    myTripAttractionOrders = _tripAttractionOrdersService.GetMyTripAttractionOrders(
-                //        UserId
-                //    );
-                //    return myTripAttractionOrders.Any(taoId => taoId == ResourceId);
+                case Resources.TRIP_ATTRACTION_ORDERS:
+                    myTripAttractionOrders = _tripAttractionOrdersService.GetMyTaos(UserId);
+                    return myTripAttractionOrders.Any(taoId => taoId == ResourceId);
             }
             return false;
         }

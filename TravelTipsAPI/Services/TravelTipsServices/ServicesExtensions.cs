@@ -20,7 +20,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<IAttractionsService, AttractionsService>();
             services.AddScoped<IHighlightsService, HighlightsService>();
             //services.AddScoped<IPreferRoutesService, PreferRoutesService>();
-            //services.AddScoped<ITripAttractionOrdersService, TripAttractionOrdersService>();
+            services.AddScoped<ITripAttractionOrdersService, TripAttractionOrdersService>();
             // user role schema
             services.AddScoped<IUserRolesService, UserRolesService>();
             // image schema
