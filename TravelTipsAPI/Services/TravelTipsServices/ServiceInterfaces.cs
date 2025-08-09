@@ -121,7 +121,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<int> DeleteTaoById(TripAttractionOrder tao);
             Task<int> DeleteTaosByDayId(int dayId);
             void IsTimeValid(TimeOnly time);
-            void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId);
+            void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId, int taoId = 0);
         }
         //    // taos
         //    TripAttractionOrder FindTripAttractionOrderById(int id, bool? isPublic = null);

@@ -39,32 +39,39 @@ namespace TravelTipsAPI.Services.HereMapServices
             int? limit
         )
         {
-            var encoded = Uri.EscapeDataString(query);
-            var actualLimit = limit ?? 20;
-            var requestUrl =
-                $"{_baseUrl}/v1/discover?q={encoded}&at={lat},{lng}&limit={actualLimit}&apiKey={_apiKey}";
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-            request.Headers.UserAgent.ParseAdd(Global.USER_AGENT);
-
-            using var response = await _httpClient.SendAsync(request);
-            response.EnsureSuccessStatusCode();
-
-            using var stream = await response.Content.ReadAsStreamAsync();
-            var result = await JsonSerializer.DeserializeAsync<HereDiscoverResponse>(
-                stream,
-                _jsonOptions
-            );
-
-            if (result is null || result.Items.Count == 0)
+            try
             {
-                throw new Exception(Messages.HereMapPlaceNotFound);
-            }
+                var encoded = Uri.EscapeDataString(query);
+                var actualLimit = limit ?? 20;
+                var requestUrl =
+                    $"{_baseUrl}/v1/discover?q={encoded}&at={lat},{lng}&limit={actualLimit}&apiKey={_apiKey}";
 
-            var herePlaces = result
-                .Items.Select(herePlace => ModelUtils.ToAttraction(herePlace))
-                .ToList();
-            return herePlaces;
+                using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+                request.Headers.UserAgent.ParseAdd(Global.USER_AGENT);
+
+                using var response = await _httpClient.SendAsync(request);
+                response.EnsureSuccessStatusCode();
+
+                using var stream = await response.Content.ReadAsStreamAsync();
+                var result = await JsonSerializer.DeserializeAsync<HereDiscoverResponse>(
+                    stream,
+                    _jsonOptions
+                );
+
+                if (result is null || result.Items.Count == 0)
+                {
+                    throw new Exception(Messages.HereMapPlaceNotFound);
+                }
+
+                var herePlaces = result
+                    .Items.Select(herePlace => ModelUtils.ToAttraction(herePlace))
+                    .ToList();
+                return herePlaces;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
         }
     }
 }

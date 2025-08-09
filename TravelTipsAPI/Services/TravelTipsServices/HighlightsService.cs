@@ -122,31 +122,19 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>the deleted highlight</returns>
         public async Task<HighlightViewModel> DeleteHighlightAsync(Highlight highlight)
         {
-            // replace all reference to this highlight with the default highlight
-            var defaultHighlight = GetDefaultHighlight(highlight.AttractionId);
+            // replace all reference to this highlight with null
 
-            if (defaultHighlight != null)
+
+            var taos = context.TripAttractionOrders.Where(tao => tao.HighlightId == highlight.Id);
+            foreach (var tao in taos)
             {
-                var taos = context.TripAttractionOrders.Where(tao =>
-                    tao.HighlightId == highlight.Id
-                );
-                foreach (var tao in taos)
-                {
-                    tao.HighlightId = defaultHighlight!.Id;
-                }
+                tao.HighlightId = null;
             }
 
             context.Highlights.Remove(highlight);
             await context.SaveChangesAsync();
 
             return GetHighlightViewModel(highlight);
-        }
-
-        private Highlight? GetDefaultHighlight(int attractionId)
-        {
-            return context.Highlights.FirstOrDefault(h =>
-                h.AttractionId == attractionId && h.CreatedBy == null
-            );
         }
     }
 }

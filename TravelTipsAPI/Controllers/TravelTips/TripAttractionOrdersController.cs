@@ -74,7 +74,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 taosService.IsTimeValid(newTao.End);
 
                 // check tao has conflict
-                taosService.IsTaoConflicted(newTao.Start, newTao.End, id);
+                taosService.IsTaoConflicted(newTao.Start, newTao.End, newTao.DayId);
             }
             catch (Exception ex)
             {
@@ -122,11 +122,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     taosService.IsTimeValid((TimeOnly)taoPatch.End);
 
                 // check tao has conflict
-                taosService.IsTaoConflicted(
-                    taoPatch.Start ?? tao.Start,
-                    taoPatch.End ?? tao.End,
-                    id
-                );
+                if (taoPatch.Start != null || taoPatch.End != null)
+                {
+                    taosService.IsTaoConflicted(
+                        taoPatch.Start ?? tao.Start,
+                        taoPatch.End ?? tao.End,
+                        tao.DayId,
+                        id
+                    );
+                }
             }
             catch (Exception ex)
             {
@@ -161,9 +165,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             return Ok(taoId);
         }
-
-        // TODO - no http delete route on day id (delete on day id is used in delete day route)
-        //      - only http delete route on tao id (individually)
     }
 }
 //        // taos
