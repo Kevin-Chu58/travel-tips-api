@@ -22,10 +22,6 @@
         public static readonly string DayUnauthorized = "Day access unauthorized.";
         public static readonly string DayInputInvalid = "Day input is invalid.";
 
-        //public static readonly string Day24HourRestricted = "Start time cannot equal to End time.";
-        //public static readonly string DayStartsBeforeEndRestricted =
-        //    "A Day starts before another ends.";
-
         // Links
         public static readonly string LinkNotFound = "Link not found.";
         public static readonly string LinkInvalid = "Link is invalid.";
@@ -65,10 +61,9 @@
         public static readonly string ImageTripAttached = "Image is attached on trip.";
         public static readonly string ImageTripDetached = "Image is not attached on trip.";
 
-        // Nominatim
-        public static readonly string OsmEntityNotFound = "Location not found.";
-
         // HereMap
         public static readonly string HereMapPlaceNotFound = "Location not found.";
+        public static readonly string HereMapRouteNotFound = "Route not found.";
+        public static readonly string HereMapTransportModeNotFound = "Transport mode not found.";
     }
 }

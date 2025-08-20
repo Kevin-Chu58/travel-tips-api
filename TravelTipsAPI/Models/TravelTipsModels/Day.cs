@@ -9,8 +9,6 @@ public partial class Day
 
     public string? Description { get; set; }
 
-    public bool IsOverNight { get; set; }
-
     public int CreatedBy { get; set; }
 
     public int TripId { get; set; }

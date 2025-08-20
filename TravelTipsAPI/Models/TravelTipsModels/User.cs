@@ -21,10 +21,6 @@ public partial class User
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
-    public virtual ICollection<Link> Links { get; set; } = new List<Link>();
-
-    public virtual ICollection<PreferRoute> PreferRoutes { get; set; } = new List<PreferRoute>();
-
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();

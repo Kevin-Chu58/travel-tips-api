@@ -5,16 +5,14 @@ using System.Threading.Tasks;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
 /// <summary>
 /// The service of Trip Attraction Orders
 /// </summary>
 /// <param name="context">travel tips context</param>
-public class TripAttractionOrdersService(
-    TravelTipsContext context
-//IPreferRoutesService preferRoutesService,
-) : ITripAttractionOrdersService
+public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttractionOrdersService
 {
     /// <summary>
     /// Get all your trip attraction order ids
@@ -61,11 +59,32 @@ public class TripAttractionOrdersService(
                 CreatedBy = tao.CreatedBy,
                 Attraction = (Attraction2ViewModel)tao.Attraction,
                 Highlight = tao.Highlight != null ? (HighlightViewModel)tao.Highlight : null,
+                TransportMode = tao.TransportMode,
             })
             .OrderBy(t => t.Start)
             .ToList();
 
         return taoViewModels;
+    }
+
+    public List<HereRouting> GetAttractionRoutingsByDayId(int dayId)
+    {
+        var taos = context
+            .TripAttractionOrders.Where(tao => tao.DayId == dayId)
+            .OrderBy(tao => tao.Start)
+            .ToList();
+        var herePositions = taos.Select(tao => new HereRouting
+            {
+                Position = new HerePosition
+                {
+                    Lat = (double)tao.Attraction.Lat,
+                    Lng = (double)tao.Attraction.Lng,
+                },
+                TransportMode = tao.TransportMode ?? "car",
+            })
+            .ToList();
+
+        return herePositions;
     }
 
     /// <summary>

@@ -9,6 +9,6 @@
         public TimeOnly Start { get; set; }
         public TimeOnly End { get; set; }
         public int CreatedBy { get; set; }
-        //public required IEnumerable<PreferRouteViewModel> PreferRoutes { get; set; }
+        public string? TransportMode { get; set; }
     }
 }

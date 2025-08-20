@@ -19,11 +19,8 @@ namespace TravelTipsAPI.Authorization
         private IUsersService _usersService;
         private ITripsService _tripsService;
         private IDaysService _daysService;
-        private ILinksService _linksService;
         private IAttractionsService _attractionsService;
         private IHighlightsService _highlightsService;
-
-        //private IPreferRoutesService _preferRoutesService;
         private ITripAttractionOrdersService _tripAttractionOrdersService;
 
         private int ResourceId { get; set; }
@@ -36,13 +33,10 @@ namespace TravelTipsAPI.Authorization
             _usersService = context.HttpContext.RequestServices.GetRequiredService<IUsersService>();
             _tripsService = context.HttpContext.RequestServices.GetRequiredService<ITripsService>();
             _daysService = context.HttpContext.RequestServices.GetRequiredService<IDaysService>();
-            _linksService = context.HttpContext.RequestServices.GetRequiredService<ILinksService>();
             _attractionsService =
                 context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
             _highlightsService =
                 context.HttpContext.RequestServices.GetRequiredService<IHighlightsService>();
-            //_preferRoutesService =
-            //    context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
             _tripAttractionOrdersService =
                 context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
 
@@ -95,10 +89,6 @@ namespace TravelTipsAPI.Authorization
                     myDays = _daysService.GetMyDayIds(UserId);
                     return myDays.Any(dayId => dayId == ResourceId);
 
-                case Resources.LINKS:
-                    myLinks = _linksService.GetMyLinkIds(UserId);
-                    return myLinks.Any(linkId => linkId == ResourceId);
-
                 case Resources.ATTRACTIONS:
                     myAttractions = _attractionsService.GetMyHighlights(UserId);
                     return myAttractions.Any(aId => aId == ResourceId);
@@ -106,10 +96,6 @@ namespace TravelTipsAPI.Authorization
                 case Resources.HIGHLIGHTS:
                     myHighlights = _highlightsService.GetMyHighlights(UserId);
                     return myHighlights.Any(aId => aId == ResourceId);
-
-                //case Resources.PREFER_ROUTES:
-                //    myPreferRoutes = _preferRoutesService.GetMyPreferRoutes(UserId);
-                //    return myPreferRoutes.Any(prId => prId == ResourceId);
 
                 case Resources.TRIP_ATTRACTION_ORDERS:
                     myTripAttractionOrders = _tripAttractionOrdersService.GetMyTaos(UserId);

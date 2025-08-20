@@ -19,6 +19,8 @@ public partial class TripAttractionOrder
 
     public TimeOnly End { get; set; }
 
+    public string? TransportMode { get; set; }
+
     public virtual Attraction Attraction { get; set; } = null!;
 
     public virtual User CreatedByNavigation { get; set; } = null!;
@@ -26,6 +28,4 @@ public partial class TripAttractionOrder
     public virtual Day Day { get; set; } = null!;
 
     public virtual Highlight? Highlight { get; set; }
-
-    public virtual ICollection<TripAttractionOrderRoute> TripAttractionOrderRoutes { get; set; } = new List<TripAttractionOrderRoute>();
 }

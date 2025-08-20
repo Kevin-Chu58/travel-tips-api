@@ -10,7 +10,6 @@ using TravelTipsAPI.Middleware;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.Auth0Services;
 using TravelTipsAPI.Services.AzureKeyVaultServices;
-using TravelTipsAPI.Services.NominatimServices;
 using TravelTipsAPI.Services.TravelTipsServices;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 
@@ -63,7 +62,6 @@ builder.Services.AddSwaggerGen(c =>
 // Add Services
 builder.Services.AddServices();
 builder.Services.AddAuth0Services();
-builder.Services.AddNominatimServices();
 builder.Services.AddHereMapServices();
 
 // get the firebase config and register it

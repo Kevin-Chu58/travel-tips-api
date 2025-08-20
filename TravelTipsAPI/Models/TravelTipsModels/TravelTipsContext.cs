@@ -21,17 +21,9 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Image> Images { get; set; }
 
-    public virtual DbSet<Link> Links { get; set; }
-
-    public virtual DbSet<PreferRoute> PreferRoutes { get; set; }
-
-    public virtual DbSet<RouteType> RouteTypes { get; set; }
-
     public virtual DbSet<Trip> Trips { get; set; }
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
-
-    public virtual DbSet<TripAttractionOrderRoute> TripAttractionOrderRoutes { get; set; }
 
     public virtual DbSet<TripImage> TripImages { get; set; }
 
@@ -100,8 +92,6 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Days", "db_basic");
 
-            entity.HasIndex(e => e.IsOverNight, "idx_days_isOverNight");
-
             entity.Property(e => e.Title).HasMaxLength(50).IsUnicode(false);
 
             entity
@@ -155,73 +145,6 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_users_images");
         });
 
-        modelBuilder.Entity<Link>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_links");
-
-            entity.ToTable("Links", "db_basic");
-
-            entity.Property(e => e.Name).HasMaxLength(50).IsUnicode(false);
-            entity.Property(e => e.Url).HasMaxLength(50).IsUnicode(false);
-
-            entity
-                .HasOne(d => d.CreatedByNavigation)
-                .WithMany(p => p.Links)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_users_links");
-        });
-
-        modelBuilder.Entity<PreferRoute>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_prefer_routes");
-
-            entity.ToTable("PreferRoutes", "db_basic");
-
-            entity
-                .HasOne(d => d.ArrivalAttraction)
-                .WithMany(p => p.PreferRouteArrivalAttractions)
-                .HasForeignKey(d => d.ArrivalAttractionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_attractions_prefer_routes_arrival");
-
-            entity
-                .HasOne(d => d.CreatedByNavigation)
-                .WithMany(p => p.PreferRoutes)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_users_prefer_routes");
-
-            entity
-                .HasOne(d => d.DepartAttraction)
-                .WithMany(p => p.PreferRouteDepartAttractions)
-                .HasForeignKey(d => d.DepartAttractionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_attractions_prefer_routes_depart");
-
-            entity
-                .HasOne(d => d.Link)
-                .WithMany(p => p.PreferRoutes)
-                .HasForeignKey(d => d.LinkId)
-                .HasConstraintName("fk_prefer_routes_links");
-
-            entity
-                .HasOne(d => d.TypeNavigation)
-                .WithMany(p => p.PreferRoutes)
-                .HasForeignKey(d => d.Type)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_prefer_routes_route_types");
-        });
-
-        modelBuilder.Entity<RouteType>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_route_types");
-
-            entity.ToTable("RouteTypes", "db_basic");
-
-            entity.Property(e => e.Name).HasMaxLength(20).IsUnicode(false);
-        });
-
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
@@ -251,6 +174,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => e.HighlightId, "idx_tao_highlight_id");
 
+            entity.Property(e => e.TransportMode).HasMaxLength(20).IsUnicode(false);
+
             entity
                 .HasOne(d => d.Attraction)
                 .WithMany(p => p.TripAttractionOrders)
@@ -277,36 +202,6 @@ public partial class TravelTipsContext : DbContext
                 .WithMany(p => p.TripAttractionOrders)
                 .HasForeignKey(d => d.HighlightId)
                 .HasConstraintName("fk_trip_attraction_orders_highlights");
-        });
-
-        modelBuilder.Entity<TripAttractionOrderRoute>(entity =>
-        {
-            entity
-                .HasKey(e => new { e.TripAttractionOrderId, e.PreferRouteId })
-                .HasName("pk_trip_attraction_order_routes");
-
-            entity.ToTable("TripAttractionOrderRoutes", "db_basic");
-
-            entity
-                .HasIndex(
-                    e => new { e.TripAttractionOrderId, e.Order },
-                    "unique_trip_attraction_order_order"
-                )
-                .IsUnique();
-
-            entity
-                .HasOne(d => d.PreferRoute)
-                .WithMany(p => p.TripAttractionOrderRoutes)
-                .HasForeignKey(d => d.PreferRouteId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_prefer_routes_trip_attraction_order_routes");
-
-            entity
-                .HasOne(d => d.TripAttractionOrder)
-                .WithMany(p => p.TripAttractionOrderRoutes)
-                .HasForeignKey(d => d.TripAttractionOrderId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_trip_attraction_orders_trip_attraction_order_routes");
         });
 
         modelBuilder.Entity<TripImage>(entity =>

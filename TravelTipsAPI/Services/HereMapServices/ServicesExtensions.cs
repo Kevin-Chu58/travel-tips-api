@@ -12,6 +12,7 @@ namespace TravelTipsAPI.HereMapServices
 
             services.AddScoped<IHereMapDiscoverService, HereMapDiscoverService>();
             services.AddScoped<IHereMapLookupService, HereMapLookupService>();
+            services.AddScoped<IHereMapRoutingService, HereMapRoutingService>();
 
             return services;
         }

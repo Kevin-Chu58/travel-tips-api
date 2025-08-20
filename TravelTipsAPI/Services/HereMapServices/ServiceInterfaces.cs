@@ -1,4 +1,5 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.HereMap;
 
 namespace TravelTipsAPI.Services.HereMapServices
 {
@@ -17,6 +18,17 @@ namespace TravelTipsAPI.Services.HereMapServices
         public interface IHereMapLookupService
         {
             Task<Attraction> LookupPlaceByIdAsync(string hereId);
+        }
+
+        public interface IHereMapRoutingService
+        {
+            Task<HereRoutingResponse> GetRouteAsync(
+                string transportMode,
+                double originLat,
+                double originLng,
+                double destinationLat,
+                double destinationLng
+            );
         }
     }
 }
