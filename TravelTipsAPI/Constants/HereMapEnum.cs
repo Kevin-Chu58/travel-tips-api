@@ -6,7 +6,7 @@
         {
             Car,
             Truck,
-            Pedistrian,
+            Pedestrian,
             PublicTransit,
         };
 
@@ -16,7 +16,7 @@
         {
             { "car", RouteMode.Car },
             { "truck", RouteMode.Truck },
-            { "pedistrian", RouteMode.Pedistrian },
+            { "pedestrian", RouteMode.Pedestrian },
             { "public transit", RouteMode.PublicTransit },
         };
     }

@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
-using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
@@ -23,45 +22,66 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         private UrlSigner? _urlSigner;
 
         /// <summary>
-        /// Get an iamge by its id
+        /// Get a list of images by their ids
         /// </summary>
-        /// <param name="id">image id</param>
-        /// <returns>the image with the id</returns>
-        public async Task<ImageViewModel> GetImageById(int id)
+        /// <param name="ids">ids</param>
+        /// <returns>a list of the images</returns>
+        public async Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids)
         {
-            // key of the image json
-            var key = $"image:{id}:v{CacheVersion.Image_Version}";
+            // keys of the image json
+            var keys = ids.Select(id => $"image:{id}:v{CacheVersion.Image_Version}").ToArray();
 
             // check cache first, if does not exist, send request to HereMap API
-            var cacheJson = await cache.GetAsync(key);
-            ImageViewModel imageViewModel;
+            var cachesJson = await cache.GetMultipleAsync(keys);
 
-            if (cacheJson != null)
-            {
-                // if the cache is not expired, convert it to the correct type
-                imageViewModel = JsonSerializer.Deserialize<ImageViewModel>(cacheJson)!;
-            }
-            else
-            {
-                var image = context.Images.Find(id);
+            List<ImageViewModel> imageViewModels = [];
 
-                if (image is null)
+            for (int i = 0; i < cachesJson.Count; i++)
+            {
+                var cacheJson = cachesJson[i];
+
+                if (cacheJson != null)
                 {
-                    throw new Exception(Messages.ImageNotFound);
+                    // if the cache is not expired, convert it to the correct type
+                    imageViewModels.Add(JsonSerializer.Deserialize<ImageViewModel>(cacheJson)!);
                 }
+                else
+                {
+                    var imageViewModel = await GenerateNewImageAsync(ids[i], keys[i]);
 
-                imageViewModel = (ImageViewModel)image;
-
-                imageViewModel.Url = GenerateSignedUrlAsync(
-                    config["Firebase:BucketName"]!,
-                    $"{imageViewModel.CreatedBy}/{image.Guid}.jpeg",
-                    TimeSpan.FromDays(7) // Firebase allows maximum 7 days expiration
-                ).Result;
-
-                // cache it to UpStash
-                string jsonString = JsonSerializer.Serialize(imageViewModel);
-                await cache.SetWithExpiryAsync(key, jsonString, Time.WEEK_1);
+                    imageViewModels.Add(imageViewModel);
+                }
             }
+
+            return imageViewModels;
+        }
+
+        /// <summary>
+        /// Generate new image view model from image id and key
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <param name="key">key to get from upstash</param>
+        /// <returns>a newly generated image view model</returns>
+        private async Task<ImageViewModel> GenerateNewImageAsync(int id, string key)
+        {
+            var image = context.Images.Find(id);
+
+            if (image is null)
+            {
+                throw new Exception(Messages.ImageNotFound);
+            }
+
+            var imageViewModel = (ImageViewModel)image;
+
+            imageViewModel.Url = await GenerateSignedUrlAsync(
+                config["Firebase:BucketName"]!,
+                $"{imageViewModel.CreatedBy}/{image.Guid}.jpeg",
+                TimeSpan.FromDays(7) // Firebase allows maximum 7 days expiration
+            );
+
+            // cache it to UpStash
+            string jsonString = JsonSerializer.Serialize(imageViewModel);
+            await cache.SetWithExpiryAsync(key, jsonString, Time.WEEK_1);
 
             return imageViewModel;
         }
@@ -140,10 +160,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             {
                 throw new Exception(ex.Message);
             }
-            //catch (Exception)
-            //{
-            //    throw new Exception(Messages.ImageUploadFailed);
-            //}
         }
 
         public async Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId)

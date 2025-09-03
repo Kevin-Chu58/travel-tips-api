@@ -1,5 +1,14 @@
 ﻿namespace TravelTipsAPI.ViewModels.HereMap
 {
+    public class HereRoutingInput
+    {
+        public required string TransportMode { get; set; }
+        public double OriginLat { get; set; }
+        public double OriginLng { get; set; }
+        public double DestinationLat { get; set; }
+        public double DestinationLng { get; set; }
+    }
+
     public class HereRouting
     {
         public required HerePosition Position { get; set; }
@@ -23,7 +32,7 @@
     {
         public string? Id { get; set; }
         public Notice[]? Notices { get; set; }
-        public Section[]? Sections { get; set; }
+        public List<Section>? Sections { get; set; }
     }
 
     public class Section
@@ -31,9 +40,9 @@
         public string? Id { get; set; }
         public string? Type { get; set; }
 
-        //public RouteAction[]? PreActions { get; set; }
-        //public RouteAction[]? PostActions { get; set; }
-        //public RouteAction[]? Actions { get; set; }
+        public List<RouteAction>? PreActions { get; set; }
+        public List<RouteAction>? PostActions { get; set; }
+        public List<RouteAction>? Actions { get; set; }
         public RouteEvent? Departure { get; set; }
         public RouteEvent? Arrival { get; set; }
         public RouteSummary? Summary { get; set; }

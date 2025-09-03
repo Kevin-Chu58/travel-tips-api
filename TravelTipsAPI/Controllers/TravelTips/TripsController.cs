@@ -205,8 +205,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>a list of images attached to the trips</returns>
         [HttpGet]
         [Route("{id}/images")]
-        [AllowAnonymous]
         [SetUserId]
+        [AllowAnonymous]
         public async Task<ActionResult<IEnumerable<ImageViewModel>>> GetImagesByTripId(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -217,18 +217,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 if (trip.IsPublic == false && userId != trip.CreatedBy)
                 {
-                    return Forbid(Messages.TripUnauthorized);
+                    return BadRequest(Messages.TripUnauthorized);
                 }
 
-                var imageIds = imagesService.GetImageIdsByTripId(id);
+                var imageIds = imagesService.GetImageIdsByTripId(id).ToArray();
 
-                var imageViewModels = new List<ImageViewModel>();
-                foreach (var imageId in imageIds)
-                {
-                    // Await one at a time to avoid DbContext concurrency issues
-                    var img = await imagesService.GetImageById(imageId);
-                    imageViewModels.Add(img);
-                }
+                var imageViewModels = await imagesService.GetImagesByIds(imageIds);
 
                 return Ok(imageViewModels);
             }

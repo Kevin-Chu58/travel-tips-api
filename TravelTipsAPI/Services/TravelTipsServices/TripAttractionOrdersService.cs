@@ -67,6 +67,38 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         return taoViewModels;
     }
 
+    public HereRoutingInput? GetHereRoutingInputByTaoId(int taoId)
+    {
+        var taos = context
+            .TripAttractionOrders.Where(tao =>
+                context
+                    .TripAttractionOrders.Where(inner => inner.Id == taoId)
+                    .Select(inner => inner.DayId)
+                    .Contains(tao.DayId)
+            )
+            .OrderBy(tao => tao.Start)
+            .ToList();
+
+        var taoIndex = taos.FindIndex(tao => tao.Id == taoId);
+
+        if (taoIndex == 0)
+            return null;
+
+        var tao = taos[taoIndex];
+        var prevTao = taos[taoIndex - 1];
+
+        var hereRoutingInput = new HereRoutingInput
+        {
+            TransportMode = tao.TransportMode ?? "car",
+            OriginLat = (double)prevTao.Attraction.Lat,
+            OriginLng = (double)prevTao.Attraction.Lng,
+            DestinationLat = (double)tao.Attraction.Lat,
+            DestinationLng = (double)tao.Attraction.Lng,
+        };
+
+        return hereRoutingInput;
+    }
+
     public List<HereRouting> GetAttractionRoutingsByDayId(int dayId)
     {
         var taos = context
@@ -119,6 +151,16 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         tao.DayId = taoPatch.DayId ?? tao.DayId;
         tao.Start = taoPatch.Start ?? tao.Start;
         tao.End = taoPatch?.End ?? tao.End;
+
+        // check the validity of transport mode
+        if (taoPatch?.TransportMode != null)
+        {
+            var isModeValid = HereMapEnum.ModeMap.TryGetValue(taoPatch.TransportMode, out var mode);
+
+            if (!isModeValid)
+                throw new Exception(Messages.HereMapTransportModeNotFound);
+        }
+        tao.TransportMode = taoPatch?.TransportMode ?? tao.TransportMode;
 
         await context.SaveChangesAsync();
 

@@ -55,9 +55,32 @@ namespace TravelTipsAPI.Controllers.HereMap
         }
 
         [HttpGet]
-        [Route("routing/{dayId}")]
+        [Route("routing/{taoId}")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<HereRoutingResponse>>> SearchRoutingAsync(
+        public async Task<ActionResult<HereRoutingResponse?>> GetRoutingOnTaoAsync(int taoId)
+        {
+            var hereRoutingInput = tripAttractionOrdersService.GetHereRoutingInputByTaoId(taoId);
+
+            if (hereRoutingInput == null)
+                return Ok(null);
+
+            try
+            {
+                var hereRoutingResponse = await hereMapRoutingService.GetRouteAsync(
+                    hereRoutingInput
+                );
+                return Ok(hereRoutingResponse);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("routing/day/{dayId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<HereRoutingResponse?>>> GetRoutingsOnDayAsync(
             int dayId
         )
         {
@@ -66,26 +89,27 @@ namespace TravelTipsAPI.Controllers.HereMap
                 var attractionRoutings = tripAttractionOrdersService.GetAttractionRoutingsByDayId(
                     dayId
                 );
-
-                var routes = new List<HereRoutingResponse>();
+                List<HereRoutingInput> routeInputs = [];
 
                 for (var i = 1; i < attractionRoutings.Count; i++)
                 {
                     var prevRouting = attractionRoutings[i - 1];
                     var curRouting = attractionRoutings[i];
 
-                    var hereRoutingResponse = await hereMapRoutingService.GetRouteAsync(
-                        curRouting.TransportMode,
-                        prevRouting.Position.Lat,
-                        prevRouting.Position.Lng,
-                        curRouting.Position.Lat,
-                        curRouting.Position.Lng
-                    );
+                    var routeInput = new HereRoutingInput
+                    {
+                        TransportMode = curRouting.TransportMode,
+                        OriginLat = prevRouting.Position.Lat,
+                        OriginLng = prevRouting.Position.Lng,
+                        DestinationLat = curRouting.Position.Lat,
+                        DestinationLng = curRouting.Position.Lng,
+                    };
 
-                    routes.Add(hereRoutingResponse);
+                    routeInputs.Add(routeInput);
                 }
 
-                return Ok(routes);
+                var hereRoutingResponses = await hereMapRoutingService.GetRoutesAsync(routeInputs);
+                return Ok(hereRoutingResponses);
             }
             catch (Exception ex)
             {

@@ -6,7 +6,7 @@ namespace TravelTipsAPI.Authorization
 {
     public class SetUserId : ActionFilterAttribute
     {
-        public override async void OnActionExecuting(ActionExecutingContext context)
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
             var usersService =
                 context.HttpContext.RequestServices.GetRequiredService<IUsersService>();

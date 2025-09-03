@@ -26,14 +26,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var imageIds = imagesService.GetImageIdsByUserId(userId);
+            var imageIds = imagesService.GetImageIdsByUserId(userId).ToArray();
 
-            var images = new List<ImageViewModel>();
-            foreach (var imageId in imageIds)
-            {
-                var img = await imagesService.GetImageById(imageId);
-                images.Add(img);
-            }
+            var images = await imagesService.GetImagesByIds(imageIds);
 
             return Ok(images);
         }

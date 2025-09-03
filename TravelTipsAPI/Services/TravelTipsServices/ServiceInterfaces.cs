@@ -72,6 +72,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<int> GetMyTaos(int id);
             TripAttractionOrder? FindTaoById(int id);
             IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId);
+            HereRoutingInput? GetHereRoutingInputByTaoId(int taoId);
             List<HereRouting> GetAttractionRoutingsByDayId(int dayId);
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
             Task<int> PatchTao(TripAttractionOrderPatchViewModel taoPatch, TripAttractionOrder tao);
@@ -94,7 +95,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         public interface IImagesService
         {
-            Task<ImageViewModel> GetImageById(int id);
+            Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetImageIdsByTripId(int id);
             Task<ImageViewModel> PostNewImageAsync(

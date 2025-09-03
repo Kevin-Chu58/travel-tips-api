@@ -75,7 +75,7 @@ public partial class TravelTipsContext : DbContext
             );
 
             entity.Property(e => e.Address).HasMaxLength(1000);
-            entity.Property(e => e.Category).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Category).HasMaxLength(50);
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.Country).HasMaxLength(60);
             entity.Property(e => e.HereId).IsUnicode(false);

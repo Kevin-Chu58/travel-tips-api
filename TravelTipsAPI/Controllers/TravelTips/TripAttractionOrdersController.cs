@@ -98,11 +98,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// </summary>
         /// <param name="id">tao id</param>
         /// <param name="taoPatch">tao details to be updated</param>
-        /// <returns>updated tao</returns>
+        /// <returns>a list of taos of the same day with the updated tao</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<int>> UpdateTao(
+        public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> UpdateTao(
             int id,
             [FromBody] TripAttractionOrderPatchViewModel taoPatch
         )
@@ -140,8 +140,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var taoId = await taosService.PatchTao(taoPatch, tao);
+                var taosOfSameDay = taosService.GetTaosByDayId(tao.DayId);
 
-                return Ok(taoId);
+                return Ok(taosOfSameDay);
             }
             catch (Exception ex)
             {

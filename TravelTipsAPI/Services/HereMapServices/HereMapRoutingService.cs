@@ -1,6 +1,9 @@
 ﻿using System.Text.Json;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
 
@@ -29,62 +32,98 @@ namespace TravelTipsAPI.Services.HereMapServices
             PropertyNameCaseInsensitive = true,
         };
 
-        public async Task<HereRoutingResponse> GetRouteAsync(
-            string transportMode,
-            double originLat,
-            double originLng,
-            double destinationLat,
-            double destinationLng
-        )
+        public async Task<HereRoutingResponse?> GetRouteAsync(HereRoutingInput routeInput)
         {
-            var isModeValid = HereMapEnum.ModeMap.TryGetValue(transportMode, out var mode);
+            var key = GetUpstashKey(routeInput);
 
-            if (!isModeValid)
-                throw new Exception(Messages.HereMapTransportModeNotFound);
-
-            HereRoutingResponse? hereRoutingResponse;
-
-            var key =
-                $"mode:{transportMode}:origin:{originLat},{originLng}:destinationLat:{destinationLat},{destinationLng}:v{CacheVersion.HereMap_Route_Version}";
-
-            // check cache first, if does not exist, send request to HereMap API
             var cacheJson = await cache.GetAsync(key);
+
             if (cacheJson != null)
             {
-                hereRoutingResponse = JsonSerializer.Deserialize<HereRoutingResponse>(cacheJson);
+                return JsonSerializer.Deserialize<HereRoutingResponse>(cacheJson);
             }
             else
             {
-                // public transit
-                if (mode == HereMapEnum.RouteMode.PublicTransit)
+                var hereRoutingResponse = await GetNewRouteAsync(routeInput, key);
+
+                return hereRoutingResponse;
+            }
+        }
+
+        public async Task<IEnumerable<HereRoutingResponse?>> GetRoutesAsync(
+            List<HereRoutingInput> routeInputs
+        )
+        {
+            if (routeInputs.Count == 0)
+                return [];
+
+            var keys = routeInputs.Select(input => GetUpstashKey(input)).ToArray();
+
+            var cachesJson = await cache.GetMultipleAsync(keys);
+            List<HereRoutingResponse?> hereRoutingResponses = [];
+
+            for (var i = 0; i < cachesJson.Count; i++)
+            {
+                var cacheJson = cachesJson[i];
+
+                if (cacheJson != null)
                 {
-                    hereRoutingResponse = await GetPublicTransitingAsync(
-                        originLat,
-                        originLng,
-                        destinationLat,
-                        destinationLng
+                    hereRoutingResponses.Add(
+                        JsonSerializer.Deserialize<HereRoutingResponse>(cacheJson)
                     );
                 }
-                // non-public transit: e.g. car, pedestrian, ...
                 else
                 {
-                    hereRoutingResponse = await GetRoutingAsync(
-                        transportMode,
-                        originLat,
-                        originLng,
-                        destinationLat,
-                        destinationLng
-                    );
-                }
+                    var routeInput = routeInputs[i];
+                    var hereRoutingResponse = await GetNewRouteAsync(routeInput, keys[i]);
 
-                // cache if exists
+                    hereRoutingResponses.Add(hereRoutingResponse);
+                }
+            }
+
+            return hereRoutingResponses;
+        }
+
+        private async Task<HereRoutingResponse?> GetNewRouteAsync(
+            HereRoutingInput routeInput,
+            string key
+        )
+        {
+            HereMapEnum.ModeMap.TryGetValue(routeInput.TransportMode, out var mode);
+            HereRoutingResponse? hereRoutingResponse;
+
+            // public transit
+            if (mode == HereMapEnum.RouteMode.PublicTransit)
+            {
+                hereRoutingResponse = await GetPublicTransitingAsync(
+                    routeInput.OriginLat,
+                    routeInput.OriginLng,
+                    routeInput.DestinationLat,
+                    routeInput.DestinationLng
+                );
+            }
+            // non-public transit: e.g. car, pedestrian, ...
+            else
+            {
+                hereRoutingResponse = await GetRoutingAsync(
+                    routeInput.TransportMode,
+                    routeInput.OriginLat,
+                    routeInput.OriginLng,
+                    routeInput.DestinationLat,
+                    routeInput.DestinationLng
+                );
+            }
+
+            // cache if exists
+            try
+            {
                 string jsonString = JsonSerializer.Serialize(hereRoutingResponse);
                 await cache.SetWithExpiryAsync(key, jsonString, Time.WEEK_1);
             }
-
-            if (hereRoutingResponse is null)
+            catch (Exception)
             {
-                throw new Exception(Messages.HereMapRouteNotFound);
+                // store empty string to upstash
+                await cache.SetWithExpiryAsync(key, "", Time.WEEK_1);
             }
 
             return hereRoutingResponse;
@@ -110,13 +149,13 @@ namespace TravelTipsAPI.Services.HereMapServices
             try
             {
                 var requestUrl =
-                    $"{_baseUrl}/v8/routes?apiKey={_apiKey}&transportMode={transportMode}&origin={originLat},{originLng}&destination={destinationLat},{destinationLng}&return=polyline,travelSummary";
+                    $"{_baseUrl}/v8/routes?apiKey={_apiKey}&transportMode={transportMode}&origin={originLat},{originLng}&destination={destinationLat},{destinationLng}&return=polyline,actions,travelSummary";
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.UserAgent.ParseAdd(Global.USER_AGENT);
 
                 using var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
+                response.EnsureSuccessStatusCode(); // TODO - change this to null if it's unsuccessful
 
                 using var stream = await response.Content.ReadAsStreamAsync();
                 var result = await JsonSerializer.DeserializeAsync<HereRoutingResponse>(
@@ -150,13 +189,13 @@ namespace TravelTipsAPI.Services.HereMapServices
             try
             {
                 var requestUrl =
-                    $"{_transitBaseUrl}/v8/routes?apiKey={_apiKey}&origin={originLat},{originLng}&destination={destinationLat},{destinationLng}&return=polyline,intermediate,travelSummary";
+                    $"{_transitBaseUrl}/v8/routes?apiKey={_apiKey}&origin={originLat},{originLng}&destination={destinationLat},{destinationLng}&return=polyline,actions,intermediate,travelSummary&alternatives=0";
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.UserAgent.ParseAdd(Global.USER_AGENT);
 
                 using var response = await _httpClient.SendAsync(request);
-                response.EnsureSuccessStatusCode();
+                response.EnsureSuccessStatusCode(); // TODO - change this to null if it's unsuccessful
 
                 using var stream = await response.Content.ReadAsStreamAsync();
                 var result = await JsonSerializer.DeserializeAsync<HereRoutingResponse>(
@@ -164,12 +203,27 @@ namespace TravelTipsAPI.Services.HereMapServices
                     _jsonOptions
                 );
 
+                if (result != null)
+                {
+                    var preferredRoute = result.Routes?.FirstOrDefault(r =>
+                        r.Sections != null && r.Sections.Any(s => s.Type == "transit")
+                    );
+
+                    // return the first route with transit if applicable
+                    result.Routes = [preferredRoute ?? result.Routes.FirstOrDefault()];
+                }
+
                 return result;
             }
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+        private static string GetUpstashKey(HereRoutingInput input)
+        {
+            return $"mode:{input.TransportMode}:origin:{input.OriginLat},{input.OriginLng}:destinationLat:{input.DestinationLat},{input.DestinationLng}:v{CacheVersion.HereMap_Route_Version}";
         }
     }
 }
