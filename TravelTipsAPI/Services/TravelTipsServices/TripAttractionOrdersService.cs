@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -39,6 +40,27 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         var tao = context.TripAttractionOrders.FirstOrDefault(tao => tao.Id == id);
 
         return tao;
+    }
+
+    public TripAttractionOrderViewModel GetTaoById(int id)
+    {
+        var tao = context
+            .TripAttractionOrders.Include(t => t.Attraction)
+            .Include(t => t.Highlight)
+            .First(tao => tao.Id == id);
+        var taoViewModel = new TripAttractionOrderViewModel
+        {
+            Id = tao!.Id,
+            DayId = tao.DayId,
+            Start = tao.Start,
+            End = tao.End,
+            CreatedBy = tao.CreatedBy,
+            Attraction = (Attraction2ViewModel)tao.Attraction,
+            Highlight = tao.Highlight != null ? (HighlightViewModel)tao.Highlight : null,
+            TransportMode = tao.TransportMode,
+        };
+
+        return taoViewModel;
     }
 
     /// <summary>
@@ -147,7 +169,8 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     )
     {
         tao!.AttractionId = taoPatch.AttractionId ?? tao.AttractionId;
-        tao.HighlightId = taoPatch.HighlightId;
+        tao.HighlightId =
+            taoPatch.AttractionId != null ? null : taoPatch.HighlightId ?? tao.HighlightId;
         tao.DayId = taoPatch.DayId ?? tao.DayId;
         tao.Start = taoPatch.Start ?? tao.Start;
         tao.End = taoPatch?.End ?? tao.End;
@@ -162,6 +185,14 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         }
         tao.TransportMode = taoPatch?.TransportMode ?? tao.TransportMode;
 
+        await context.SaveChangesAsync();
+
+        return tao.Id;
+    }
+
+    public async Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao)
+    {
+        tao.HighlightId = null;
         await context.SaveChangesAsync();
 
         return tao.Id;

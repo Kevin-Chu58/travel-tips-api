@@ -64,15 +64,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPost]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<DayViewModel>> PostNewDay(int id, [FromBody] string? title)
+        public async Task<ActionResult> PostNewDay(int id, [FromBody] string? title)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             try
             {
-                var dayViewModel = await daysService.PostNewDayAsync(userId, id, title);
+                await daysService.PostNewDayAsync(userId, id, title);
 
-                return Ok(dayViewModel);
+                return Ok();
             }
             catch (Exception ex)
             {
@@ -120,14 +120,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.DAYS)]
-        public async Task<ActionResult<DayViewModel>> DeleteDay(int id)
+        public async Task<ActionResult> DeleteDay(int id)
         {
             _ = taosService.DeleteTaosByDayId(id);
 
             Day day = daysService.FindDayById(id);
-            var dayViewModel = await daysService.DeleteDay(day);
+            await daysService.DeleteDay(day);
 
-            return Ok(dayViewModel);
+            return Ok();
         }
     }
 }

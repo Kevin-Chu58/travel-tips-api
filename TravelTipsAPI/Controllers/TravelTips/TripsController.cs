@@ -241,7 +241,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPost]
         [Route("{id}/image/{imageId}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<ImageRelationViewModel>> AttachImage(int id, int imageId)
+        public async Task<ActionResult<ImageViewModel>> AttachImage(int id, int imageId)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -260,9 +260,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 return Forbid(Messages.ImageMaxAttached);
             }
 
-            var imageRelation = await imagesService.AttachImageToTrip(imageId, id);
+            await imagesService.AttachImageToTrip(imageId, id);
 
-            return Ok(imageRelation);
+            var imageViewModels = await imagesService.GetImagesByIds([imageId]);
+
+            return Ok(imageViewModels.First());
         }
 
         /// <summary>

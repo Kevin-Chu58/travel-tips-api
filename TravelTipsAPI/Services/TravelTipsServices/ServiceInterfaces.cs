@@ -71,11 +71,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             IEnumerable<int> GetMyTaos(int id);
             TripAttractionOrder? FindTaoById(int id);
+            TripAttractionOrderViewModel GetTaoById(int id);
             IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId);
             HereRoutingInput? GetHereRoutingInputByTaoId(int taoId);
             List<HereRouting> GetAttractionRoutingsByDayId(int dayId);
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
             Task<int> PatchTao(TripAttractionOrderPatchViewModel taoPatch, TripAttractionOrder tao);
+            Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao);
             Task<int> DeleteTaoById(TripAttractionOrder tao);
             Task<int> DeleteTaosByDayId(int dayId);
             void IsTimeValid(TimeOnly time);

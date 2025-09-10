@@ -19,6 +19,33 @@ namespace TravelTipsAPI.Controllers.TravelTips
         ITripsService tripsService
     ) : TravelTipsControllerBase
     {
+        [HttpGet]
+        [Route("{id}/day/{dayId}")]
+        [AllowAnonymous]
+        [SetUserId]
+        public ActionResult<TripAttractionOrderViewModel> GetTaoById(int id, int dayId)
+        {
+            // check if the trip is public or the user is the owner
+            var trip = tripsService.GetTripByDayId(dayId);
+
+            if (trip is null)
+            {
+                return NotFound(Messages.DayNotFound);
+            }
+
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            if ((trip.IsPublic || trip.CreatedBy == userId) && !trip.IsHidden)
+            {
+                var taoViewModel = taosService.GetTaoById(id);
+                return Ok(taoViewModel);
+            }
+            else
+            {
+                return Forbid(Messages.TripUnauthorized);
+            }
+        }
+
         /// <summary>
         /// Get a list of tao by day id
         /// </summary>
@@ -28,7 +55,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [Route("day/{id}")]
         [AllowAnonymous]
         [SetUserId]
-        public ActionResult<TripAttractionOrderViewModel> GetTaosByDayId(int id)
+        public ActionResult<IEnumerable<TripAttractionOrderViewModel>> GetTaosByDayId(int id)
         {
             // check if the trip is public or the user is the owner
             var trip = tripsService.GetTripByDayId(id);
@@ -56,11 +83,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// </summary>
         /// <param name="id">day id</param>
         /// <param name="newTao">new tao</param>
-        /// <returns>the new tao id</returns>
+        /// <returns>the new tao</returns>
         [HttpPost]
         [Route("{id}")]
         [IsOwner(Resource = Resources.DAYS)]
-        public async Task<ActionResult<int>> CreateNewTao(
+        public async Task<ActionResult<TripAttractionOrderViewModel>> CreateNewTao(
             int id,
             [FromBody] TripAttractionOrderPostViewModel newTao
         )
@@ -84,8 +111,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var taoId = await taosService.PostTao(newTao, userId);
+                var tao = taosService.GetTaoById(taoId);
 
-                return Ok(taoId);
+                return Ok(tao);
             }
             catch (Exception ex)
             {
@@ -98,11 +126,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// </summary>
         /// <param name="id">tao id</param>
         /// <param name="taoPatch">tao details to be updated</param>
-        /// <returns>a list of taos of the same day with the updated tao</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> UpdateTao(
+        public async Task<ActionResult<TripAttractionOrderViewModel>> UpdateTao(
             int id,
             [FromBody] TripAttractionOrderPatchViewModel taoPatch
         )
@@ -140,9 +167,32 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var taoId = await taosService.PatchTao(taoPatch, tao);
-                var taosOfSameDay = taosService.GetTaosByDayId(tao.DayId);
+                var updatedTao = taosService.GetTaoById(taoId);
 
-                return Ok(taosOfSameDay);
+                return Ok(updatedTao);
+            }
+            catch (Exception ex)
+            {
+                return Forbid(ex.Message);
+            }
+        }
+
+        [HttpPatch]
+        [Route("{id}/detach-highlight")]
+        [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
+        public async Task<ActionResult<TripAttractionOrderViewModel>> UpdateTaoHighlight(int id)
+        {
+            var tao = taosService.FindTaoById(id);
+
+            if (tao is null)
+                return NotFound(Messages.TaoNotFound);
+
+            try
+            {
+                var taoId = await taosService.PatchTaoDetachHighlight(tao);
+                var updatedTao = taosService.GetTaoById(taoId);
+
+                return Ok(updatedTao);
             }
             catch (Exception ex)
             {
