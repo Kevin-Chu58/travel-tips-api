@@ -42,7 +42,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
             else
             {
-                return Forbid(Messages.TripUnauthorized);
+                return Unauthorized(Messages.TripUnauthorized);
             }
         }
 
@@ -74,7 +74,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
             else
             {
-                return Forbid(Messages.TripUnauthorized);
+                return Unauthorized(Messages.TripUnauthorized);
             }
         }
 

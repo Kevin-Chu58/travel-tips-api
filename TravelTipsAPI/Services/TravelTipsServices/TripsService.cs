@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
@@ -115,7 +116,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public Trip? GetTripByDayId(int dayId)
         {
-            var day = context.Days.FirstOrDefault(d => d.Id == dayId);
+            var day = context.Days.Include(d => d.Trip).FirstOrDefault(d => d.Id == dayId);
 
             if (day is null)
                 return null;
