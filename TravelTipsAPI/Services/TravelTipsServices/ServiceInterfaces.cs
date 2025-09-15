@@ -12,6 +12,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             User GetUserById(int id);
             User? GetUserByUserId(string userId);
+            Task<User?> GetUserByUserIdAsync(string userId);
             Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
         }

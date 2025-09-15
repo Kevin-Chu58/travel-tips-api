@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -28,14 +29,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return user;
         }
 
+        public User? GetUserByUserId(string userId)
+        {
+            var user = context.Users.FirstOrDefault(user => user.UserId == userId);
+
+            return user;
+        }
+
         /// <summary>
         /// Get the user by its auth0 id
         /// </summary>
         /// <param name="userId">auth0 id</param>
         /// <returns>the user with the auth0 id</returns>
-        public User? GetUserByUserId(string userId)
+        public async Task<User?> GetUserByUserIdAsync(string userId)
         {
-            var user = context.Users.FirstOrDefault(user => user.UserId == userId);
+            var user = await context.Users.FirstOrDefaultAsync(user => user.UserId == userId);
 
             return user;
         }

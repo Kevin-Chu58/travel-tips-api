@@ -42,12 +42,19 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}")]
         [AllowAnonymous]
-        public ActionResult<TripViewModel> GetPublicTripById(int id)
+        [SetUserId]
+        public ActionResult<TripViewModel> GetTripById(int id)
         {
             try
             {
                 var tripViewModel = tripsService.GetTripByTripId(id);
-                return Ok(tripViewModel);
+
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
+                    return Ok(tripViewModel);
+                else
+                    return NotFound(Messages.TripNotFound);
             }
             catch (Exception ex)
             {
@@ -56,32 +63,18 @@ namespace TravelTipsAPI.Controllers.TravelTips
         }
 
         /// <summary>
-        /// Get your own trips
+        /// Get my own trips
         /// </summary>
-        /// <returns>a list of your own trips</returns>
+        /// <returns>a list of my own trips</returns>
         [HttpGet]
         [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<IEnumerable<TripViewModel>> GetYourTrips()
+        public ActionResult<IEnumerable<TripViewModel>> GetMyTrips()
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var myTripViewModels = tripsService.GetTripsByUserId(userId);
             return Ok(myTripViewModels);
-        }
-
-        /// <summary>
-        /// Get your own trip by id
-        /// </summary>
-        /// <param name="id">trip id</param>
-        /// <returns>the trip you own</returns>
-        [HttpGet]
-        [Route("my/{id}")]
-        [IsOwner(Resource = Resources.TRIPS)]
-        public ActionResult<TripViewModel> GetTripById(int id)
-        {
-            var tripViewModel = tripsService.GetTripByTripId(id);
-            return Ok(tripViewModel);
         }
 
         /// <summary>
@@ -205,8 +198,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>a list of images attached to the trips</returns>
         [HttpGet]
         [Route("{id}/images")]
-        [SetUserId]
         [AllowAnonymous]
+        [SetUserId]
         public async Task<ActionResult<IEnumerable<ImageViewModel>>> GetImagesByTripId(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);

@@ -56,7 +56,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             var tripViewModels = context
                 .Trips.Where(trip => trip.Title.ToLower().Contains(title) && trip.IsPublic == true)
-                .Select(trip => (TripViewModel)trip)
+                .Select(trip => new TripViewModel
+                {
+                    Id = trip.Id,
+                    Title = trip.Title,
+                    Description = trip.Description,
+                    CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
+                    CreatedAt = trip.CreatedAt,
+                    IsPublic = trip.IsPublic,
+                    NumDays = context.Days.Where(day => day.TripId == trip.Id).Count(),
+                })
                 .ToList();
 
             foreach (var tripViewModel in tripViewModels)

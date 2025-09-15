@@ -17,7 +17,7 @@ namespace TravelTipsAPI.Authorization
 
         private int UserId { get; set; }
 
-        public override async void OnActionExecuting(ActionExecutingContext actionContext)
+        public override void OnActionExecuting(ActionExecutingContext actionContext)
         {
             context = actionContext;
 
