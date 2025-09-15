@@ -1,15 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Drawing.Text;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models;
-using TravelTipsAPI.Services;
-using TravelTipsAPI.ViewModels.db_basic;
-using static TravelTipsAPI.Services.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
 namespace TravelTipsAPI.Authorization
 {
@@ -26,9 +19,8 @@ namespace TravelTipsAPI.Authorization
         private IUsersService _usersService;
         private ITripsService _tripsService;
         private IDaysService _daysService;
-        private ILinksService _linksService;
         private IAttractionsService _attractionsService;
-        private IPreferRoutesService _preferRoutesService;
+        private IHighlightsService _highlightsService;
         private ITripAttractionOrdersService _tripAttractionOrdersService;
 
         private int ResourceId { get; set; }
@@ -41,16 +33,16 @@ namespace TravelTipsAPI.Authorization
             _usersService = context.HttpContext.RequestServices.GetRequiredService<IUsersService>();
             _tripsService = context.HttpContext.RequestServices.GetRequiredService<ITripsService>();
             _daysService = context.HttpContext.RequestServices.GetRequiredService<IDaysService>();
-            _linksService = context.HttpContext.RequestServices.GetRequiredService<ILinksService>();
             _attractionsService =
                 context.HttpContext.RequestServices.GetRequiredService<IAttractionsService>();
-            _preferRoutesService =
-                context.HttpContext.RequestServices.GetRequiredService<IPreferRoutesService>();
+            _highlightsService =
+                context.HttpContext.RequestServices.GetRequiredService<IHighlightsService>();
             _tripAttractionOrdersService =
                 context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
 
-            var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
+            var auth0Id =
+                context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             if (UserId == 0)
             {
@@ -79,38 +71,35 @@ namespace TravelTipsAPI.Authorization
 
         private bool HasOwnership(string resource)
         {
-            IEnumerable<int> yourTrips,
-                yourDays,
-                yourLinks,
-                yourAttractions,
-                yourPreferRoutes,
-                yourTripAttractionOrders;
+            IEnumerable<int> myTrips,
+                myDays,
+                myLinks,
+                myAttractions,
+                myHighlights,
+                myPreferRoutes,
+                myTripAttractionOrders;
+
             switch (resource)
             {
                 case Resources.TRIPS:
-                    yourTrips = _tripsService.GetMyTripIds(UserId);
-                    return yourTrips.Any(tripId => tripId == ResourceId);
+                    myTrips = _tripsService.GetMyTripIds(UserId);
+                    return myTrips.Any(tripId => tripId == ResourceId);
 
                 case Resources.DAYS:
-                    yourDays = _daysService.GetMyDayIds(UserId);
-                    return yourDays.Any(dayId => dayId == ResourceId);
-
-                case Resources.LINKS:
-                    yourLinks = _linksService.GetMyLinkIds(UserId);
-                    return yourLinks.Any(linkId => linkId == ResourceId);
+                    myDays = _daysService.GetMyDayIds(UserId);
+                    return myDays.Any(dayId => dayId == ResourceId);
 
                 case Resources.ATTRACTIONS:
-                    yourAttractions = _attractionsService.GetMyHighlights(UserId);
-                    return yourAttractions.Any(aId => aId == ResourceId);
+                    myAttractions = _attractionsService.GetMyHighlights(UserId);
+                    return myAttractions.Any(aId => aId == ResourceId);
 
-                case Resources.PREFER_ROUTES:
-                    yourPreferRoutes = _preferRoutesService.GetMyPreferRoutes(UserId);
-                    return yourPreferRoutes.Any(prId => prId == ResourceId);
+                case Resources.HIGHLIGHTS:
+                    myHighlights = _highlightsService.GetMyHighlights(UserId);
+                    return myHighlights.Any(aId => aId == ResourceId);
 
                 case Resources.TRIP_ATTRACTION_ORDERS:
-                    yourTripAttractionOrders =
-                        _tripAttractionOrdersService.GetMyTripAttractionOrders(UserId);
-                    return yourTripAttractionOrders.Any(taoId => taoId == ResourceId);
+                    myTripAttractionOrders = _tripAttractionOrdersService.GetMyTaos(UserId);
+                    return myTripAttractionOrders.Any(taoId => taoId == ResourceId);
             }
             return false;
         }

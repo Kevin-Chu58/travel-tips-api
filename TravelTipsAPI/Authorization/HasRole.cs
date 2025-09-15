@@ -2,8 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
-using static TravelTipsAPI.Services.BasicSchema;
-using static TravelTipsAPI.Services.RoleSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 
 namespace TravelTipsAPI.Authorization
 {
@@ -17,7 +17,7 @@ namespace TravelTipsAPI.Authorization
 
         private int UserId { get; set; }
 
-        public override async void OnActionExecuting(ActionExecutingContext actionContext)
+        public override void OnActionExecuting(ActionExecutingContext actionContext)
         {
             context = actionContext;
 
@@ -25,8 +25,9 @@ namespace TravelTipsAPI.Authorization
             _userRolesService =
                 context.HttpContext.RequestServices.GetRequiredService<IUserRolesService>();
 
-            var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            UserId = (await _usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
+            var auth0Id =
+                context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             var isAuthorized = UserHasRole(Role);
             if (!isAuthorized)

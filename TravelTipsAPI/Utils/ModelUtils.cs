@@ -1,32 +1,30 @@
-﻿using TravelTipsAPI.ViewModels.db_basic;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.HereMap;
 
 namespace TravelTipsAPI.Utils
 {
     public class ModelUtils
     {
-        // Trips
-        public List<string> ValidateTripPostViewModel(TripPostViewModel trip)
+        // HereMap model conversion
+        public static Attraction ToAttraction(HerePlace herePlace)
         {
-            List<string> invalidParams = [];
+            var category = herePlace.Categories?.FirstOrDefault(c => c.Primary == true)?.Name;
 
-            if (trip.Name.Length > 50)
-                invalidParams.Add("name");
-            if (trip.Description?.Length > 500)
-                invalidParams.Add("description");
-
-            return invalidParams;
-        }
-
-        public List<string> ValidateTripPatchViewModel(TripPatchViewModel trip)
-        {
-            List<string> invalidParams = [];
-
-            if (trip.Name?.Length > 50)
-                invalidParams.Add("name");
-            if (trip.Description?.Length > 500)
-                invalidParams.Add("description");
-
-            return invalidParams;
+            return new Attraction
+            {
+                Id = new int(),
+                HereId = herePlace.Id,
+                Title = herePlace.Title,
+                ResultType = herePlace.ResultType,
+                Category = category,
+                Lat = (decimal)herePlace.Position.Lat,
+                Lng = (decimal)herePlace.Position.Lng,
+                Address = herePlace.Address.Label,
+                Country = herePlace.Address.CountryName,
+                State = herePlace.Address.State,
+                City = herePlace.Address.City,
+            };
         }
     }
 }

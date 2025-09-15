@@ -1,15 +1,14 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
     public class TripViewModel
     {
         public int Id { get; set; }
-        public required string Name { get; set; }
+        public required string Title { get; set; }
         public string? Description { get; set; }
-        public int CreatedBy { get; set; }
+        public UserViewModel? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime LastUpdatedAt { get; set; }
         public bool IsPublic { get; set; }
         public int? NumDays { get; set; }
 
@@ -18,11 +17,9 @@ namespace TravelTipsAPI.ViewModels.db_basic
             return new TripViewModel
             {
                 Id = trip.Id,
-                Name = trip.Name,
+                Title = trip.Title,
                 Description = trip.Description,
-                CreatedBy = trip.CreatedBy,
                 CreatedAt = trip.CreatedAt,
-                LastUpdatedAt = trip.LastUpdatedAt,
                 IsPublic = trip.IsPublic,
             };
         }

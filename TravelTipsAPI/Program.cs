@@ -1,18 +1,28 @@
+using Azure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using TravelTipsAPI.Models;
-using TravelTipsAPI.Services;
+using TravelTipsAPI.Clients;
+using TravelTipsAPI.Firebase;
+using TravelTipsAPI.HereMapServices;
+using TravelTipsAPI.Middleware;
+using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Services.Auth0Services;
+using TravelTipsAPI.Services.AzureKeyVaultServices;
+using TravelTipsAPI.Services.TravelTipsServices;
+using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration.AddEnvironmentVariables();
 
-builder.Services.AddDbContext<TravelTipsContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"))
-//options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"))
-);
+builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
+{
+    options.UseLazyLoadingProxies();
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+});
 
 // Add authentication to the container.
 
@@ -31,8 +41,7 @@ builder
         };
     });
 
-// Add services to the container.
-
+// Add Controllers
 builder.Services.AddControllers();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -49,35 +58,61 @@ builder.Services.AddSwaggerGen(c =>
         }
     );
 });
-;
 
+// Add Services
 builder.Services.AddServices();
+builder.Services.AddAuth0Services();
+builder.Services.AddHereMapServices();
+
+// get the firebase config and register it
+var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];
+
+var tenantId = builder.Configuration["Azure:TenantId"];
+var clientId = builder.Configuration["Azure:ClientId"];
+var clientSecret = builder.Configuration["Azure:ClientSecret"];
+
+var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+
+builder.Services.AddSingleton<IKeyVaultService>(sp =>
+{
+    return new KeyVaultService(keyVaultUrl!, credential);
+});
+
+var keyVaultService = new KeyVaultService(keyVaultUrl!, credential);
+
+string jsonSecret = await keyVaultService.GetJsonSecretAsync(
+    builder.Configuration["AzureKeyVault:FirebaseKey"]!
+);
+FirebaseInitializer.InitFirebase(jsonSecret);
+builder.Services.AddSingleton(new FirebaseStorageUploader(jsonSecret));
+
+// Add Middleware
+builder.Services.AddScoped<EnsureUserMiddleware>();
 
 // Add CORS policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
-        "AllowProduction",
+        "AllowAllKnownOrigins",
         policy =>
         {
             policy
-                .WithOrigins("https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net")
+                .WithOrigins(
+                    "https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net",
+                    "http://localhost:5173"
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
     );
 });
 
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy(
-//        "AllowLocalhost5173",
-//        policy =>
-//        {
-//            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod();
-//        }
-//    );
-//});
+builder.Services.AddSingleton(sp =>
+{
+    var baseUrl = builder.Configuration["Upstash:Domain"];
+    var token = builder.Configuration["Upstash:Token"];
+    return new UpstashHttpClient(baseUrl!, token!);
+});
 
 var app = builder.Build();
 
@@ -88,13 +123,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowProduction");
-
-//app.UseCors("AllowLocalhost5173");
+app.UseCors("AllowAllKnownOrigins");
 
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+// Use Middleware
+app.Use(
+    async (context, next) =>
+    {
+        var ensureUser = context.RequestServices.GetRequiredService<EnsureUserMiddleware>();
+        await ensureUser.InvokeAsync(context, next);
+    }
+);
+
 app.UseAuthorization();
 
 app.MapControllers();

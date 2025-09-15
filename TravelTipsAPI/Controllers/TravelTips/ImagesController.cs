@@ -1,0 +1,75 @@
+﻿using System.Net.Mail;
+using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Clients;
+using TravelTipsAPI.Constants;
+using TravelTipsAPI.ViewModels.db_image;
+using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+
+namespace TravelTipsAPI.Controllers.TravelTips
+{
+    [Route("api/[controller]")]
+    public class ImagesController(IImagesService imagesService, UpstashHttpClient cache)
+        : TravelTipsControllerBase
+    {
+        /// <summary>
+        /// Get image by user id
+        /// </summary>
+        /// <returns>the images the user owns</returns>
+        [HttpGet]
+        [Route("my")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<ImageViewModel>> GetImagesByUserId()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var imageIds = imagesService.GetImageIdsByUserId(userId).ToArray();
+
+            var images = await imagesService.GetImagesByIds(imageIds);
+
+            return Ok(images);
+        }
+
+        /// <summary>
+        /// upload an image to firebase
+        /// </summary>
+        /// <param name="name">name of the image</param>
+        /// <param name="file">file of the image</param>
+        /// <returns>image view model created</returns>
+        [HttpPost]
+        [Route("upload")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<ImageViewModel>> UploadImage(
+            [FromForm] string? name,
+            IFormFile file
+        )
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                using var stream = file.OpenReadStream();
+                var contentType = file.ContentType;
+
+                var imageViewModel = await imagesService.PostNewImageAsync(
+                    stream,
+                    contentType,
+                    userId,
+                    name
+                );
+
+                return Ok(imageViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+    }
+}

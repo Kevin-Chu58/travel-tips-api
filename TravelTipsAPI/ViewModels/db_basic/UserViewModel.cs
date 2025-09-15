@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Models;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -6,18 +6,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
     {
         public int Id { get; set; }
         public required string Username { get; set; }
-        public required string Email { get; set; }
 
-        public static explicit operator UserViewModel?(User? user)
+        public static explicit operator UserViewModel(User user)
         {
-            if (user == null) return null;
-
-            var userViewModel = new UserViewModel
-            {
-                Id = user.Id,
-                Username = user.Username,
-                Email = user.Email,
-            };
+            var userViewModel = new UserViewModel { Id = user.Id, Username = user.Username };
 
             return userViewModel;
         }
