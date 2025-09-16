@@ -21,6 +21,13 @@ namespace TravelTipsAPI.Middleware
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
+            // Skip CORS preflight requests
+            if (HttpMethods.IsOptions(context.Request.Method))
+            {
+                await next(context);
+                return;
+            }
+
             var auth0UserInfo = await _auth0Service.GetUserInfoAsync();
 
             if (auth0UserInfo != null && !string.IsNullOrEmpty(auth0UserInfo.Sub))
