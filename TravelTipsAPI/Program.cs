@@ -20,8 +20,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
 {
     options.UseLazyLoadingProxies();
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
 // Add authentication to the container.
@@ -67,11 +67,7 @@ builder.Services.AddHereMapServices();
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];
 
-var tenantId = builder.Configuration["Azure:TenantId"];
-var clientId = builder.Configuration["Azure:ClientId"];
-var clientSecret = builder.Configuration["Azure:ClientSecret"];
-
-var credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+var credential = new DefaultAzureCredential();
 
 builder.Services.AddSingleton<IKeyVaultService>(sp =>
 {

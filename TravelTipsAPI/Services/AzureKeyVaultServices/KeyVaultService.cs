@@ -4,7 +4,7 @@ using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 
 namespace TravelTipsAPI.Services.AzureKeyVaultServices
 {
-    public class KeyVaultService(string keyVaultUrl, ClientSecretCredential credential)
+    public class KeyVaultService(string keyVaultUrl, DefaultAzureCredential credential)
         : IKeyVaultService
     {
         // lock
