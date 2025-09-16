@@ -76,10 +76,20 @@ builder.Services.AddSingleton<IKeyVaultService>(sp =>
 
 var keyVaultService = new KeyVaultService(keyVaultUrl!, credential);
 
-string jsonSecret = keyVaultService
-    .GetJsonSecretAsync(builder.Configuration["AzureKeyVault:FirebaseKey"]!)
-    .GetAwaiter()
-    .GetResult();
+string jsonSecret;
+try
+{
+    jsonSecret = keyVaultService
+        .GetJsonSecretAsync(builder.Configuration["AzureKeyVault:FirebaseKey"]!)
+        .GetAwaiter()
+        .GetResult();
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"KeyVault init failed: {ex}");
+    throw; // or handle gracefully
+}
+
 FirebaseInitializer.InitFirebase(jsonSecret);
 builder.Services.AddSingleton(new FirebaseStorageUploader(jsonSecret));
 
