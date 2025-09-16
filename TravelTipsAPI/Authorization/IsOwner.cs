@@ -26,7 +26,7 @@ namespace TravelTipsAPI.Authorization
         private int ResourceId { get; set; }
         private int UserId { get; set; }
 
-        public override async void OnActionExecuting(ActionExecutingContext actionContext)
+        public override void OnActionExecuting(ActionExecutingContext actionContext)
         {
             context = actionContext;
 
@@ -73,10 +73,8 @@ namespace TravelTipsAPI.Authorization
         {
             IEnumerable<int> myTrips,
                 myDays,
-                myLinks,
                 myAttractions,
                 myHighlights,
-                myPreferRoutes,
                 myTripAttractionOrders;
 
             switch (resource)

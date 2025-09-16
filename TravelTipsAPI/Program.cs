@@ -76,9 +76,10 @@ builder.Services.AddSingleton<IKeyVaultService>(sp =>
 
 var keyVaultService = new KeyVaultService(keyVaultUrl!, credential);
 
-string jsonSecret = await keyVaultService.GetJsonSecretAsync(
-    builder.Configuration["AzureKeyVault:FirebaseKey"]!
-);
+string jsonSecret = keyVaultService
+    .GetJsonSecretAsync(builder.Configuration["AzureKeyVault:FirebaseKey"]!)
+    .GetAwaiter()
+    .GetResult();
 FirebaseInitializer.InitFirebase(jsonSecret);
 builder.Services.AddSingleton(new FirebaseStorageUploader(jsonSecret));
 
@@ -93,10 +94,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins(
-                    "https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net",
-                    "http://localhost:5173"
-                )
+                .WithOrigins("https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net")
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
