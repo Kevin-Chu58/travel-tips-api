@@ -94,8 +94,8 @@ builder.Services.AddCors(options =>
         {
             policy
                 .WithOrigins(
-                    "https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net"
-                //"http://localhost:5173"
+                    "https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net",
+                    "http://localhost:5173"
                 )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
@@ -133,7 +133,7 @@ app.Use(
     {
         if (HttpMethods.IsOptions(context.Request.Method))
         {
-            context.Response.StatusCode = StatusCodes.Status204NoContent; // success
+            await next(context);
             return;
         }
 
