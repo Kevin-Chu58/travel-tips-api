@@ -125,6 +125,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
+app.UseAuthorization();
+
 // Use Middleware
 app.Use(
     async (context, next) =>
@@ -133,8 +135,6 @@ app.Use(
         await ensureUser.InvokeAsync(context, next);
     }
 );
-
-app.UseAuthorization();
 
 app.MapControllers();
 
