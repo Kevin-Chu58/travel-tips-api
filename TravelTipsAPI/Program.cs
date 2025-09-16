@@ -119,19 +119,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAllKnownOrigins");
 
-app.UseHttpsRedirection();
-
-app.UseAuthentication();
-
-app.UseAuthorization();
-
 // Use Middleware
 app.Use(
     async (context, next) =>
     {
         if (HttpMethods.IsOptions(context.Request.Method))
         {
-            await next(context);
+            // immediately return 200 OK so CORS preflight succeeds
+            context.Response.StatusCode = StatusCodes.Status200OK;
             return;
         }
 
@@ -139,6 +134,12 @@ app.Use(
         await ensureUser.InvokeAsync(context, next);
     }
 );
+
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+
+app.UseAuthorization();
 
 app.MapControllers();
 
