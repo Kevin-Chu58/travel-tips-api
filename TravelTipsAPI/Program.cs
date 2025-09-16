@@ -131,6 +131,12 @@ app.UseAuthorization();
 app.Use(
     async (context, next) =>
     {
+        if (HttpMethods.IsOptions(context.Request.Method))
+        {
+            context.Response.StatusCode = StatusCodes.Status204NoContent; // success
+            return;
+        }
+
         var ensureUser = context.RequestServices.GetRequiredService<EnsureUserMiddleware>();
         await ensureUser.InvokeAsync(context, next);
     }
