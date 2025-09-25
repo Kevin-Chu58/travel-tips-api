@@ -235,7 +235,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
-            entity.Property(e => e.Username).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.Username).HasMaxLength(50).IsUnicode(false);
         });
 
         OnModelCreatingPartial(modelBuilder);
