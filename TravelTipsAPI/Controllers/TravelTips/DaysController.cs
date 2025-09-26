@@ -68,6 +68,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
+            // check day max restriction
+            var dayViewModels = daysService.GetDaysByTripId(id);
+
+            if (dayViewModels.Count() >= NumberConstraints.MAX_DAY_PER_TRIP)
+                return BadRequest(Messages.DayMaxReached);
+
             try
             {
                 await daysService.PostNewDayAsync(userId, id, title);

@@ -21,6 +21,7 @@
         public static readonly string DayNotFound = "Day not found.";
         public static readonly string DayUnauthorized = "Day access unauthorized.";
         public static readonly string DayInputInvalid = "Day input is invalid.";
+        public static readonly string DayMaxReached = "Maximum number of days created.";
 
         // Links
         public static readonly string LinkNotFound = "Link not found.";
@@ -48,6 +49,7 @@
         public static readonly string TaoTimeInvalid =
             "Event time is not aligned to 15-minute interval.";
         public static readonly string TaoTimeConflicted = "Event has time conflict.";
+        public static readonly string TaoMaxReached = "Maximum number of events created.";
 
         // Images
         public static readonly string ImageNotFound = "Image not found.";
