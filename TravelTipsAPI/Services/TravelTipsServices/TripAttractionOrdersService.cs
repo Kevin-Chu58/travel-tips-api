@@ -42,6 +42,11 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         return tao;
     }
 
+    /// <summary>
+    /// Get tao by id
+    /// </summary>
+    /// <param name="id">tao id</param>
+    /// <returns>tao with the id</returns>
     public TripAttractionOrderViewModel GetTaoById(int id)
     {
         var tao = context
@@ -89,6 +94,33 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         return taoViewModels;
     }
 
+    /// <summary>
+    /// Get a list of TaoGeo view models by day id
+    /// </summary>
+    /// <param name="dayId">day id</param>
+    /// <returns>a list of TaoGeo view models</returns>
+    public IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByDayId(int dayId)
+    {
+        var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
+
+        var taoViewModels = taos.Select(tao => new TripAttractionOrderGeoViewModel
+            {
+                Id = tao.Id,
+                DayId = dayId,
+                Title = tao.Attraction.Title,
+                Lat = tao.Attraction.Lat,
+                Lng = tao.Attraction.Lng,
+            })
+            .ToList();
+
+        return taoViewModels;
+    }
+
+    /// <summary>
+    /// Get here map routing input by tao id (the destination)
+    /// </summary>
+    /// <param name="taoId">tao id</param>
+    /// <returns>the here map routing input</returns>
     public HereRoutingInput? GetHereRoutingInputByTaoId(int taoId)
     {
         var taos = context
@@ -121,6 +153,11 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         return hereRoutingInput;
     }
 
+    /// <summary>
+    /// Get a list of the here map routings of the day by day id
+    /// </summary>
+    /// <param name="dayId">day id</param>
+    /// <returns>a list of here map routing of the day</returns>
     public List<HereRouting> GetAttractionRoutingsByDayId(int dayId)
     {
         var taos = context
@@ -190,6 +227,11 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         return tao.Id;
     }
 
+    /// <summary>
+    /// Detach highlight from tao
+    /// </summary>
+    /// <param name="tao">tao</param>
+    /// <returns>tao id</returns>
     public async Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao)
     {
         tao.HighlightId = null;

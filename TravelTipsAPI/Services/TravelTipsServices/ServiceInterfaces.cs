@@ -74,6 +74,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             TripAttractionOrder? FindTaoById(int id);
             TripAttractionOrderViewModel GetTaoById(int id);
             IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId);
+            IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByDayId(int dayId);
             HereRoutingInput? GetHereRoutingInputByTaoId(int taoId);
             List<HereRouting> GetAttractionRoutingsByDayId(int dayId);
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);

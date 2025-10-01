@@ -17,8 +17,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <param name="tripsService">trips service</param>
     /// <param name="imagesService">images service</param>
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService, IImagesService imagesService)
-        : TravelTipsControllerBase
+    public class TripsController(
+        ITripsService tripsService,
+        IDaysService daysService,
+        ITripAttractionOrdersService taosService,
+        IImagesService imagesService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get trips by title
@@ -75,6 +79,47 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             var myTripViewModels = tripsService.GetTripsByUserId(userId);
             return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get TaoGeo trip list by trip id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the TaoGeo trip list</returns>
+        [HttpGet]
+        [Route("{id}/day-overview")]
+        [AllowAnonymous]
+        [SetUserId]
+        public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
+        {
+            try
+            {
+                // check the trip is either public or the user is the owner
+                var tripViewModel = tripsService.GetTripByTripId(id);
+
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
+                {
+                    var days = daysService.GetDaysByTripId(id);
+
+                    IEnumerable<TripAttractionOrderGeoViewModel> geoTripList = [];
+
+                    foreach (var day in days)
+                    {
+                        var geoDayList = taosService.GetTaoGeosByDayId(day.Id);
+                        geoTripList = geoTripList.Concat(geoDayList);
+                    }
+
+                    return Ok(geoTripList);
+                }
+                else
+                    return NotFound(Messages.TripNotFound);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         /// <summary>
