@@ -67,5 +67,9 @@
         public static readonly string HereMapPlaceNotFound = "Location not found.";
         public static readonly string HereMapRouteNotFound = "Route not found.";
         public static readonly string HereMapTransportModeNotFound = "Transport mode not found.";
+
+        // Wiki Commons
+        public static readonly string WikiCommonsQueryNotFound = "WikiImage:Query not found.";
+        public static readonly string WikiCommonsPagesNotFound = "WikiImage:Pages not found.";
     }
 }
