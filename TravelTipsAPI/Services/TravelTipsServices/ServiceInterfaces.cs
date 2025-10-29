@@ -40,7 +40,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<int> GetMyDayIds(int id);
             Day FindDayById(int id, bool? isPublic = null);
             IEnumerable<DayViewModel> GetDaysByTripId(int tripId);
-            Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId, string? title);
+            Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
             Task<DayViewModel> DeleteDay(Day day);
         }
@@ -49,7 +49,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Attraction FindAttractionById(int id);
             Attraction FindAttractionByHereId(string hereId);
-            IEnumerable<Attraction2ViewModel> GetAttractionsByParams(string? title, int? ownerId);
+            IEnumerable<AttractionViewModel> GetAttractionsByParams(string? title, int? ownerId);
             IEnumerable<int> GetMyHighlights(int id);
             Task<Attraction> PostNewAttractionAsync(string hereId);
         }

@@ -9,15 +9,15 @@ public partial class TripAttractionOrder
 
     public int DayId { get; set; }
 
-    public int AttractionId { get; set; }
-
     public int? HighlightId { get; set; }
+
+    public int CreatedBy { get; set; }
+
+    public int AttractionId { get; set; }
 
     public TimeOnly Start { get; set; }
 
     public TimeOnly End { get; set; }
-
-    public int CreatedBy { get; set; }
 
     public string? TransportMode { get; set; }
 

@@ -1,4 +1,5 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_image;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
@@ -11,6 +12,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public DateTime CreatedAt { get; set; }
         public bool IsPublic { get; set; }
         public int? NumDays { get; set; }
+        public IEnumerable<ImageViewModel>? Images { get; set; }
 
         public static explicit operator TripViewModel(Trip trip)
         {

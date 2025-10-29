@@ -57,12 +57,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// Create a new day by trip id
         /// </summary>
         /// <param name="id">trip id</param>
-        /// <param name="title">day title</param>
         /// <returns>the new day</returns>
         [HttpPost]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult> PostNewDay(int id, [FromBody] string? title)
+        public async Task<ActionResult> PostNewDay(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -74,7 +73,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             try
             {
-                await daysService.PostNewDayAsync(userId, id, title);
+                await daysService.PostNewDayAsync(userId, id);
 
                 return Ok();
             }
@@ -100,10 +99,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             try
             {
-                // validate the inputs
-                if (dayPatch.Title?.Length > 50)
-                    return BadRequest(Messages.DayInputInvalid);
-
                 Day day = daysService.FindDayById(id);
 
                 var updatedDayViewModel = await daysService.PatchDayAsync(day, dayPatch);

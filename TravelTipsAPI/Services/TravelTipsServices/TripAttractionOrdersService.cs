@@ -60,7 +60,7 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
             Start = tao.Start,
             End = tao.End,
             CreatedBy = tao.CreatedBy,
-            Attraction = (Attraction2ViewModel)tao.Attraction,
+            Attraction = (AttractionViewModel)tao.Attraction,
             Highlight = tao.Highlight != null ? (HighlightViewModel)tao.Highlight : null,
             TransportMode = tao.TransportMode,
         };
@@ -84,7 +84,7 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
                 Start = tao.Start,
                 End = tao.End,
                 CreatedBy = tao.CreatedBy,
-                Attraction = (Attraction2ViewModel)tao.Attraction,
+                Attraction = (AttractionViewModel)tao.Attraction,
                 Highlight = tao.Highlight != null ? (HighlightViewModel)tao.Highlight : null,
                 TransportMode = tao.TransportMode,
             })

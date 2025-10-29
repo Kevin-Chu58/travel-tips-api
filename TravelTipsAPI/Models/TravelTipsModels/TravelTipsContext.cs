@@ -92,8 +92,6 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Days", "db_basic");
 
-            entity.Property(e => e.Title).HasMaxLength(50).IsUnicode(false);
-
             entity
                 .HasOne(d => d.CreatedByNavigation)
                 .WithMany(p => p.Days)
@@ -231,7 +229,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D70D79A34").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);

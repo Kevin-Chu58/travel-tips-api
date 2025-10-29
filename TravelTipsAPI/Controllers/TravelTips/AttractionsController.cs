@@ -24,12 +24,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}")]
         [AllowAnonymous]
-        public ActionResult<Attraction2ViewModel> GetAttractionById(int id)
+        public ActionResult<AttractionViewModel> GetAttractionById(int id)
         {
             try
             {
                 var attraction = attractionsService.FindAttractionById(id);
-                return Ok((Attraction2ViewModel)attraction);
+                return Ok((AttractionViewModel)attraction);
             }
             catch (Exception ex)
             {
@@ -45,7 +45,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<Attraction2ViewModel>> GetAllAttractionsByParams(
+        public ActionResult<IEnumerable<AttractionViewModel>> GetAllAttractionsByParams(
             [FromQuery] string? name
         )
         {
@@ -62,7 +62,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<IEnumerable<Attraction2ViewModel>> GetMyAttractionsByParams(
+        public ActionResult<IEnumerable<AttractionViewModel>> GetMyAttractionsByParams(
             [FromQuery] string? name
         )
         {
@@ -81,7 +81,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPost]
         [Route("{hereId}")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<Attraction2ViewModel>> PostNewAttraction(string hereId)
+        public async Task<ActionResult<AttractionViewModel>> PostNewAttraction(string hereId)
         {
             Attraction attraction;
             try
@@ -93,7 +93,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 attraction = await attractionsService.PostNewAttractionAsync(hereId);
             }
 
-            var attractionViewModel = (Attraction2ViewModel)attraction;
+            var attractionViewModel = (AttractionViewModel)attraction;
 
             return Ok(attractionViewModel);
         }

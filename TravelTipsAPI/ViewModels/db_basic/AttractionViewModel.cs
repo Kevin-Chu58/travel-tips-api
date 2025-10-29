@@ -1,13 +1,8 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using TravelTipsAPI.Models.TravelTipsModels;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
-    /// <summary>
-    /// A separation from the mixture of Attraction and Highlight,
-    /// slowly replacing all the old AttractionViewModels
-    /// </summary>
-    public class Attraction2ViewModel
+    public class AttractionViewModel
     {
         public int? Id { get; set; }
         public required string HereId { get; set; }
@@ -22,9 +17,9 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public string? Country { get; set; }
         public int? NumHighlights { get; set; }
 
-        public static explicit operator Attraction2ViewModel(Attraction attraction)
+        public static explicit operator AttractionViewModel(Attraction attraction)
         {
-            var attractionViewModel = new Attraction2ViewModel
+            var attractionViewModel = new AttractionViewModel
             {
                 // NumHighlights is not set
                 Id = attraction.Id,
@@ -43,7 +38,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
             return attractionViewModel;
         }
 
-        public static explicit operator Attraction(Attraction2ViewModel attractionViewModel)
+        public static explicit operator Attraction(AttractionViewModel attractionViewModel)
         {
             var attraction = new Attraction
             {
