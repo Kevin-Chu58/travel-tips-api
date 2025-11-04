@@ -58,6 +58,7 @@
             "There's a problem when uploading the image.";
         public static readonly string ImageUnauthorized = "Image access unauthorized.";
         public static readonly string ImageStreamEmpty = "Uploaded image stream is empty.";
+        public static readonly string ImageNameTooLong = "Image name too long.";
 
         // - trip image
         public static readonly string ImageTripAttached = "Image is attached on trip.";

@@ -1,6 +1,8 @@
-﻿using System.Text.Json;
+﻿using System;
+using System.Text.Json;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
@@ -21,6 +23,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         private UrlSigner? _urlSigner;
 
+        public Image? GetImageById(int id)
+        {
+            var image = context.Images.Find(id);
+            return image;
+        }
+
         /// <summary>
         /// Get a list of images by their ids
         /// </summary>
@@ -29,7 +37,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public async Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids)
         {
             // keys of the image json
-            var keys = ids.Select(id => $"image:{id}:v{CacheVersion.Image_Version}").ToArray();
+            var keys = ids.Select(id => GetImageUpstashKey(id)).ToArray();
 
             // check cache first, if does not exist, send request to HereMap API
             var cachesJson = await cache.GetMultipleAsync(keys);
@@ -47,7 +55,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 }
                 else
                 {
-                    var imageViewModel = await GenerateNewImageAsync(ids[i], keys[i]);
+                    var imageViewModel = await GenerateNewImageAsync(ids[i], key: keys[i]);
 
                     imageViewModels.Add(imageViewModel);
                 }
@@ -62,9 +70,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="id">image id</param>
         /// <param name="key">key to get from upstash</param>
         /// <returns>a newly generated image view model</returns>
-        private async Task<ImageViewModel> GenerateNewImageAsync(int id, string key)
+        private async Task<ImageViewModel> GenerateNewImageAsync(
+            int id = 0,
+            Image? image = null,
+            string key = ""
+        )
         {
-            var image = context.Images.Find(id);
+            if (image == null)
+                image = context.Images.Find(id);
+
+            if (key == "")
+                key = $"image:{id}:v{CacheVersion.Image_Version}";
 
             if (image is null)
             {
@@ -154,12 +170,27 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 context.Images.Add(newImage);
                 await context.SaveChangesAsync();
 
-                return (ImageViewModel)newImage;
+                var newImageViewModel = await GenerateNewImageAsync(image: newImage);
+
+                return newImageViewModel;
             }
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+        public async Task UpdateImageName(Image image, string newName)
+        {
+            if (newName.Length > 50)
+                throw new Exception(Messages.ImageNameTooLong);
+
+            image.Name = newName;
+            await context.SaveChangesAsync();
+
+            await GenerateNewImageAsync(image.Id, image);
+
+            return;
         }
 
         public async Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId)
@@ -194,6 +225,27 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return (ImageRelationViewModel)tripImage;
+        }
+
+        public async Task DeleteImageAsync(Image image)
+        {
+            var tripImages = context
+                .TripImages.Where(tripImage => tripImage.ImageId == image.Id)
+                .ToList();
+
+            context.TripImages.RemoveRange(tripImages);
+            context.Images.Remove(image);
+            await context.SaveChangesAsync();
+
+            string fileName = $"{image.Guid}{GetExtensionFromContentType("image/jpeg")}";
+
+            await uploader.DeleteFileAsync(
+                config["Firebase:BucketName"]!,
+                $"{image.CreatedBy}/{fileName}"
+            );
+
+            var key = GetImageUpstashKey(image.Id);
+            await cache.DeleteKeyAsync(key);
         }
 
         public bool IsOwner(int userId, int imageId)
@@ -233,6 +285,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             var urlSigner = await GetUrlSignerAsync();
 
             return urlSigner.Sign(bucket: bucketName, objectName: objectName, duration: duration);
+        }
+
+        private static string GetImageUpstashKey(int id)
+        {
+            return $"image:{id}:v{CacheVersion.Image_Version}";
         }
 
         private static string GetExtensionFromContentType(string contentType)

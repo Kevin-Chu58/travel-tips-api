@@ -99,6 +99,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         public interface IImagesService
         {
+            Image? GetImageById(int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetImageIdsByTripId(int id);
@@ -108,8 +109,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int userId,
                 string? name
             );
+            Task UpdateImageName(Image image, string newName);
             Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
             Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);
+            Task DeleteImageAsync(Image image);
             bool IsOwner(int userId, int imageId);
         }
     }
