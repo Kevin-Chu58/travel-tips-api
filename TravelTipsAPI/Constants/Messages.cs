@@ -35,6 +35,7 @@
 
         // Highlights
         public static readonly string HighlightNotFound = "Highlight not found.";
+        public static readonly string HighlightDescriptionEmpty = "Highlight is empty";
 
         // PreferRoutes
         public static readonly string PreferRouteNotFound = "Prefer Route not found.";

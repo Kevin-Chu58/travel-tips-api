@@ -95,7 +95,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.Highlights.AddAsync(highlight);
             await context.SaveChangesAsync();
 
-            return (HighlightViewModel)highlight;
+            return GetHighlightViewModel(highlight);
         }
 
         /// <summary>
@@ -109,6 +109,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             string description
         )
         {
+            if (description.Length == 0)
+                throw new Exception(Messages.HighlightDescriptionEmpty);
+
             highlight.Description = description;
             await context.SaveChangesAsync();
 
