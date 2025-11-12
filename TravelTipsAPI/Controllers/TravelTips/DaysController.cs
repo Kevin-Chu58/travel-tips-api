@@ -1,10 +1,8 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
@@ -59,18 +57,23 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// Create a new day by trip id
         /// </summary>
         /// <param name="id">trip id</param>
-        /// <param name="title">day title</param>
         /// <returns>the new day</returns>
         [HttpPost]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult> PostNewDay(int id, [FromBody] string? title)
+        public async Task<ActionResult> PostNewDay(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
+            // check day max restriction
+            var dayViewModels = daysService.GetDaysByTripId(id);
+
+            if (dayViewModels.Count() >= NumberConstraints.MAX_DAY_PER_TRIP)
+                return BadRequest(Messages.DayMaxReached);
+
             try
             {
-                await daysService.PostNewDayAsync(userId, id, title);
+                await daysService.PostNewDayAsync(userId, id);
 
                 return Ok();
             }
@@ -96,10 +99,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             try
             {
-                // validate the inputs
-                if (dayPatch.Title?.Length > 50)
-                    return BadRequest(Messages.DayInputInvalid);
-
                 Day day = daysService.FindDayById(id);
 
                 var updatedDayViewModel = await daysService.PatchDayAsync(day, dayPatch);

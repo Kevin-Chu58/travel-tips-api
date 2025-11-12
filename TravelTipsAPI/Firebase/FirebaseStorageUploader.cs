@@ -30,5 +30,18 @@ namespace TravelTipsAPI.Firebase
                 throw new Exception(ex.Message);
             }
         }
+
+        public async Task DeleteFileAsync(string bucketName, string objectName)
+        {
+            try
+            {
+                var storageClient = await StorageClient.CreateAsync(credential);
+                await storageClient.DeleteObjectAsync(bucketName, objectName);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to delete file: {ex.Message}");
+            }
+        }
     }
 }

@@ -94,6 +94,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
+            // check day max restriction
+            var taoViewModels = taosService.GetTaosByDayId(id);
+
+            if (taoViewModels.Count() >= NumberConstraints.MAX_TAO_PER_DAY)
+                return BadRequest(Messages.TaoMaxReached);
+
             try
             {
                 // check time is valid

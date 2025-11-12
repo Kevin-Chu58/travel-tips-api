@@ -52,7 +52,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="title">title to search</param>
         /// <param name="ownerId">user id</param>
         /// <returns>a list of highlights that satisfy the search params</returns>
-        public IEnumerable<Attraction2ViewModel> GetAttractionsByParams(string? title, int? ownerId)
+        public IEnumerable<AttractionViewModel> GetAttractionsByParams(string? title, int? ownerId)
         {
             title = title?.Trim().ToLower();
 
@@ -67,7 +67,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
 
             // get the number of highlights of each attraction
-            var attractionViewModels = attractions.Select(a => (Attraction2ViewModel)a).ToList();
+            var attractionViewModels = attractions.Select(a => (AttractionViewModel)a).ToList();
 
             foreach (var attraction in attractionViewModels)
             {

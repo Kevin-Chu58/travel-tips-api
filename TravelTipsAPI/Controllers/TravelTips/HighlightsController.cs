@@ -45,6 +45,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] HighlightPostViewModel newHighlight
         )
         {
+            if (newHighlight.Description.Length == 0)
+                return BadRequest(Messages.HighlightDescriptionEmpty);
+
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var highlightViewModel = await highlightsService.PostNewHighlightAsync(
@@ -68,13 +71,20 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] string description
         )
         {
-            var highlight = highlightsService.FindHighlightById(id);
-            var highlightViewModel = await highlightsService.UpdateHighlightAsync(
-                highlight,
-                description
-            );
+            try
+            {
+                var highlight = highlightsService.FindHighlightById(id);
+                var highlightViewModel = await highlightsService.UpdateHighlightAsync(
+                    highlight,
+                    description
+                );
 
-            return Ok(highlightViewModel);
+                return Ok(highlightViewModel);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         [HttpDelete]

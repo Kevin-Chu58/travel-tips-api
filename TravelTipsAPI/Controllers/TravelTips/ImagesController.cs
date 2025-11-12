@@ -40,7 +40,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <param name="file">file of the image</param>
         /// <returns>image view model created</returns>
         [HttpPost]
-        [Route("upload")]
+        [Route("")]
         [IsOwner(Resource = Resources.NONE)]
         public async Task<ActionResult<ImageViewModel>> UploadImage(
             [FromForm] string? name,
@@ -65,6 +65,50 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 );
 
                 return Ok(imageViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch]
+        [Route("{id}/name/{name}")]
+        [IsOwner(Resource = Resources.IMAGES)]
+        public async Task<ActionResult> UpdateImageName(int id, string name)
+        {
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                var image = imagesService.GetImageById(id);
+                if (image == null)
+                    return NotFound(Messages.ImageNotFound);
+
+                await imagesService.UpdateImageName(image, name);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.IMAGES)]
+        public async Task<ActionResult<int>> DeleteImage(int id)
+        {
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                var image = imagesService.GetImageById(id);
+                if (image == null)
+                    return NotFound(Messages.ImageNotFound);
+
+                await imagesService.DeleteImageAsync(image);
+                return Ok(id);
             }
             catch (Exception ex)
             {

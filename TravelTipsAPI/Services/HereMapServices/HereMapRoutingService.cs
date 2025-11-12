@@ -149,7 +149,7 @@ namespace TravelTipsAPI.Services.HereMapServices
             try
             {
                 var requestUrl =
-                    $"{_baseUrl}/v8/routes?apiKey={_apiKey}&transportMode={transportMode}&origin={originLat},{originLng}&destination={destinationLat},{destinationLng}&return=polyline,actions,travelSummary";
+                    $"{_baseUrl}/v8/routes?apiKey={_apiKey}&transportMode={transportMode}&origin={originLat},{originLng}&destination={destinationLat},{destinationLng}&return=polyline,travelSummary";
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
                 request.Headers.UserAgent.ParseAdd(Global.USER_AGENT);

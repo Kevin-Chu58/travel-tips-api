@@ -21,6 +21,7 @@
         public static readonly string DayNotFound = "Day not found.";
         public static readonly string DayUnauthorized = "Day access unauthorized.";
         public static readonly string DayInputInvalid = "Day input is invalid.";
+        public static readonly string DayMaxReached = "Maximum number of days created.";
 
         // Links
         public static readonly string LinkNotFound = "Link not found.";
@@ -34,6 +35,7 @@
 
         // Highlights
         public static readonly string HighlightNotFound = "Highlight not found.";
+        public static readonly string HighlightDescriptionEmpty = "Highlight is empty";
 
         // PreferRoutes
         public static readonly string PreferRouteNotFound = "Prefer Route not found.";
@@ -48,6 +50,7 @@
         public static readonly string TaoTimeInvalid =
             "Event time is not aligned to 15-minute interval.";
         public static readonly string TaoTimeConflicted = "Event has time conflict.";
+        public static readonly string TaoMaxReached = "Maximum number of events created.";
 
         // Images
         public static readonly string ImageNotFound = "Image not found.";
@@ -56,6 +59,7 @@
             "There's a problem when uploading the image.";
         public static readonly string ImageUnauthorized = "Image access unauthorized.";
         public static readonly string ImageStreamEmpty = "Uploaded image stream is empty.";
+        public static readonly string ImageNameTooLong = "Image name too long.";
 
         // - trip image
         public static readonly string ImageTripAttached = "Image is attached on trip.";
@@ -65,5 +69,9 @@
         public static readonly string HereMapPlaceNotFound = "Location not found.";
         public static readonly string HereMapRouteNotFound = "Route not found.";
         public static readonly string HereMapTransportModeNotFound = "Transport mode not found.";
+
+        // Wiki Commons
+        public static readonly string WikiCommonsQueryNotFound = "WikiImage:Query not found.";
+        public static readonly string WikiCommonsPagesNotFound = "WikiImage:Pages not found.";
     }
 }

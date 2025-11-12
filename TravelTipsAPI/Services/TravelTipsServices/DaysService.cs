@@ -62,16 +62,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="createdBy">user id</param>
         /// <param name="tripId">trip id</param>
-        /// <param name="title">day title</param>
         /// <returns>the new day</returns>
-        public async Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId, string? title)
+        public async Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId)
         {
-            var day = new Day
-            {
-                CreatedBy = createdBy,
-                TripId = tripId,
-                Title = title,
-            };
+            var day = new Day { CreatedBy = createdBy, TripId = tripId };
 
             await context.Days.AddAsync(day);
             await context.SaveChangesAsync();
@@ -87,7 +81,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>the updated day</returns>
         public async Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch)
         {
-            day.Title = dayPatch.Title?.Trim() ?? day.Title;
             day.Description = dayPatch.Description?.Trim() ?? day.Description;
 
             await context.SaveChangesAsync();

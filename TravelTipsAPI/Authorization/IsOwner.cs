@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
 namespace TravelTipsAPI.Authorization
 {
@@ -22,6 +23,7 @@ namespace TravelTipsAPI.Authorization
         private IAttractionsService _attractionsService;
         private IHighlightsService _highlightsService;
         private ITripAttractionOrdersService _tripAttractionOrdersService;
+        private IImagesService _imagesService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -39,6 +41,8 @@ namespace TravelTipsAPI.Authorization
                 context.HttpContext.RequestServices.GetRequiredService<IHighlightsService>();
             _tripAttractionOrdersService =
                 context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
+            _imagesService =
+                context.HttpContext.RequestServices.GetRequiredService<IImagesService>();
 
             var auth0Id =
                 context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
@@ -98,6 +102,9 @@ namespace TravelTipsAPI.Authorization
                 case Resources.TRIP_ATTRACTION_ORDERS:
                     myTripAttractionOrders = _tripAttractionOrdersService.GetMyTaos(UserId);
                     return myTripAttractionOrders.Any(taoId => taoId == ResourceId);
+
+                case Resources.IMAGES:
+                    return _imagesService.IsOwner(UserId, ResourceId);
             }
             return false;
         }

@@ -31,7 +31,7 @@ namespace TravelTipsAPI.Controllers.HereMap
         [HttpGet]
         [Route("discover")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<Attraction2ViewModel>>> SearchPlaceByNameAsync(
+        public async Task<ActionResult<IEnumerable<AttractionViewModel>>> SearchPlaceByNameAsync(
             [FromQuery] string query,
             decimal lat,
             decimal lng,

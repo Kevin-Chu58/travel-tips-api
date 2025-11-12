@@ -136,22 +136,25 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Create a new trip
         /// </summary>
-        /// <param name="createBy">the user id created the new trip</param>
+        /// <param name="createdBy">the user id created the new trip</param>
         /// <param name="title">the new trip title</param>
         /// <returns>the new trip</returns>
-        public async Task<TripViewModel> PostNewTripAsync(int createBy, string title)
+        public async Task<TripViewModel> PostNewTripAsync(int createdBy, string title)
         {
             var newTrip = new Trip
             {
                 Title = title,
-                CreatedBy = createBy,
+                CreatedBy = createdBy,
                 CreatedAt = DateTime.Now,
             };
 
             await context.Trips.AddAsync(newTrip);
             await context.SaveChangesAsync();
 
-            return (TripViewModel)newTrip;
+            var newTripViewModel = (TripViewModel)newTrip;
+            newTripViewModel.CreatedBy = (UserViewModel)usersService.GetUserById(createdBy);
+
+            return newTripViewModel;
         }
 
         /// <summary>

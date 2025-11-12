@@ -92,8 +92,6 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Days", "db_basic");
 
-            entity.Property(e => e.Title).HasMaxLength(50).IsUnicode(false);
-
             entity
                 .HasOne(d => d.CreatedByNavigation)
                 .WithMany(p => p.Days)

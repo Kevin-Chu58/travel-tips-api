@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
@@ -17,8 +18,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <param name="tripsService">trips service</param>
     /// <param name="imagesService">images service</param>
     [Route("api/[controller]")]
-    public class TripsController(ITripsService tripsService, IImagesService imagesService)
-        : TravelTipsControllerBase
+    public class TripsController(
+        ITripsService tripsService,
+        IDaysService daysService,
+        ITripAttractionOrdersService taosService,
+        IImagesService imagesService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get trips by title
@@ -28,9 +33,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<TripViewModel>> GetTripsByTitle([FromQuery] string title)
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetTripsByTitle(
+            [FromQuery] string title
+        )
         {
             var tripViewModels = tripsService.GetTripsByTitle(title);
+
+            tripViewModels = await AppendImagesToTripsAsync(tripViewModels);
+
             return Ok(tripViewModels);
         }
 
@@ -43,7 +53,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [Route("{id}")]
         [AllowAnonymous]
         [SetUserId]
-        public ActionResult<TripViewModel> GetTripById(int id)
+        public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
             try
             {
@@ -52,7 +62,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
                 if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
+                {
+                    tripViewModel.Images = await GetImagesByTripIdAsync(tripViewModel.Id);
                     return Ok(tripViewModel);
+                }
                 else
                     return NotFound(Messages.TripNotFound);
             }
@@ -69,12 +82,54 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<IEnumerable<TripViewModel>> GetMyTrips()
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetMyTrips()
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var myTripViewModels = tripsService.GetTripsByUserId(userId);
+            myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get TaoGeo trip list by trip id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the TaoGeo trip list</returns>
+        [HttpGet]
+        [Route("{id}/day-overview")]
+        [AllowAnonymous]
+        [SetUserId]
+        public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
+        {
+            try
+            {
+                // check the trip is either public or the user is the owner
+                var tripViewModel = tripsService.GetTripByTripId(id);
+
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
+                {
+                    var days = daysService.GetDaysByTripId(id);
+
+                    IEnumerable<TripAttractionOrderGeoViewModel> geoTripList = [];
+
+                    foreach (var day in days)
+                    {
+                        var geoDayList = taosService.GetTaoGeosByDayId(day.Id);
+                        geoTripList = geoTripList.Concat(geoDayList);
+                    }
+
+                    return Ok(geoTripList);
+                }
+                else
+                    return NotFound(Messages.TripNotFound);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
 
         /// <summary>
@@ -213,11 +268,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     return BadRequest(Messages.TripUnauthorized);
                 }
 
-                var imageIds = imagesService.GetImageIdsByTripId(id).ToArray();
+                var images = await GetImagesByTripIdAsync(id);
 
-                var imageViewModels = await imagesService.GetImagesByIds(imageIds);
-
-                return Ok(imageViewModels);
+                return Ok(images);
             }
             catch (Exception ex)
             {
@@ -288,6 +341,32 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 return Forbid(ex.Message);
             }
+        }
+
+        private async Task<IEnumerable<TripViewModel>> AppendImagesToTripsAsync(
+            IEnumerable<TripViewModel> trips
+        )
+        {
+            var tripList = trips.ToList();
+
+            var tasks = tripList.Select(async trip =>
+            {
+                trip.Images = await GetImagesByTripIdAsync(trip.Id);
+            });
+
+            // Wait for all
+            await Task.WhenAll(tasks);
+
+            return tripList;
+        }
+
+        private async Task<IEnumerable<ImageViewModel>> GetImagesByTripIdAsync(int id)
+        {
+            var imageIds = imagesService.GetImageIdsByTripId(id).ToArray();
+
+            var imageViewModels = await imagesService.GetImagesByIds(imageIds);
+
+            return imageViewModels;
         }
     }
 }
