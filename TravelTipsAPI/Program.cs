@@ -98,7 +98,7 @@ builder.Services.AddCors(options =>
         {
             policy
                 .WithOrigins(
-                    "https://travel-tips-ui-btbndzc9fndhd5fv.westus2-01.azurewebsites.net",
+                    "https://travel-tips-ui-us-west-g2cxbjaydqejh0af.westus-01.azurewebsites.net",
                     "http://localhost:5173"
                 )
                 .AllowAnyHeader()
