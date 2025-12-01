@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using TravelTipsAPI.Models.TravelTipsModels;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
@@ -75,8 +74,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             TripAttractionOrderViewModel GetTaoById(int id);
             IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId);
             IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByDayId(int dayId);
+            IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByTripId(int tripId);
             HereRoutingInput? GetHereRoutingInputByTaoId(int taoId);
-            List<HereRouting> GetAttractionRoutingsByDayId(int dayId);
+            IEnumerable<HereRouting> GetAttractionRoutingsByDayId(int dayId);
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
             Task<int> PatchTao(TripAttractionOrderPatchViewModel taoPatch, TripAttractionOrder tao);
             Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao);

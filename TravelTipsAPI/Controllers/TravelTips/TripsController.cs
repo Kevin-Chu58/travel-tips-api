@@ -111,15 +111,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
                 {
-                    var days = daysService.GetDaysByTripId(id);
-
-                    IEnumerable<TripAttractionOrderGeoViewModel> geoTripList = [];
-
-                    foreach (var day in days)
-                    {
-                        var geoDayList = taosService.GetTaoGeosByDayId(day.Id);
-                        geoTripList = geoTripList.Concat(geoDayList);
-                    }
+                    var geoTripList = taosService.GetTaoGeosByTripId(id);
 
                     return Ok(geoTripList);
                 }

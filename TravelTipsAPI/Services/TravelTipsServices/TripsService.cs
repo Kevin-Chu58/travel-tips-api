@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Security.Claims;
+using FuzzySharp;
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.UtilServices.UtilSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -13,7 +15,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Trips
     /// </summary>
     /// <param name="context">context</param>
-    public class TripsService(TravelTipsContext context, IUsersService usersService) : ITripsService
+    public class TripsService(
+        TravelTipsContext context,
+        IUsersService usersService,
+        ISpellCheckerService spellCheckerService
+    ) : ITripsService
     {
         /// <summary>
         /// Get my trips' ids
@@ -52,30 +58,31 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>trips contain the title</returns>
         public IEnumerable<TripViewModel> GetTripsByTitle(string title)
         {
+            if (string.IsNullOrWhiteSpace(title))
+                return [];
+
             title = title.Trim().ToLower();
 
-            var tripViewModels = context
-                .Trips.Where(trip => trip.Title.ToLower().Contains(title) && trip.IsPublic == true)
-                .Select(trip => new TripViewModel
-                {
-                    Id = trip.Id,
-                    Title = trip.Title,
-                    Description = trip.Description,
-                    CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
-                    CreatedAt = trip.CreatedAt,
-                    IsPublic = trip.IsPublic,
-                    NumDays = context.Days.Where(day => day.TripId == trip.Id).Count(),
-                })
+            // correct typos in user search input
+            var correctedInput = spellCheckerService.CorrectSentence(title);
+            Console.WriteLine(title + ": " + correctedInput);
+
+            // find the trips that match the title
+            var candidates = context
+                .Trips.Where(t => t.IsPublic && t.Title.Contains(correctedInput))
                 .ToList();
 
-            foreach (var tripViewModel in tripViewModels)
+            // convert to viewModel
+            return candidates.Select(trip => new TripViewModel
             {
-                tripViewModel.NumDays = context
-                    .Days.Where(day => day.TripId == tripViewModel.Id)
-                    .Count();
-            }
-
-            return tripViewModels;
+                Id = trip.Id,
+                Title = trip.Title,
+                Description = trip.Description,
+                CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
+                CreatedAt = trip.CreatedAt,
+                IsPublic = trip.IsPublic,
+                NumDays = context.Days.Count(day => day.TripId == trip.Id),
+            });
         }
 
         /// <summary>

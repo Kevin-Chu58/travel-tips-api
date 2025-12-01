@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenAI.Responses;
 using TravelTipsAPI.Controllers.TravelTips;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Utils.ObjectUtils;
 
 namespace TravelTipsAPI.Controllers.HereMap
 {
@@ -17,9 +20,50 @@ namespace TravelTipsAPI.Controllers.HereMap
         IHereMapDiscoverService hereMapDiscoverService,
         IHereMapLookupService hereMapLookupService,
         IHereMapRoutingService hereMapRoutingService,
-        ITripAttractionOrdersService tripAttractionOrdersService
+        ITripAttractionOrdersService tripAttractionOrdersService,
+        IConfiguration config
     ) : TravelTipsControllerBase
     {
+#pragma warning disable OPENAI001
+        private readonly static string model = "gpt-4.1-nano";
+        private readonly OpenAIResponseClient _client = new(
+            model: model,
+            apiKey: config["OpenAI:ApiKey"]
+        );
+
+        [HttpGet]
+        [Route("suggestion")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<string>>> GetSuggestionFromGPT(
+            [FromQuery] string input
+        )
+        {
+            // Prompt instructs AI to output JSON array of strings
+            string prompt =
+                $"Give 5 short search suggestions for the user input \"{input}\". Return ONLY a JSON array of strings of locations.";
+
+            OpenAIResponse response = await _client.CreateResponseAsync(prompt);
+
+            string outputText = response.GetOutputText();
+
+            string outputArray = ExtractJsonArray(outputText);
+
+            try
+            {
+                // Convert string to List<string>
+                List<string> suggestions =
+                    JsonSerializer.Deserialize<List<string>>(outputArray) ?? [];
+
+                return Ok(suggestions);
+            }
+            catch (Exception)
+            {
+                {
+                    return Ok();
+                }
+            }
+        }
+
         /// <summary>
         /// Find a list of HerePlace by query name
         /// </summary>
@@ -86,9 +130,9 @@ namespace TravelTipsAPI.Controllers.HereMap
         {
             try
             {
-                var attractionRoutings = tripAttractionOrdersService.GetAttractionRoutingsByDayId(
-                    dayId
-                );
+                var attractionRoutings = tripAttractionOrdersService
+                    .GetAttractionRoutingsByDayId(dayId)
+                    .ToList();
                 List<HereRoutingInput> routeInputs = [];
 
                 for (var i = 1; i < attractionRoutings.Count; i++)

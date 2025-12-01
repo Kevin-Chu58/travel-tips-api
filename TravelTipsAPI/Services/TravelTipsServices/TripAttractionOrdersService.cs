@@ -116,6 +116,27 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         return taoViewModels;
     }
 
+    public IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByTripId(int tripId)
+    {
+        var taos = context
+            .TripAttractionOrders.Where(t => t.Day.TripId == tripId)
+            .Include(t => t.Attraction)
+            .Include(t => t.Day)
+            .ToList();
+
+        var taoViewModels = taos.Select(tao => new TripAttractionOrderGeoViewModel
+            {
+                Id = tao.Id,
+                DayId = tao.DayId,
+                Title = tao.Attraction.Title,
+                Lat = tao.Attraction.Lat,
+                Lng = tao.Attraction.Lng,
+            })
+            .ToList();
+
+        return taoViewModels;
+    }
+
     /// <summary>
     /// Get here map routing input by tao id (the destination)
     /// </summary>
@@ -158,7 +179,7 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// </summary>
     /// <param name="dayId">day id</param>
     /// <returns>a list of here map routing of the day</returns>
-    public List<HereRouting> GetAttractionRoutingsByDayId(int dayId)
+    public IEnumerable<HereRouting> GetAttractionRoutingsByDayId(int dayId)
     {
         var taos = context
             .TripAttractionOrders.Where(tao => tao.DayId == dayId)
