@@ -7,7 +7,6 @@ using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
-using static TravelTipsAPI.Services.UtilServices.UtilSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -15,11 +14,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Trips
     /// </summary>
     /// <param name="context">context</param>
-    public class TripsService(
-        TravelTipsContext context,
-        IUsersService usersService,
-        ISpellCheckerService spellCheckerService
-    ) : ITripsService
+    public class TripsService(TravelTipsContext context, IUsersService usersService) : ITripsService
     {
         /// <summary>
         /// Get my trips' ids
@@ -63,13 +58,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             title = title.Trim().ToLower();
 
-            // correct typos in user search input
-            var correctedInput = spellCheckerService.CorrectSentence(title);
-            Console.WriteLine(title + ": " + correctedInput);
-
             // find the trips that match the title
             var candidates = context
-                .Trips.Where(t => t.IsPublic && t.Title.Contains(correctedInput))
+                .Trips.Where(t => t.IsPublic && t.Title.Contains(title))
                 .ToList();
 
             // convert to viewModel

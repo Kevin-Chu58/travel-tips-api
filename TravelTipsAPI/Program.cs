@@ -11,7 +11,6 @@ using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.Auth0Services;
 using TravelTipsAPI.Services.AzureKeyVaultServices;
 using TravelTipsAPI.Services.TravelTipsServices;
-using TravelTipsAPI.Services.UtilServices;
 using TravelTipsAPI.Services.WikiCommonsServices;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 
@@ -66,7 +65,6 @@ builder.Services.AddServices();
 builder.Services.AddAuth0Services();
 builder.Services.AddHereMapServices();
 builder.Services.AddWikiCommonsServices();
-builder.Services.AddUtilServices();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];
