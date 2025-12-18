@@ -14,6 +14,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<User?> GetUserByUserIdAsync(string userId);
             Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
+            Task<bool> AcceptUserAgreementAsync(int id);
         }
 
         public interface ITripsService

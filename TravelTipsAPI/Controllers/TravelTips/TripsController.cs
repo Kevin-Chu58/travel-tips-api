@@ -32,7 +32,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>a list of trips that includes the title</returns>
         [HttpGet]
         [Route("")]
-        [AllowAnonymous]
+        //[AllowAnonymous]
+        [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<IEnumerable<TripViewModel>>> GetTripsByTitle(
             [FromQuery] string title
         )
@@ -51,8 +52,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>a trip with that id, Not Found otherwise</returns>
         [HttpGet]
         [Route("{id}")]
-        [AllowAnonymous]
-        [SetUserId]
+        //[AllowAnonymous]
+        //[SetUserId]
+        [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
             try
@@ -98,8 +100,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>the TaoGeo trip list</returns>
         [HttpGet]
         [Route("{id}/day-overview")]
-        [AllowAnonymous]
-        [SetUserId]
+        //[AllowAnonymous]
+        //[SetUserId]
+        [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
         {
             try
