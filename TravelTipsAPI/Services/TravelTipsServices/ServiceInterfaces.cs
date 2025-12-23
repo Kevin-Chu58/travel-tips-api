@@ -110,6 +110,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int userId,
                 string? name
             );
+            Task<byte[]> DownloadImageAsync(int userId, Guid guid);
             Task UpdateImageName(Image image, string newName);
             Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
             Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);
