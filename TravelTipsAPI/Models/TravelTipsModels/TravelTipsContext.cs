@@ -30,7 +30,7 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
+        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -229,7 +229,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D7D8D0D21").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
