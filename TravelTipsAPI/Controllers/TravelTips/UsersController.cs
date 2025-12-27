@@ -35,5 +35,27 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 return BadRequest(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Accepts user agreement
+        /// </summary>
+        /// <returns>updated user agreement status</returns>
+        [HttpPatch]
+        [Route("me/user-agreement")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<bool>> AcceptUserAgreement()
+        {
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                var userAgreementStatus = await usersService.AcceptUserAgreementAsync(userId);
+                return Ok(userAgreementStatus);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

@@ -12,8 +12,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Users
     /// </summary>
     /// <param name="context">context</param>
-    public class UsersService(TravelTipsContext context) : IUsersService
+    public class UsersService(IDbContextFactory<TravelTipsContext> contextFactory) : IUsersService
     {
+        private readonly TravelTipsContext context = contextFactory.CreateDbContext();
+
         /// <summary>
         /// Get the user by its id
         /// </summary>
@@ -74,7 +76,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             UserPatchViewModel userPatchViewModel
         )
         {
-            var user = context.Users.Find(id) ?? throw UserIdNotFoundException(id);
+            var user = context.Users.Find(id) ?? throw new Exception(Messages.UserNotFound);
             user.Email = userPatchViewModel.Email ?? user.Email;
             user.Username = userPatchViewModel.Username ?? user.Username;
             await context.SaveChangesAsync();
@@ -83,13 +85,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Get the exception of user id not found
+        /// Update a user agreement status when accepts it
         /// </summary>
         /// <param name="id">user id</param>
-        /// <returns>an exception</returns>
-        private static Exception UserIdNotFoundException(int id)
+        /// <returns>updated user agreement status</returns>
+        public async Task<bool> AcceptUserAgreementAsync(int id)
         {
-            return new Exception($"User not found with id {id}");
+            var user = context.Users.Find(id) ?? throw new Exception(Messages.UserNotFound);
+            user.UserAgreement = true;
+            await context.SaveChangesAsync();
+
+            return user.UserAgreement;
         }
     }
 }

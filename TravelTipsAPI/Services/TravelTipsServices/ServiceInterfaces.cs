@@ -14,6 +14,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<User?> GetUserByUserIdAsync(string userId);
             Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
+            Task<bool> AcceptUserAgreementAsync(int id);
         }
 
         public interface ITripsService
@@ -109,6 +110,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int userId,
                 string? name
             );
+            Task<byte[]> DownloadImageAsync(int userId, Guid guid);
             Task UpdateImageName(Image image, string newName);
             Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
             Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);

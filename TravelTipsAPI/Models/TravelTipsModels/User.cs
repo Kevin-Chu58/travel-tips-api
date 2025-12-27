@@ -13,6 +13,8 @@ public partial class User
 
     public string Email { get; set; } = null!;
 
+    public bool UserAgreement { get; set; }
+
     public virtual Admin? Admin { get; set; }
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();

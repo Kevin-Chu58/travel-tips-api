@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
@@ -12,8 +13,7 @@ using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 namespace TravelTipsAPI.Controllers.TravelTips
 {
     [Route("api/[controller]")]
-    public class ImagesController(IImagesService imagesService, UpstashHttpClient cache)
-        : TravelTipsControllerBase
+    public class ImagesController(IImagesService imagesService) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get image by user id
@@ -31,6 +31,26 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var images = await imagesService.GetImagesByIds(imageIds);
 
             return Ok(images);
+        }
+
+        /// <summary>
+        /// Get the image file by image id
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <returns>the file with the image id</returns>
+        [HttpGet]
+        [Route("download/{id}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<object>> GetImageFile(int id)
+        {
+            var image = imagesService.GetImageById(id);
+            if (image == null)
+                return NotFound();
+
+            var bytes = await imagesService.DownloadImageAsync(image.CreatedBy, image.Guid);
+
+            var base64 = Convert.ToBase64String(bytes);
+            return Ok(new { base64 });
         }
 
         /// <summary>

@@ -180,6 +180,25 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
         }
 
+        public async Task<byte[]> DownloadImageAsync(int userId, Guid guid)
+        {
+            var bucket = config["Firebase:BucketName"]!;
+            var objectName = $"{userId}/{guid}.jpeg";
+
+            // Get Google credential JSON from Key Vault (you already have this in your service)
+            var credentialJson = await keyVaultService.GetJsonSecretAsync(
+                config["AzureKeyVault:FirebaseKey"]!
+            );
+            var credential = GoogleCredential.FromJson(credentialJson);
+
+            using var storage = await StorageClient.CreateAsync(credential);
+            using var memoryStream = new MemoryStream();
+
+            await storage.DownloadObjectAsync(bucket, objectName, memoryStream);
+
+            return memoryStream.ToArray();
+        }
+
         public async Task UpdateImageName(Image image, string newName)
         {
             if (newName.Length > 50)
