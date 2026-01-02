@@ -11,13 +11,13 @@ namespace TravelTipsAPI.Services.HereMapServices
                 string query,
                 decimal lat,
                 decimal lng,
-                int? limit
+                int? limit = 20
             );
         }
 
         public interface IHereMapLookupService
         {
-            Task<Attraction> LookupPlaceByIdAsync(string hereId);
+            Task<HerePlace> LookupPlaceByIdAsync(string hereId);
         }
 
         public interface IHereMapRoutingService

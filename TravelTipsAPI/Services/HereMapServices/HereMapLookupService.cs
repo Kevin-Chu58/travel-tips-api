@@ -33,7 +33,7 @@ namespace TravelTipsAPI.Services.HereMapServices
         /// </summary>
         /// <param name="hereId">hereId</param>
         /// <returns>a place with the hereId</returns>
-        public async Task<Attraction> LookupPlaceByIdAsync(string hereId)
+        public async Task<HerePlace> LookupPlaceByIdAsync(string hereId)
         {
             HerePlace? result;
             var key = $"{hereId}:v{CacheVersion.HereMap_Version}";
@@ -69,7 +69,7 @@ namespace TravelTipsAPI.Services.HereMapServices
                 await cache.SetWithExpiryAsync(key, jsonString, Time.WEEK_2);
             }
 
-            return ModelUtils.ToAttraction(result);
+            return result;
         }
     }
 }

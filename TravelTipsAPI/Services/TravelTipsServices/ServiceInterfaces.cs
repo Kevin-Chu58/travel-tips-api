@@ -52,6 +52,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<AttractionViewModel> GetAttractionsByParams(string? title, int? ownerId);
             IEnumerable<int> GetMyHighlights(int id);
             Task<Attraction> PostNewAttractionAsync(string hereId);
+            Task<Attraction> UpdateAttractionAsync(Attraction attraction, Attraction newAttraction);
         }
 
         public interface IHighlightsService

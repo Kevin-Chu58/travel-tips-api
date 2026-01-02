@@ -6,6 +6,8 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
@@ -17,8 +19,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <param name="linksService">links service</param>
     [Route("api/[controller]")]
     public class AttractionsController(
-        IAttractionsService attractionsService
-    //ILinksService linksService
+        IAttractionsService attractionsService,
+        IHereMapDiscoverService hereMapDiscoverService,
+        IHereMapLookupService hereMapLookupService
     ) : TravelTipsControllerBase
     {
         [HttpGet]
@@ -30,6 +33,59 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var attraction = attractionsService.FindAttractionById(id);
                 return Ok((AttractionViewModel)attraction);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("{id}/here-map")]
+        [AllowAnonymous]
+        public async Task<ActionResult<HerePlace>> GetHerePlaceByAttractionId(int id)
+        {
+            try
+            {
+                var attraction = attractionsService.FindAttractionById(id);
+                var hereId = attraction.HereId;
+                HerePlace herePlace;
+                try
+                {
+                    herePlace = await hereMapLookupService.LookupPlaceByIdAsync(hereId);
+                    return Ok(herePlace);
+                }
+                catch (Exception)
+                {
+                    // hereId is outdated, auto-update the hereId, Lat & Lng, and address of the attraction
+                    var places = await hereMapDiscoverService.SearchPlaceByNameAsync(
+                        attraction.Title,
+                        attraction.Lat,
+                        attraction.Lng
+                    );
+                    var newAttraction = places.First(place =>
+                        place.City == attraction.City
+                        && place.State == attraction.State
+                        && place.Country == attraction.Country
+                        && place.Title == attraction.Title
+                        && place.Category == attraction.Category
+                        && place.ResultType == attraction.ResultType
+                    );
+
+                    if (newAttraction != null)
+                    {
+                        attraction = await attractionsService.UpdateAttractionAsync(
+                            attraction,
+                            newAttraction
+                        );
+                        herePlace = await hereMapLookupService.LookupPlaceByIdAsync(
+                            attraction.HereId
+                        );
+                        return Ok(herePlace);
+                    }
+                    else
+                        return NotFound("Attraction no longer exist in Here Map.");
+                }
             }
             catch (Exception ex)
             {

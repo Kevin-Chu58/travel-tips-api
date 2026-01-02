@@ -1,6 +1,7 @@
 ﻿using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
@@ -112,12 +113,34 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>the new attraction</returns>
         public async Task<Attraction> PostNewAttractionAsync(string hereId)
         {
-            var newAttraction = await hereMapLookupService.LookupPlaceByIdAsync(hereId);
+            var newHerePlace = await hereMapLookupService.LookupPlaceByIdAsync(hereId);
+            var newAttraction = ModelUtils.ToAttraction(newHerePlace);
 
             await context.Attractions.AddAsync(newAttraction);
             await context.SaveChangesAsync();
 
             return newAttraction;
+        }
+
+        /// <summary>
+        /// Update attraction hereId, Lat & Lng by the updated attraction info in HereMap
+        /// </summary>
+        /// <param name="attraction">old attraction</param>
+        /// <param name="newAttraction">updated attraction</param>
+        /// <returns>the updated old attraction</returns>
+        public async Task<Attraction> UpdateAttractionAsync(
+            Attraction attraction,
+            Attraction newAttraction
+        )
+        {
+            attraction.HereId = newAttraction.HereId;
+            attraction.Lat = newAttraction.Lat;
+            attraction.Lng = newAttraction.Lng;
+            attraction.Address = newAttraction.Address;
+
+            await context.SaveChangesAsync();
+
+            return attraction;
         }
     }
 }

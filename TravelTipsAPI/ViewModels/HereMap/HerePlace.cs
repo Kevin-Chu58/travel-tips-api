@@ -17,6 +17,8 @@
         public List<HereCategory>? Categories { get; set; }
         public List<HereReference>? References { get; set; }
         public List<HereContact>? Contacts { get; set; }
+        public List<HereOpeningHours>? OpeningHours { get; set; }
+        public List<HereFoodTypes>? FoodTypes { get; set; }
     }
 
     public class HereAddress
@@ -62,6 +64,18 @@
     {
         public List<HereValue>? Phone { get; set; }
         public List<HereValue>? Www { get; set; }
+    }
+
+    public class HereOpeningHours
+    {
+        public List<string>? Text { get; set; }
+    }
+
+    public class HereFoodTypes
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public bool? Primary { get; set; }
     }
 
     public class HereValue
