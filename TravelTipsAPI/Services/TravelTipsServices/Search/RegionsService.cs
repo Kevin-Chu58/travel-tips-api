@@ -57,7 +57,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <param name="type">region type</param>
         /// <param name="parentRegionId">parent region id</param>
         /// <returns>a list of regions</returns>
-        public IEnumerable<string> GetRegionsByParams(
+        public IEnumerable<Region> GetRegionsByParams(
             string type,
             string? name = null,
             int? parentRegionId = null
@@ -75,7 +75,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
                 regions = regions.Where(region => region.Name.StartsWith(name));
             }
 
-            return regions.Select(region => region.Name).Distinct().ToList();
+            return regions;
         }
 
         /// <summary>

@@ -12,7 +12,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Region GetRegionById(int id);
             Region GetRegionByName(string name);
-            IEnumerable<string> GetRegionsByParams(
+            IEnumerable<Region> GetRegionsByParams(
                 string type,
                 string? name = null,
                 int? parentRegionId = null
