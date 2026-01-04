@@ -1,10 +1,26 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
+using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
+    public class SearchSchema
+    {
+        public interface IRegionsService
+        {
+            Region GetRegionById(int id);
+            Region GetRegionByName(string name);
+            IEnumerable<string> GetRegionsByParams(
+                string type,
+                string? name = null,
+                int? parentRegionId = null
+            );
+            RegionCompleteViewModel BuildRegionComplete(int regionId);
+        }
+    }
+
     public class BasicSchema
     {
         public interface IUsersService
@@ -29,7 +45,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
-            bool IsOwner(int id, int tripId);
+            Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int regionId);
             bool IsOwnerList(int id, int[] tripIds);
             List<string> ValidatePost(string name);
             List<string> ValidatePatch(TripPatchViewModel trip);
@@ -49,9 +65,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Attraction FindAttractionById(int id);
             Attraction FindAttractionByHereId(string hereId);
-            IEnumerable<AttractionViewModel> GetAttractionsByParams(string? title, int? ownerId);
+            IEnumerable<AttractionViewModel> GetAttractionsByParams(
+                string? title,
+                string? Category = null,
+                string? ResultType = null,
+                string? HereId = null,
+                string? City = null,
+                string? State = null,
+                string? Country = null,
+                int? ownerId = null
+            );
             IEnumerable<int> GetMyHighlights(int id);
-            Task<Attraction> PostNewAttractionAsync(string hereId);
+            Task<Attraction> PostNewAttractionAsync(Attraction newAttraction);
             Task<Attraction> UpdateAttractionAsync(Attraction attraction, Attraction newAttraction);
         }
 

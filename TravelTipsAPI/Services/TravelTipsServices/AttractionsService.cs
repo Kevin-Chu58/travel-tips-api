@@ -12,10 +12,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Attractions
     /// </summary>
     /// <param name="context">context</param>
-    public class AttractionsService(
-        TravelTipsContext context,
-        IHereMapLookupService hereMapLookupService
-    ) : IAttractionsService
+    public class AttractionsService(TravelTipsContext context) : IAttractionsService
     {
         /// <summary>
         /// Get an attraction by its id
@@ -53,7 +50,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="title">title to search</param>
         /// <param name="ownerId">user id</param>
         /// <returns>a list of highlights that satisfy the search params</returns>
-        public IEnumerable<AttractionViewModel> GetAttractionsByParams(string? title, int? ownerId)
+        public IEnumerable<AttractionViewModel> GetAttractionsByParams(
+            string? title,
+            string? Category = null,
+            string? ResultType = null,
+            string? HereId = null,
+            string? City = null,
+            string? State = null,
+            string? Country = null,
+            int? ownerId = null
+        )
         {
             title = title?.Trim().ToLower();
 
@@ -67,26 +73,64 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     attractions = attractions.Where(a => a.Title.ToLower().Contains(title));
             }
 
-            // get the number of highlights of each attraction
-            var attractionViewModels = attractions.Select(a => (AttractionViewModel)a).ToList();
-
-            foreach (var attraction in attractionViewModels)
+            if (Category != null)
             {
-                var highlights = context.Highlights.Where(h => h.AttractionId == attraction.Id);
-                int numHighlights;
-
-                if (ownerId is null)
-                    numHighlights = highlights.Count();
-                else
-                    numHighlights = highlights.Where(h => h.CreatedBy == ownerId).Count();
-
-                attraction.NumHighlights = numHighlights;
+                Category = Category.Trim().ToLower();
+                attractions = attractions.Where(a =>
+                    a.Category != null && a.Category.ToLower() == Category
+                );
             }
 
-            // if looking for highlights written by a particular user,
-            // filter out all attractions with no highlights
+            if (ResultType != null)
+            {
+                ResultType = ResultType.Trim().ToLower();
+                attractions = attractions.Where(a => a.ResultType.ToLower() == ResultType);
+            }
+
+            if (HereId != null)
+            {
+                HereId = HereId.Trim();
+                attractions = attractions.Where(a => a.HereId == HereId);
+            }
+
+            if (City != null)
+            {
+                City = City.Trim().ToLower();
+                attractions = attractions.Where(a => a.City != null && a.City.ToLower() == City);
+            }
+
+            if (State != null)
+            {
+                State = State.Trim().ToLower();
+                attractions = attractions.Where(a => a.State != null && a.State.ToLower() == State);
+            }
+
+            if (Country != null)
+            {
+                Country = Country.Trim().ToLower();
+                attractions = attractions.Where(a =>
+                    a.Country != null && a.Country.ToLower() == Country
+                );
+            }
+
+            var attractionViewModels = attractions.Select(a => (AttractionViewModel)a).ToList();
             if (ownerId != null)
+            {
+                // get the number of highlights of each attraction
+                foreach (var attraction in attractionViewModels)
+                {
+                    var highlights = context.Highlights.Where(h => h.AttractionId == attraction.Id);
+                    int numHighlights;
+
+                    numHighlights = highlights.Where(h => h.CreatedBy == ownerId).Count();
+
+                    attraction.NumHighlights = numHighlights;
+                }
+
+                // if looking for highlights written by a particular user,
+                // filter out all attractions with no highlights
                 attractionViewModels = [.. attractionViewModels.Where(a => a.NumHighlights > 0)];
+            }
 
             return attractionViewModels;
         }
@@ -109,13 +153,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Create a new attraction
         /// </summary>
-        /// <param name="hereId">hereId</param>
+        /// <param name="newAttraction">new attraction</param>
         /// <returns>the new attraction</returns>
-        public async Task<Attraction> PostNewAttractionAsync(string hereId)
+        public async Task<Attraction> PostNewAttractionAsync(Attraction newAttraction)
         {
-            var newHerePlace = await hereMapLookupService.LookupPlaceByIdAsync(hereId);
-            var newAttraction = ModelUtils.ToAttraction(newHerePlace);
-
             await context.Attractions.AddAsync(newAttraction);
             await context.SaveChangesAsync();
 

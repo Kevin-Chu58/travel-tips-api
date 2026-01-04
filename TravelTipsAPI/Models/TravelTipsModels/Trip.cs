@@ -7,8 +7,6 @@ public partial class Trip
 {
     public int Id { get; set; }
 
-    public string Title { get; set; } = null!;
-
     public string? Description { get; set; }
 
     public int CreatedBy { get; set; }
@@ -19,9 +17,15 @@ public partial class Trip
 
     public bool IsHidden { get; set; }
 
+    public string Title { get; set; } = null!;
+
+    public int? RegionId { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
+
+    public virtual Region? Region { get; set; }
 
     public virtual ICollection<TripImage> TripImages { get; set; } = new List<TripImage>();
 }

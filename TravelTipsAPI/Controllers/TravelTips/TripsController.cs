@@ -1,12 +1,11 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
+using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
@@ -239,6 +238,35 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             var _tripIds = await tripsService.UpdateIsHiddenAsync(tripIds, isHidden);
             return Ok(_tripIds);
+        }
+
+        /// <summary>
+        /// update trip region id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <param name="regionId">new region id</param>
+        /// <returns>the updated complete region</returns>
+        [HttpPatch]
+        [Route("{id}/region/{regionId}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<RegionCompleteViewModel>> UpdateTripRegion(
+            int id,
+            int regionId
+        )
+        {
+            try
+            {
+                var trip = tripsService.FindTripByParams(id);
+                if (trip is null)
+                    return NotFound(Messages.TripNotFound);
+
+                var regionComplete = await tripsService.UpdateRegionAsync(trip, regionId);
+                return Ok(regionComplete);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>

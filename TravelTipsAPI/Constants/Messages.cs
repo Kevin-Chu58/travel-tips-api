@@ -13,6 +13,11 @@
         public static readonly string UserNotFound = "User not found";
         public static readonly string UserIdNotFound = "User Auth Id not found.";
 
+        // Regions
+        public static readonly string RegionNotFound = "Region not found.";
+        public static readonly string RegionRootInvalid =
+            "Region hierarchy is missing Continent or Country";
+
         // Trips
         public static readonly string TripNotFound = "Trip not found.";
         public static readonly string TripUnauthorized = "Trip access unauthorized.";

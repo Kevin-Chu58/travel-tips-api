@@ -1,10 +1,9 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
@@ -96,35 +95,39 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <summary>
         /// Get the search result contains a list of attractions with filter params
         /// </summary>
-        /// <param name="name">attraction name</param>
+        /// <param name="Title">attraction title</param>
+        /// <param name="Category">category</param>
+        /// <param name="ResultType">result type</param>
+        /// <param name="HereId">hereId</param>
+        /// <param name="City">city</param>
+        /// <param name="State">state</param>
+        /// <param name="Country">country</param>
+        /// <param name="ownerId">owner user id</param>
         /// <returns>a list of attractions that satisfy the condition</returns>
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
         public ActionResult<IEnumerable<AttractionViewModel>> GetAllAttractionsByParams(
-            [FromQuery] string? name
+            [FromQuery] string? Title = null,
+            string? Category = null,
+            string? ResultType = null,
+            string? HereId = null,
+            string? City = null,
+            string? State = null,
+            string? Country = null,
+            int? ownerId = null
         )
         {
-            var attractionViewModels = attractionsService.GetAttractionsByParams(name, null);
-
-            return Ok(attractionViewModels);
-        }
-
-        /// <summary>
-        /// Get search result of your attractions with filter params
-        /// </summary>
-        /// <param name="name">attraction name</param>
-        /// <returns>a list of attractions that satisfy the condition</returns>
-        [HttpGet]
-        [Route("my")]
-        [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<IEnumerable<AttractionViewModel>> GetMyAttractionsByParams(
-            [FromQuery] string? name
-        )
-        {
-            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
-            var attractionViewModels = attractionsService.GetAttractionsByParams(name, userId);
+            var attractionViewModels = attractionsService.GetAttractionsByParams(
+                Title,
+                Category,
+                ResultType,
+                HereId,
+                City,
+                State,
+                Country,
+                ownerId
+            );
 
             return Ok(attractionViewModels);
         }
@@ -137,21 +140,42 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPost]
         [Route("{hereId}")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<AttractionViewModel>> PostNewAttraction(string hereId)
+        public async Task<ActionResult<HerePlace>> PostNewAttraction(string hereId)
         {
-            Attraction attraction;
+            HerePlace herePlace;
             try
             {
-                attraction = attractionsService.FindAttractionByHereId(hereId);
+                herePlace = await hereMapLookupService.LookupPlaceByIdAsync(hereId);
+
+                // check if the herePlace exists in attractions, if not, create a new one
+                var newAttraction = ModelUtils.ToAttraction(herePlace);
+                var sameAttraction = attractionsService
+                    .GetAttractionsByParams(
+                        title: newAttraction.Title,
+                        Category: newAttraction.Category,
+                        ResultType: newAttraction.ResultType,
+                        City: newAttraction.City,
+                        State: newAttraction.State,
+                        Country: newAttraction.Country
+                    )
+                    .FirstOrDefault();
+
+                if (sameAttraction != null)
+                {
+                    await attractionsService.UpdateAttractionAsync(
+                        (Attraction)sameAttraction,
+                        newAttraction
+                    );
+                }
+                else
+                    await attractionsService.PostNewAttractionAsync(newAttraction);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                attraction = await attractionsService.PostNewAttractionAsync(hereId);
+                return BadRequest(e.Message);
             }
 
-            var attractionViewModel = (AttractionViewModel)attraction;
-
-            return Ok(attractionViewModel);
+            return Ok(herePlace);
         }
     }
 }

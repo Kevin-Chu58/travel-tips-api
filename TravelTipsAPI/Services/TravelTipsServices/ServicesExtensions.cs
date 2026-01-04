@@ -1,7 +1,9 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Services.TravelTipsServices.Search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -12,6 +14,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             // db context
             services.AddDbContext<TravelTipsContext>(ServiceLifetime.Transient);
 
+            // search schema
+            services.AddScoped<IRegionsService, RegionsService>();
             // basic schema
             services.AddScoped<IUsersService, UsersService>();
             services.AddScoped<ITripsService, TripsService>();

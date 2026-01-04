@@ -21,6 +21,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<Region> Regions { get; set; }
+
     public virtual DbSet<Trip> Trips { get; set; }
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
@@ -143,6 +145,27 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_users_images");
         });
 
+        modelBuilder.Entity<Region>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_regions");
+
+            entity.ToTable("Regions", "db_search");
+
+            entity.HasIndex(e => e.Name, "idx_regions_name");
+
+            entity.HasIndex(e => e.Type, "idx_regions_type");
+
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Slug).HasMaxLength(100);
+            entity.Property(e => e.Type).HasMaxLength(10).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.ParentRegion)
+                .WithMany(p => p.InverseParentRegion)
+                .HasForeignKey(d => d.ParentRegionId)
+                .HasConstraintName("fk_regions_parent");
+        });
+
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
@@ -162,6 +185,12 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_trips");
+
+            entity
+                .HasOne(d => d.Region)
+                .WithMany(p => p.Trips)
+                .HasForeignKey(d => d.RegionId)
+                .HasConstraintName("fk_regions_trips");
         });
 
         modelBuilder.Entity<TripAttractionOrder>(entity =>
@@ -229,7 +258,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D7D8D0D21").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);

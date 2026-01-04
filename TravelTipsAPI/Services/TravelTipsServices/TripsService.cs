@@ -6,7 +6,9 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -14,7 +16,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Trips
     /// </summary>
     /// <param name="context">context</param>
-    public class TripsService(TravelTipsContext context, IUsersService usersService) : ITripsService
+    public class TripsService(
+        TravelTipsContext context,
+        IUsersService usersService,
+        IRegionsService regionsService
+    ) : ITripsService
     {
         /// <summary>
         /// Get my trips' ids
@@ -73,6 +79,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 NumDays = context.Days.Count(day => day.TripId == trip.Id),
+                Region =
+                    trip.RegionId != null
+                        ? regionsService.BuildRegionComplete(trip.RegionId.Value)
+                        : null,
             });
         }
 
@@ -94,6 +104,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 NumDays = context.Days.Count(day => day.TripId == trip.Id),
+                Region =
+                    trip.RegionId != null
+                        ? regionsService.BuildRegionComplete(trip.RegionId.Value)
+                        : null,
             };
         }
 
@@ -115,6 +129,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     CreatedAt = trip.CreatedAt,
                     IsPublic = trip.IsPublic,
                     NumDays = context.Days.Where(day => day.TripId == trip.Id).Count(),
+                    Region =
+                        trip.RegionId != null
+                            ? regionsService.BuildRegionComplete(trip.RegionId.Value)
+                            : null,
                 })
                 .ToList();
 
@@ -151,6 +169,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             var newTripViewModel = (TripViewModel)newTrip;
             newTripViewModel.CreatedBy = (UserViewModel)usersService.GetUserById(createdBy);
+            newTripViewModel.Region =
+                newTrip.RegionId != null
+                    ? regionsService.BuildRegionComplete(newTrip.RegionId.Value)
+                    : null;
 
             return newTripViewModel;
         }
@@ -200,7 +222,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Update the trip is hidden status
         /// </summary>
-        /// <param name="id">trip id</param>
+        /// <param name="tripIds">trip ids</param>
         /// <param name="isHidden">new is hidden status</param>
         /// <returns>the updated trip</returns>
         public async Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden)
@@ -221,15 +243,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Whether you are the owner of the trip
+        /// Update the trip region
         /// </summary>
-        /// <param name="id">user id</param>
-        /// <param name="tripId">trip id</param>
-        /// <returns>true if the owner, false otherwise</returns>
-        public bool IsOwner(int id, int tripId)
+        /// <param name="trip">the trip to be updated</param>
+        /// <param name="regionId">region id</param>
+        /// <returns>the updated complete region</returns>
+        public async Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int regionId)
         {
-            var trip = context.Trips.Find(tripId);
-            return trip?.CreatedBy == id;
+            trip.RegionId = regionId;
+
+            await context.SaveChangesAsync();
+
+            return regionsService.BuildRegionComplete(regionId);
         }
 
         /// <summary>
