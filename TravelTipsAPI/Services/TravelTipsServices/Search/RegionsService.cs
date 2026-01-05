@@ -12,7 +12,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
     public class RegionsService : IRegionsService
     {
         // In your service or singleton
-        private readonly IReadOnlyDictionary<int, Region> _regionCache;
+        private readonly IReadOnlyDictionary<int, RegionViewModel> _regionCache;
         private readonly TravelTipsContext _context;
 
         /// <summary>
@@ -22,7 +22,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         public RegionsService(TravelTipsContext context)
         {
             _context = context;
-            _regionCache = _context.Regions.AsNoTracking().ToDictionary(r => r.Id);
+            _regionCache = _context
+                .Regions.AsNoTracking()
+                .Select(r => (RegionViewModel)r)
+                .ToDictionary(r => r.Id);
         }
 
         /// <summary>
@@ -30,7 +33,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// </summary>
         /// <param name="id">id of the region</param>
         /// <returns>the region with the id</returns>
-        public Region GetRegionById(int id)
+        public RegionViewModel GetRegionById(int id)
         {
             _regionCache.TryGetValue(id, out var region);
             if (region is null)
@@ -43,7 +46,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// </summary>
         /// <param name="name">region name</param>
         /// <returns>region with the name</returns>
-        public Region GetRegionByName(string name)
+        public RegionViewModel GetRegionByName(string name)
         {
             var region = _regionCache.Values.FirstOrDefault(r => r.Name == name);
             if (region is null)
@@ -57,7 +60,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <param name="type">region type</param>
         /// <param name="parentRegionId">parent region id</param>
         /// <returns>a list of regions</returns>
-        public IEnumerable<Region> GetRegionsByParams(
+        public IEnumerable<RegionViewModel> GetRegionsByParams(
             string type,
             string? name = null,
             int? parentRegionId = null

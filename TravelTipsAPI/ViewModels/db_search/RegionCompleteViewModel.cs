@@ -4,9 +4,9 @@ namespace TravelTipsAPI.ViewModels.db_search
 {
     public class RegionCompleteViewModel
     {
-        public Region? Continent { get; set; }
-        public Region? Country { get; set; }
-        public Region? State { get; set; }
-        public Region? Area { get; set; }
+        public RegionViewModel? Continent { get; set; }
+        public RegionViewModel? Country { get; set; }
+        public RegionViewModel? State { get; set; }
+        public RegionViewModel? Area { get; set; }
     }
 }

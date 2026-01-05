@@ -247,11 +247,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <param name="regionId">new region id</param>
         /// <returns>the updated complete region</returns>
         [HttpPatch]
-        [Route("{id}/region/{regionId}")]
+        [Route("{id}/region")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<RegionCompleteViewModel>> UpdateTripRegion(
+        public async Task<ActionResult<RegionCompleteViewModel?>> UpdateTripRegion(
             int id,
-            int regionId
+            [FromQuery] int? regionId
         )
         {
             try

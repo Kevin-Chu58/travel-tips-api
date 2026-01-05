@@ -10,9 +10,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         public interface IRegionsService
         {
-            Region GetRegionById(int id);
-            Region GetRegionByName(string name);
-            IEnumerable<Region> GetRegionsByParams(
+            RegionViewModel GetRegionById(int id);
+            RegionViewModel GetRegionByName(string name);
+            IEnumerable<RegionViewModel> GetRegionsByParams(
                 string type,
                 string? name = null,
                 int? parentRegionId = null
@@ -45,7 +45,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
-            Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int regionId);
+            Task<RegionCompleteViewModel?> UpdateRegionAsync(Trip trip, int? regionId);
             bool IsOwnerList(int id, int[] tripIds);
             List<string> ValidatePost(string name);
             List<string> ValidatePatch(TripPatchViewModel trip);

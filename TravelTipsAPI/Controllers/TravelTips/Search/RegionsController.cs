@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips.Search
@@ -11,7 +11,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Search
         [HttpGet]
         [Route("browse")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<Region>> GetRegionNamesByParams(
+        public ActionResult<IEnumerable<RegionViewModel>> GetRegionNamesByParams(
             [FromQuery] string type,
             string? name = null,
             int? parentRegionId = null

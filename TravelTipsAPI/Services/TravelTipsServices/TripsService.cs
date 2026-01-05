@@ -248,13 +248,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="trip">the trip to be updated</param>
         /// <param name="regionId">region id</param>
         /// <returns>the updated complete region</returns>
-        public async Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int regionId)
+        public async Task<RegionCompleteViewModel?> UpdateRegionAsync(Trip trip, int? regionId)
         {
             trip.RegionId = regionId;
 
             await context.SaveChangesAsync();
 
-            return regionsService.BuildRegionComplete(regionId);
+            return regionId != null ? regionsService.BuildRegionComplete((int)regionId) : null;
         }
 
         /// <summary>
