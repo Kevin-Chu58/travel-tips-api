@@ -123,8 +123,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
             }
 
             // Validation: ensure required regions exist
-            if (result.Continent == null || result.Country == null)
-                throw new InvalidOperationException(Messages.RegionRootInvalid);
+            //if (result.Continent == null || result.Country == null)
+            //    throw new InvalidOperationException(Messages.RegionRootInvalid);
 
             return result;
         }

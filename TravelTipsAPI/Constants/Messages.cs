@@ -15,12 +15,13 @@
 
         // Regions
         public static readonly string RegionNotFound = "Region not found.";
-        public static readonly string RegionRootInvalid =
-            "Region hierarchy is missing Continent or Country";
+
+        //public static readonly string RegionRootInvalid = "Region hierarchy is missing Country";
 
         // Trips
         public static readonly string TripNotFound = "Trip not found.";
         public static readonly string TripUnauthorized = "Trip access unauthorized.";
+        public static readonly string TripBudgetInvalid = "Trip budget is invalid.";
 
         // Days
         public static readonly string DayNotFound = "Day not found.";

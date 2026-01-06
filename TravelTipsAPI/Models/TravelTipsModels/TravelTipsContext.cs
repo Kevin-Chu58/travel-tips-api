@@ -172,6 +172,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Trips", "db_basic");
 
+            entity.HasIndex(e => e.Budget, "idx_trips_budget");
+
             entity.HasIndex(e => e.IsHidden, "idx_trips_isHidden");
 
             entity.HasIndex(e => e.IsPublic, "idx_trips_isPublic");

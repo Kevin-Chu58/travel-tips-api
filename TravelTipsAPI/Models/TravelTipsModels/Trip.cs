@@ -21,6 +21,8 @@ public partial class Trip
 
     public int? RegionId { get; set; }
 
+    public int? Budget { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();

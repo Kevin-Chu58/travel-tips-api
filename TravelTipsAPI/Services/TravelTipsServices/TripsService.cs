@@ -83,6 +83,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     trip.RegionId != null
                         ? regionsService.BuildRegionComplete(trip.RegionId.Value)
                         : null,
+                Budget = trip.Budget,
             });
         }
 
@@ -108,6 +109,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     trip.RegionId != null
                         ? regionsService.BuildRegionComplete(trip.RegionId.Value)
                         : null,
+                Budget = trip.Budget,
             };
         }
 
@@ -133,6 +135,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                         trip.RegionId != null
                             ? regionsService.BuildRegionComplete(trip.RegionId.Value)
                             : null,
+                    Budget = trip.Budget,
                 })
                 .ToList();
 
@@ -255,6 +258,22 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return regionId != null ? regionsService.BuildRegionComplete((int)regionId) : null;
+        }
+
+        /// <summary>
+        /// Update the trip budget
+        /// </summary>
+        /// <param name="trip">the trip to be updated</param>
+        /// <param name="budget">budget</param>
+        /// <returns>the updated budget</returns>
+        public async Task<int?> UpdateBudgetAsync(Trip trip, int? budget)
+        {
+            if (budget < 1 || budget > 5)
+                throw new Exception(Messages.TripBudgetInvalid);
+
+            trip.Budget = budget;
+            await context.SaveChangesAsync();
+            return trip.Budget;
         }
 
         /// <summary>

@@ -12,6 +12,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public UserViewModel? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsPublic { get; set; }
+        public int? Budget { get; set; }
         public int? NumDays { get; set; }
         public RegionCompleteViewModel? Region { get; set; }
         public IEnumerable<ImageViewModel>? Images { get; set; }
@@ -25,6 +26,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Description = trip.Description,
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
+                Budget = trip.Budget,
             };
         }
     }

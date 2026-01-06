@@ -241,7 +241,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         }
 
         /// <summary>
-        /// update trip region id
+        /// Update trip region id
         /// </summary>
         /// <param name="id">trip id</param>
         /// <param name="regionId">new region id</param>
@@ -251,7 +251,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<RegionCompleteViewModel?>> UpdateTripRegion(
             int id,
-            [FromQuery] int? regionId
+            [FromBody] int? regionId
         )
         {
             try
@@ -262,6 +262,32 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 var regionComplete = await tripsService.UpdateRegionAsync(trip, regionId);
                 return Ok(regionComplete);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Update trip budget
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <param name="budget">budget</param>
+        /// <returns>the updated budget</returns>
+        [HttpPatch]
+        [Route("{id}/budget")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<int?>> UpdateTripBudget(int id, [FromBody] int? budget)
+        {
+            try
+            {
+                var trip = tripsService.FindTripByParams(id);
+                if (trip is null)
+                    return NotFound(Messages.TripNotFound);
+
+                var newBudget = await tripsService.UpdateBudgetAsync(trip, budget);
+                return Ok(newBudget);
             }
             catch (Exception ex)
             {

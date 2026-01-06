@@ -46,6 +46,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
             Task<RegionCompleteViewModel?> UpdateRegionAsync(Trip trip, int? regionId);
+            Task<int?> UpdateBudgetAsync(Trip trip, int? budget);
             bool IsOwnerList(int id, int[] tripIds);
             List<string> ValidatePost(string name);
             List<string> ValidatePatch(TripPatchViewModel trip);
