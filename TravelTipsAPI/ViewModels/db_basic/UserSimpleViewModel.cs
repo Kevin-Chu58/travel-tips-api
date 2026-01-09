@@ -2,26 +2,24 @@
 
 namespace TravelTipsAPI.ViewModels.db_basic
 {
-    public class UserViewModel
+    public class UserSimpleViewModel
     {
         public int Id { get; set; }
         public required string UserId { get; set; }
         public required string Username { get; set; }
         public required string Email { get; set; }
-        public bool UserAgreement { get; set; }
 
-        public static explicit operator UserViewModel(User user)
+        public static explicit operator UserSimpleViewModel(User user)
         {
-            var userViewModel = new UserViewModel
+            var userSimpleViewModel = new UserSimpleViewModel
             {
                 Id = user.Id,
                 UserId = user.UserId,
                 Username = user.Username ?? "",
                 Email = user.Email,
-                UserAgreement = user.UserAgreement,
             };
 
-            return userViewModel;
+            return userSimpleViewModel;
         }
     }
 }

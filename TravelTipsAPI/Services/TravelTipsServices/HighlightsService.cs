@@ -18,12 +18,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="id">highlight id</param>
         /// <returns>the highlight with the id</returns>
-        public Highlight FindHighlightById(int id)
+        public Highlight? FindHighlightById(int id)
         {
             var highlight = context.Highlights.Find(id);
-
-            if (highlight == null)
-                throw new FileNotFoundException(Messages.HighlightNotFound);
 
             return highlight;
         }
@@ -34,14 +31,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="id">attraction id</param>
         /// <param name="userId">user id</param>
         /// <returns>a list of highlights</returns>
-        public IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId)
+        public IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId = null)
         {
-            var highlights = context.Highlights.Where(h => h.AttractionId == id).ToList();
+            var query = context.Highlights.AsQueryable();
 
+            query = query.Where(h => h.AttractionId == id);
             if (userId != null)
-                highlights = [.. highlights.Where(h => h.CreatedBy == userId)];
+            {
+                query = query.Where(h => h.CreatedBy == userId);
+            }
 
-            return highlights;
+            return query.ToList();
         }
 
         /// <summary>
@@ -53,13 +53,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var highlightViewModel = (HighlightViewModel)highlight;
 
-            if (highlight.CreatedBy != null)
-            {
-                var userViewModel = (UserViewModel)
-                    usersService.GetUserById((int)highlight.CreatedBy);
+            var userViewModel = (UserViewModel)usersService.GetUserById(highlight.CreatedBy);
 
-                highlightViewModel.CreatedBy = userViewModel;
-            }
+            highlightViewModel.CreatedBy = userViewModel;
 
             return highlightViewModel;
         }

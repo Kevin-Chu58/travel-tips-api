@@ -10,5 +10,6 @@
         public TimeOnly End { get; set; }
         public int CreatedBy { get; set; }
         public string? TransportMode { get; set; }
+        public bool IsPrivate { get; set; }
     }
 }

@@ -2,7 +2,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenAI.Responses;
+using TravelTipsAPI.Authorization;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Controllers.TravelTips;
+using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
@@ -17,10 +21,12 @@ namespace TravelTipsAPI.Controllers.HereMap
     /// <param name="hereMapDiscoverService">here map discover service</param>
     [Route("api/[controller]")]
     public class HereMapController(
+        ITripsService tripsService,
+        ITripSharesService tripSharesService,
+        ITripAttractionOrdersService tripAttractionOrdersService,
         IHereMapDiscoverService hereMapDiscoverService,
         IHereMapLookupService hereMapLookupService,
         IHereMapRoutingService hereMapRoutingService,
-        ITripAttractionOrdersService tripAttractionOrdersService,
         IConfiguration config
     ) : TravelTipsControllerBase
     {
@@ -31,6 +37,11 @@ namespace TravelTipsAPI.Controllers.HereMap
             apiKey: config["OpenAI:ApiKey"]
         );
 
+        /// <summary>
+        /// Get search suggestions from GPT
+        /// </summary>
+        /// <param name="input">user input</param>
+        /// <returns>a list of suggestions</returns>
         [HttpGet]
         [Route("suggestion")]
         [AllowAnonymous]
@@ -98,12 +109,38 @@ namespace TravelTipsAPI.Controllers.HereMap
             }
         }
 
+        /// <summary>
+        /// Get here map routing on a trip attraction order
+        /// </summary>
+        /// <param name="taoId">tao id</param>
+        /// <returns>the here map routing</returns>
         [HttpGet]
         [Route("routing/{taoId}")]
         [AllowAnonymous]
+        [SetUserId]
         public async Task<ActionResult<HereRoutingResponse?>> GetRoutingOnTaoAsync(int taoId)
         {
-            var hereRoutingInput = tripAttractionOrdersService.GetHereRoutingInputByTaoId(taoId);
+            // check if the trip is public or the user is the owner or shared user
+            var tripId = tripAttractionOrdersService.BackTrackTripIdByTaoId(taoId);
+            var trip = tripsService.FindTripByParams(tripId);
+
+            if (trip is null)
+            {
+                return NotFound(Messages.TripNotFound);
+            }
+
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var isShared = tripSharesService.IsTripSharedWithUser(trip.Id, userId);
+
+            var isRestricted = trip.CreatedBy == userId || isShared;
+
+            if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
+                return BadRequest(Messages.TripUnauthorized);
+
+            var hereRoutingInput = tripAttractionOrdersService.GetHereRoutingInputByTaoId(
+                taoId,
+                isRestricted
+            );
 
             if (hereRoutingInput == null)
                 return Ok(null);
@@ -121,37 +158,60 @@ namespace TravelTipsAPI.Controllers.HereMap
             }
         }
 
+        /// <summary>
+        /// Get here map routings on a day
+        /// </summary>
+        /// <param name="dayId">day id</param>
+        /// <returns>a list of here map routings</returns>
         [HttpGet]
         [Route("routing/day/{dayId}")]
         [AllowAnonymous]
+        [SetUserId]
         public async Task<ActionResult<IEnumerable<HereRoutingResponse?>>> GetRoutingsOnDayAsync(
             int dayId
         )
         {
+            // check if the trip is public or the user is the owner or shared user
+            var trip = tripsService.FindTripByParams(dayId: dayId);
+
+            if (trip is null)
+            {
+                return NotFound(Messages.TripNotFound);
+            }
+
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var isShared = tripSharesService.IsTripSharedWithUser(trip.Id, userId);
+
+            var isRestricted = trip.CreatedBy == userId || isShared;
+
+            if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
+                return BadRequest(Messages.TripUnauthorized);
+
+            var attractionRoutings = tripAttractionOrdersService
+                .GetAttractionRoutingsByDayId(dayId, isRestricted)
+                .ToList();
+
+            List<HereRoutingInput> routeInputs = [];
+
+            for (var i = 1; i < attractionRoutings.Count; i++)
+            {
+                var prevRouting = attractionRoutings[i - 1];
+                var curRouting = attractionRoutings[i];
+
+                var routeInput = new HereRoutingInput
+                {
+                    TransportMode = curRouting.TransportMode,
+                    OriginLat = prevRouting.Position.Lat,
+                    OriginLng = prevRouting.Position.Lng,
+                    DestinationLat = curRouting.Position.Lat,
+                    DestinationLng = curRouting.Position.Lng,
+                };
+
+                routeInputs.Add(routeInput);
+            }
+
             try
             {
-                var attractionRoutings = tripAttractionOrdersService
-                    .GetAttractionRoutingsByDayId(dayId)
-                    .ToList();
-                List<HereRoutingInput> routeInputs = [];
-
-                for (var i = 1; i < attractionRoutings.Count; i++)
-                {
-                    var prevRouting = attractionRoutings[i - 1];
-                    var curRouting = attractionRoutings[i];
-
-                    var routeInput = new HereRoutingInput
-                    {
-                        TransportMode = curRouting.TransportMode,
-                        OriginLat = prevRouting.Position.Lat,
-                        OriginLng = prevRouting.Position.Lng,
-                        DestinationLat = curRouting.Position.Lat,
-                        DestinationLng = curRouting.Position.Lng,
-                    };
-
-                    routeInputs.Add(routeInput);
-                }
-
                 var hereRoutingResponses = await hereMapRoutingService.GetRoutesAsync(routeInputs);
                 return Ok(hereRoutingResponses);
             }

@@ -25,5 +25,7 @@ public partial class User
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 
+    public virtual ICollection<TripShare> TripShares { get; set; } = new List<TripShare>();
+
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

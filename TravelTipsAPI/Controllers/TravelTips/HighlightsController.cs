@@ -71,9 +71,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] string description
         )
         {
+            var highlight = highlightsService.FindHighlightById(id);
+
+            if (highlight is null)
+                return NotFound(Messages.HighlightNotFound);
+
             try
             {
-                var highlight = highlightsService.FindHighlightById(id);
                 var highlightViewModel = await highlightsService.UpdateHighlightAsync(
                     highlight,
                     description
@@ -93,6 +97,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
         public async Task<ActionResult<HighlightViewModel>> DeleteHighlightAsync(int id)
         {
             var highlight = highlightsService.FindHighlightById(id);
+            if (highlight is null)
+                return NotFound(Messages.HighlightNotFound);
+
             var highlightViewModel = await highlightsService.DeleteHighlightAsync(highlight);
 
             return Ok(highlightViewModel);

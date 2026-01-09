@@ -26,30 +26,49 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IUsersService
         {
             User GetUserById(int id);
+            IEnumerable<User> GetUsersByIds(IEnumerable<int> ids);
             User? GetUserByUserId(string userId);
-            Task<User?> GetUserByUserIdAsync(string userId);
-            Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
             Task<bool> AcceptUserAgreementAsync(int id);
         }
 
         public interface ITripsService
         {
+            Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
+            TripViewModel? GetTripById(int id, int searchUserId = 0);
+            TripViewModel GetTripViewModel(Trip trip, int searchUserId = 0);
             IEnumerable<int> GetMyTripIds(int id);
-            Trip FindTripByParams(int id, bool? isPublic = null);
-            IEnumerable<TripViewModel> GetTripsByTitle(string title);
-            TripViewModel GetTripByTripId(int id);
-            IEnumerable<TripViewModel> GetTripsByUserId(int id);
-            Trip? GetTripByDayId(int dayId);
+            IEnumerable<TripViewModel> GetTripsByParams(
+                int? id = null,
+                string? title = null,
+                int? userId = null,
+                bool? isPublic = null,
+                bool? isHidden = null,
+                int? regionId = null,
+                int? budget = null,
+                int searchUserId = 0
+            );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
             Task<List<int>> UpdateIsPublicAsync(int[] tripIds, bool isPublic);
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
-            Task<RegionCompleteViewModel?> UpdateRegionAsync(Trip trip, int? regionId);
-            Task<int?> UpdateBudgetAsync(Trip trip, int? budget);
+            Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int? regionId);
+            Task<int> UpdateBudgetAsync(Trip trip, int? budget);
             bool IsOwnerList(int id, int[] tripIds);
             List<string> ValidatePost(string name);
             List<string> ValidatePatch(TripPatchViewModel trip);
+        }
+
+        public interface ITripSharesService
+        {
+            TripShare? FindTripShare(int tripId, int userId);
+            IEnumerable<TripShare> FindTripSharesByTripId(int tripId);
+            IEnumerable<int> GetSharedUserIdsByTripId(int tripId);
+            IEnumerable<int> GetSharedTripIdsByUserId(int userId);
+            bool IsTripSharedWithUser(int tripId, int userId);
+            Task ShareTripWithUser(int tripId, int userId);
+            Task UnshareTripWithUser(int tripId, int userId);
+            Task<int> UnshareTripWithAll(int tripId);
         }
 
         public interface IDaysService
@@ -65,7 +84,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IAttractionsService
         {
             Attraction FindAttractionById(int id);
-            Attraction FindAttractionByHereId(string hereId);
             IEnumerable<AttractionViewModel> GetAttractionsByParams(
                 string? title,
                 string? Category = null,
@@ -83,8 +101,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public interface IHighlightsService
         {
-            Highlight FindHighlightById(int id);
-            IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId);
+            Highlight? FindHighlightById(int id);
+            IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId = null);
             HighlightViewModel GetHighlightViewModel(Highlight highlight);
             IEnumerable<int> GetMyHighlights(int id);
             Task<HighlightViewModel> PostNewHighlightAsync(
@@ -98,16 +116,30 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ITripAttractionOrdersService
         {
             IEnumerable<int> GetMyTaos(int id);
+            int BackTrackTripIdByTaoId(int taoId);
             TripAttractionOrder? FindTaoById(int id);
-            TripAttractionOrderViewModel GetTaoById(int id);
-            IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(int dayId);
-            IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByDayId(int dayId);
-            IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByTripId(int tripId);
-            HereRoutingInput? GetHereRoutingInputByTaoId(int taoId);
-            IEnumerable<HereRouting> GetAttractionRoutingsByDayId(int dayId);
+            TripAttractionOrderViewModel GetTaoById(int id, bool isRestricted = false);
+            IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(
+                int dayId,
+                bool isRestricted = false
+            );
+            IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByDayId(
+                int dayId,
+                bool isRestricted = false
+            );
+            IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByTripId(
+                int tripId,
+                bool isRestricted = false
+            );
+            HereRoutingInput? GetHereRoutingInputByTaoId(int taoId, bool isRestricted = false);
+            IEnumerable<HereRouting> GetAttractionRoutingsByDayId(
+                int dayIdbool,
+                bool isRestricted = false
+            );
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
             Task<int> PatchTao(TripAttractionOrderPatchViewModel taoPatch, TripAttractionOrder tao);
             Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao);
+            Task<bool> PatchTaoSetPrivate(TripAttractionOrder tao, bool isPrivate);
             Task<int> DeleteTaoById(TripAttractionOrder tao);
             Task<int> DeleteTaosByDayId(int dayId);
             void IsTimeValid(TimeOnly time);

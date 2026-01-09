@@ -1,6 +1,4 @@
-﻿using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -31,11 +29,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return user;
         }
 
-        public User? GetUserByUserId(string userId)
+        /// <summary>
+        /// Get a list of users by their ids
+        /// </summary>
+        /// <param name="ids">user ids</param>
+        /// <returns>a list of users</returns>
+        public IEnumerable<User> GetUsersByIds(IEnumerable<int> ids)
         {
-            var user = context.Users.FirstOrDefault(user => user.UserId == userId);
-
-            return user;
+            var users = context.Users.Where(user => ids.Contains(user.Id)).ToList();
+            return users;
         }
 
         /// <summary>
@@ -43,26 +45,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="userId">auth0 id</param>
         /// <returns>the user with the auth0 id</returns>
-        public async Task<User?> GetUserByUserIdAsync(string userId)
+        public User? GetUserByUserId(string userId)
         {
-            var user = await context.Users.FirstOrDefaultAsync(user => user.UserId == userId);
+            var user = context.Users.FirstOrDefault(user => user.UserId == userId);
 
             return user;
-        }
-
-        /// <summary>
-        /// Create a new user by its auth0 id
-        /// </summary>
-        /// <param name="userId">auth0 id</param>
-        /// <returns>the new user with the auth0 id</returns>
-        public async Task<UserViewModel> PostNewUserAsync(UserPostViewModel userPost)
-        {
-            var newUser = userPost.ToUser();
-
-            await context.Users.AddAsync(newUser);
-            await context.SaveChangesAsync();
-
-            return (UserViewModel)newUser;
         }
 
         /// <summary>
@@ -77,8 +64,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         )
         {
             var user = context.Users.Find(id) ?? throw new Exception(Messages.UserNotFound);
+
             user.Email = userPatchViewModel.Email ?? user.Email;
             user.Username = userPatchViewModel.Username ?? user.Username;
+
             await context.SaveChangesAsync();
 
             return (UserViewModel)user;

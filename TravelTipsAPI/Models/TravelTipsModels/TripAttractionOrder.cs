@@ -21,6 +21,8 @@ public partial class TripAttractionOrder
 
     public string? TransportMode { get; set; }
 
+    public bool IsPrivate { get; set; }
+
     public virtual Attraction Attraction { get; set; } = null!;
 
     public virtual User CreatedByNavigation { get; set; } = null!;
