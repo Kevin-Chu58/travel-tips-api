@@ -55,8 +55,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int? regionId);
             Task<int> UpdateBudgetAsync(Trip trip, int? budget);
             bool IsOwnerList(int id, int[] tripIds);
-            List<string> ValidatePost(string name);
-            List<string> ValidatePatch(TripPatchViewModel trip);
         }
 
         public interface ITripSharesService

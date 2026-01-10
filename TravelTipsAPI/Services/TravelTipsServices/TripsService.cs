@@ -186,12 +186,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.Trips.AddAsync(newTrip);
             await context.SaveChangesAsync();
 
-            var newTripViewModel = (TripViewModel)newTrip;
-            newTripViewModel.CreatedBy = (UserViewModel)usersService.GetUserById(createdBy);
-            newTripViewModel.Region =
-                newTrip.RegionId != null
-                    ? regionsService.BuildRegionComplete(newTrip.RegionId.Value)
-                    : null;
+            var newTripViewModel = GetTripById(newTrip.Id)!;
 
             return newTripViewModel;
         }
@@ -207,8 +202,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             TripPatchViewModel tripPatch
         )
         {
-            trip.Title = tripPatch.Title?.Trim() ?? trip.Title;
-            trip.Description = tripPatch.Description?.Trim() ?? trip.Description;
+            // Title: override only if non-null (validation already guarantees min length)
+            if (tripPatch.Title is not null)
+            {
+                trip.Title = tripPatch.Title.Trim();
+            }
+
+            // Description: null = no change, empty = clear
+            if (tripPatch.Description is not null)
+            {
+                trip.Description = tripPatch.Description.Trim();
+            }
 
             await context.SaveChangesAsync();
 
@@ -311,29 +315,29 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="name">new trip name</param>
         /// <returns>true if is valid, false otherwise</returns>
-        public List<string> ValidatePost(string name)
-        {
-            var invalidParams = new List<string>();
+        //public List<string> ValidatePost(string name)
+        //{
+        //    var invalidParams = new List<string>();
 
-            if (name.Length > 50)
-                invalidParams.Add("name");
+        //    if (name.Length > 50)
+        //        invalidParams.Add("name");
 
-            return invalidParams;
-        }
+        //    return invalidParams;
+        //}
 
         /// <summary>
         /// Check if trip's detail is valid
         /// </summary>
         /// <param name="trip">existing trip</param>
         /// <returns>true if is valid, false otherwise</returns>
-        public List<string> ValidatePatch(TripPatchViewModel trip)
-        {
-            var invalidParams = new List<string>();
+        //public List<string> ValidatePatch(TripPatchViewModel trip)
+        //{
+        //    var invalidParams = new List<string>();
 
-            if (trip.Title?.Length == 0 || trip.Title?.Length > 50)
-                invalidParams.Add("name");
+        //    if (trip.Title?.Length == 0 || trip.Title?.Length > 50)
+        //        invalidParams.Add("name");
 
-            return invalidParams;
-        }
+        //    return invalidParams;
+        //}
     }
 }

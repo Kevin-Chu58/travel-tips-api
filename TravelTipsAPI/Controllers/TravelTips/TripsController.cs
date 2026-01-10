@@ -186,25 +186,19 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <summary>
         /// Post a new trip to db
         /// </summary>
-        /// <param name="name">a new trip title</param>
+        /// <param name="newTrip">new trip</param>
         /// <returns>the new trip posted to db</returns>
         [HttpPost]
-        [Route("{name}")]
+        [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<TripViewModel>> PostNewTrip(string name)
+        public async Task<ActionResult<TripViewModel>> PostNewTrip(
+            [FromBody] TripPostViewModel newTrip
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            // validate the trip name
-            var invalidParams = tripsService.ValidatePost(name);
-            if (invalidParams.Count > 0)
-            {
-                var invalidInputs = string.Join(", ", invalidParams);
-                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
-            }
-
-            var tripViewModel = await tripsService.PostNewTripAsync(userId, name);
-            return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
+            var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip.Title);
+            return Ok(tripViewModel);
         }
 
         /// <summary>
@@ -225,14 +219,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             if (trip is null)
                 return NotFound(Messages.TripNotFound);
-
-            // validate the inputs
-            var invalidParams = tripsService.ValidatePatch(tripPatch);
-            if (invalidParams.Count > 0)
-            {
-                var invalidInputs = string.Join(", ", invalidParams);
-                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
-            }
 
             var tripPatchViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
             return Ok(tripPatchViewModel);

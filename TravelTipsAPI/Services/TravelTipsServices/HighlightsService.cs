@@ -105,9 +105,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             string description
         )
         {
-            if (description.Length == 0)
-                throw new Exception(Messages.HighlightDescriptionEmpty);
-
             highlight.Description = description;
             await context.SaveChangesAsync();
 
