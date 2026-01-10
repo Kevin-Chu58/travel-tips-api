@@ -63,19 +63,20 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
-            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var trip = tripsService.FindTripByParams(id);
 
-            var tripViewModel = tripsService.GetTripById(id, searchUserId: userId);
-
-            if (tripViewModel is null)
+            if (trip is null)
                 return NotFound(Messages.TripNotFound);
 
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var isShared = tripSharesService.IsTripSharedWithUser(id, userId);
 
-            var isRestricted = tripViewModel.CreatedBy?.Id == userId || isShared;
+            var isRestricted = trip.CreatedBy == userId || isShared;
 
-            if ((!tripViewModel.IsPublic && !isRestricted) || tripViewModel.IsHidden)
+            if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
                 return BadRequest(Messages.TripUnauthorized);
+
+            var tripViewModel = tripsService.GetTripViewModel(trip, isRestricted: isRestricted);
 
             try
             {
@@ -102,7 +103,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var myTripViewModels = tripsService.GetTripsByParams(
                 userId: userId,
                 isHidden: false,
-                searchUserId: userId
+                isRestricted: true
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);
@@ -123,7 +124,29 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 userId: userId,
                 isPublic: false,
                 isHidden: true,
-                searchUserId: userId
+                isRestricted: true
+            );
+            myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
+            return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get trips shared with me
+        /// </summary>
+        /// <returns>a list of trips shared with mes</returns>
+        [HttpGet]
+        [Route("my/shared")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetSharedTrips()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var sharedTripIds = tripSharesService.GetSharedTripIdsByUserId(userId);
+
+            var myTripViewModels = tripsService.GetTripsByParams(
+                ids: sharedTripIds,
+                isHidden: false,
+                isRestricted: true
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);

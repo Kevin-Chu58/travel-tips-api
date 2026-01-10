@@ -52,11 +52,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get a trip by trip id
         /// </summary>
         /// <param name="id">trip id</param>
-        /// <param name="searchUserId">search user id</param>
+        /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>the trip view model</returns>
-        public TripViewModel? GetTripById(int id, int searchUserId = 0)
+        public TripViewModel? GetTripById(int id, bool isRestricted = false)
         {
-            var trip = GetTripsByParams(id: id, searchUserId: searchUserId).FirstOrDefault();
+            var trip = GetTripsByParams(ids: [id], isRestricted: isRestricted).FirstOrDefault();
             return trip;
         }
 
@@ -64,9 +64,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get trip view model from trip
         /// </summary>
         /// <param name="trip">trip</param>
-        /// <param name="searchUserId">search user id</param>
+        /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>trip view model of that trip</returns>
-        public TripViewModel GetTripViewModel(Trip trip, int searchUserId = 0)
+        public TripViewModel GetTripViewModel(Trip trip, bool isRestricted = false)
         {
             var tripViewModel = new TripViewModel
             {
@@ -83,13 +83,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                         ? regionsService.BuildRegionComplete(trip.RegionId.Value)
                         : null,
                 Budget = trip.Budget,
-                SharedUsers =
-                    searchUserId == trip.CreatedBy
-                        ? tripSharesService
-                            .GetSharedUserIdsByTripId(trip.Id)
-                            .Select(userId => (UserSimpleViewModel)usersService.GetUserById(userId))
-                            .ToList()
-                        : [],
+                SharedUsers = isRestricted
+                    ? tripSharesService
+                        .GetSharedUserIdsByTripId(trip.Id)
+                        .Select(userId => (UserSimpleViewModel)usersService.GetUserById(userId))
+                        .ToList()
+                    : [],
             };
             return tripViewModel;
         }
@@ -119,24 +118,24 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="isHidden">is hidden</param>
         /// <param name="regionId">region id</param>
         /// <param name="budget">budget</param>
-        /// <param name="searchUserId">search user owner</param>
+        /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>a list of trips</returns>
         public IEnumerable<TripViewModel> GetTripsByParams(
-            int? id = null,
+            IEnumerable<int>? ids = null,
             string? title = null,
             int? userId = null,
             bool? isPublic = null,
             bool? isHidden = null,
             int? regionId = null,
             int? budget = null,
-            int searchUserId = 0
+            bool isRestricted = false
         )
         {
             var query = context.Trips.AsQueryable();
 
-            if (id != null)
+            if (ids != null)
             {
-                query = query.Where(t => t.Id == id);
+                query = query.Where(t => ids.Contains(t.Id));
             }
             if (!string.IsNullOrWhiteSpace(title))
             {
@@ -166,7 +165,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             var trips = query.ToList();
 
-            return trips.Select(trip => GetTripViewModel(trip, searchUserId));
+            return trips.Select(trip => GetTripViewModel(trip, isRestricted));
         }
 
         /// <summary>

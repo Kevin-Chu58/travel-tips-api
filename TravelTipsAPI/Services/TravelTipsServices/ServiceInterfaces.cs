@@ -35,18 +35,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
-            TripViewModel? GetTripById(int id, int searchUserId = 0);
-            TripViewModel GetTripViewModel(Trip trip, int searchUserId = 0);
+            TripViewModel? GetTripById(int id, bool isRestricted = false);
+            TripViewModel GetTripViewModel(Trip trip, bool isRestricted = false);
             IEnumerable<int> GetMyTripIds(int id);
             IEnumerable<TripViewModel> GetTripsByParams(
-                int? id = null,
+                IEnumerable<int>? ids = null,
                 string? title = null,
                 int? userId = null,
                 bool? isPublic = null,
                 bool? isHidden = null,
                 int? regionId = null,
                 int? budget = null,
-                int searchUserId = 0
+                bool isRestricted = false
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
