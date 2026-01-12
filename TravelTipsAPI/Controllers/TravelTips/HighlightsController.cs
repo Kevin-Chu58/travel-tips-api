@@ -58,16 +58,18 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <summary>
         /// Update a highlight description
         /// </summary>
+        /// <param name="id">highlight id</param>
         /// <param name="highlightPatch">highlight patch</param>
         /// <returns>update highlight</returns>
         [HttpPatch]
-        [Route("")]
+        [Route("{id}")]
         [IsOwner(Resource = Resources.HIGHLIGHTS)]
         public async Task<ActionResult<HighlightViewModel>> PatchHighlightAsync(
+            int id,
             [FromBody] HighlightPatchViewModel highlightPatch
         )
         {
-            var highlight = highlightsService.FindHighlightById(highlightPatch.Id);
+            var highlight = highlightsService.FindHighlightById(id);
 
             if (highlight is null)
                 return NotFound(Messages.HighlightNotFound);
