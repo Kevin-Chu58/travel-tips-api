@@ -16,6 +16,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     [Route("api/[controller]")]
     public class DaysController(
         ITripsService tripsService,
+        ITripSharesService tripSharesService,
         IDaysService daysService,
         ITripAttractionOrdersService taosService
     ) : TravelTipsControllerBase
@@ -31,26 +32,23 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [SetUserId]
         public ActionResult<IEnumerable<DayViewModel>> GetDaysById(int tripId)
         {
+            var trip = tripsService.FindTripByParams(tripId);
+
+            if (trip is null)
+                return NotFound(Messages.TripNotFound);
+
+            // check if the trip is either public or the user is the owner or shared user
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var isShared = tripSharesService.IsTripSharedWithUser(trip.Id, userId);
 
-            try
-            {
-                // check if the trip is either public or the user is the owner
-                var trip = tripsService.FindTripByParams(tripId);
+            var isRestricted = trip.CreatedBy == userId || isShared;
 
-                if (trip.IsPublic == false && userId != trip.CreatedBy)
-                {
-                    return Forbid(Messages.DayUnauthorized);
-                }
+            if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
+                return BadRequest(Messages.TripUnauthorized);
 
-                var dayViewModels = daysService.GetDaysByTripId(tripId);
+            var dayViewModels = daysService.GetDaysByTripId(tripId);
 
-                return Ok(dayViewModels);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
-            }
+            return Ok(dayViewModels);
         }
 
         /// <summary>
@@ -121,7 +119,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.DAYS)]
         public async Task<ActionResult> DeleteDay(int id)
         {
-            _ = taosService.DeleteTaosByDayId(id);
+            _ = await taosService.DeleteTaosByDayId(id);
 
             Day day = daysService.FindDayById(id);
             await daysService.DeleteDay(day);

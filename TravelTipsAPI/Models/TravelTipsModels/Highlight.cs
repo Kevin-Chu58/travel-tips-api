@@ -11,11 +11,11 @@ public partial class Highlight
 
     public string? Description { get; set; }
 
-    public int? CreatedBy { get; set; }
+    public int CreatedBy { get; set; }
 
     public virtual Attraction Attraction { get; set; } = null!;
 
-    public virtual User? CreatedByNavigation { get; set; }
+    public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 }

@@ -30,21 +30,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Get an attraction by its here id
-        /// </summary>
-        /// <param name="hereId">here id</param>
-        /// <returns>the attraction with here id</returns>
-        public Attraction FindAttractionByHereId(string hereId)
-        {
-            var attraction = context.Attractions.FirstOrDefault(a => a.HereId == hereId);
-
-            if (attraction == null)
-                throw new FileNotFoundException(Messages.AttractionNotFound);
-
-            return attraction;
-        }
-
-        /// <summary>
         /// Get a list of attractions by search params
         /// </summary>
         /// <param name="title">title to search</param>
@@ -61,57 +46,49 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             int? ownerId = null
         )
         {
-            title = title?.Trim().ToLower();
+            var query = context.Attractions.AsQueryable();
 
-            IEnumerable<Attraction> attractions = [.. context.Attractions];
-
-            if (title != null)
+            if (!string.IsNullOrWhiteSpace(title))
             {
+                title = title.Trim().ToLower();
                 if (title.Length < SearchConstraints.ATTRACTION_SEARCH_MIN_LENGTH)
-                    attractions = [];
-                else
-                    attractions = attractions.Where(a => a.Title.ToLower().Contains(title));
+                {
+                    return [];
+                }
+                query = query.Where(a => a.Title.ToLower().Contains(title));
             }
-
-            if (Category != null)
+            if (!string.IsNullOrWhiteSpace(Category))
             {
                 Category = Category.Trim().ToLower();
-                attractions = attractions.Where(a =>
-                    a.Category != null && a.Category.ToLower() == Category
-                );
+                query = query.Where(a => a.Category != null && a.Category.ToLower() == Category);
             }
-
-            if (ResultType != null)
+            if (!string.IsNullOrWhiteSpace(ResultType))
             {
                 ResultType = ResultType.Trim().ToLower();
-                attractions = attractions.Where(a => a.ResultType.ToLower() == ResultType);
+                query = query.Where(a => a.ResultType.ToLower() == ResultType);
             }
-
-            if (HereId != null)
+            if (!string.IsNullOrWhiteSpace(HereId))
             {
                 HereId = HereId.Trim();
-                attractions = attractions.Where(a => a.HereId == HereId);
+                query = query.Where(a => a.HereId == HereId);
             }
-
-            if (City != null)
+            if (!string.IsNullOrWhiteSpace(City))
             {
                 City = City.Trim().ToLower();
-                attractions = attractions.Where(a => a.City != null && a.City.ToLower() == City);
+                query = query.Where(a => a.City != null && a.City.ToLower() == City);
             }
-
-            if (State != null)
+            if (!string.IsNullOrWhiteSpace(State))
             {
                 State = State.Trim().ToLower();
-                attractions = attractions.Where(a => a.State != null && a.State.ToLower() == State);
+                query = query.Where(a => a.State != null && a.State.ToLower() == State);
             }
-
-            if (Country != null)
+            if (!string.IsNullOrWhiteSpace(Country))
             {
                 Country = Country.Trim().ToLower();
-                attractions = attractions.Where(a =>
-                    a.Country != null && a.Country.ToLower() == Country
-                );
+                query = query.Where(a => a.Country != null && a.Country.ToLower() == Country);
             }
+
+            var attractions = query.ToList();
 
             var attractionViewModels = attractions.Select(a => (AttractionViewModel)a).ToList();
             if (ownerId != null)

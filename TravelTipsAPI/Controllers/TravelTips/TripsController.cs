@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
@@ -14,18 +13,22 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <summary>
     /// The controller of Trips
     /// </summary>
+    /// <param name="usersService">users service</param>
     /// <param name="tripsService">trips service</param>
+    /// <param name="tripSharesService">trip shares service</param>
     /// <param name="imagesService">images service</param>
+    /// <param name="taosService">trip attraction orders service</param>
     [Route("api/[controller]")]
     public class TripsController(
+        IUsersService usersService,
         ITripsService tripsService,
-        IDaysService daysService,
+        ITripSharesService tripSharesService,
         ITripAttractionOrdersService taosService,
         IImagesService imagesService
     ) : TravelTipsControllerBase
     {
         /// <summary>
-        /// Get trips by title
+        /// Get public trips by title
         /// </summary>
         /// <param name="title">the title of the trips</param>
         /// <returns>a list of trips that includes the title</returns>
@@ -37,7 +40,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromQuery] string title
         )
         {
-            var tripViewModels = tripsService.GetTripsByTitle(title);
+            var tripViewModels = tripsService.GetTripsByParams(
+                title: title,
+                isPublic: true,
+                isHidden: false
+            );
 
             tripViewModels = await AppendImagesToTripsAsync(tripViewModels);
 
@@ -45,7 +52,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         }
 
         /// <summary>
-        /// Get a public trip by its id
+        /// Get a trip by its id
         /// </summary>
         /// <param name="id">the id of a trip</param>
         /// <returns>a trip with that id, Not Found otherwise</returns>
@@ -56,28 +63,34 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
+            var trip = tripsService.FindTripByParams(id);
+
+            if (trip is null)
+                return NotFound(Messages.TripNotFound);
+
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var isShared = tripSharesService.IsTripSharedWithUser(id, userId);
+
+            var isRestricted = trip.CreatedBy == userId || isShared;
+
+            if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
+                return BadRequest(Messages.TripUnauthorized);
+
+            var tripViewModel = tripsService.GetTripViewModel(trip, isRestricted: isRestricted);
+
             try
             {
-                var tripViewModel = tripsService.GetTripByTripId(id);
-
-                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
-                if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
-                {
-                    tripViewModel.Images = await GetImagesByTripIdAsync(tripViewModel.Id);
-                    return Ok(tripViewModel);
-                }
-                else
-                    return NotFound(Messages.TripNotFound);
+                tripViewModel.Images = await GetImagesByTripIdAsync(tripViewModel.Id);
+                return Ok(tripViewModel);
             }
             catch (Exception ex)
             {
-                return NotFound(ex.Message);
+                return BadRequest(ex.Message);
             }
         }
 
         /// <summary>
-        /// Get my own trips
+        /// Get my own trips (not hidden)
         /// </summary>
         /// <returns>a list of my own trips</returns>
         [HttpGet]
@@ -87,7 +100,54 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var myTripViewModels = tripsService.GetTripsByUserId(userId);
+            var myTripViewModels = tripsService.GetTripsByParams(
+                userId: userId,
+                isHidden: false,
+                isRestricted: true
+            );
+            myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
+            return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get my own trips (hidden)
+        /// </summary>
+        /// <returns>a list of my own trips</returns>
+        [HttpGet]
+        [Route("my/hidden")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetMyHiddenTrips()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var myTripViewModels = tripsService.GetTripsByParams(
+                userId: userId,
+                isPublic: false,
+                isHidden: true,
+                isRestricted: true
+            );
+            myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
+            return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get trips shared with me
+        /// </summary>
+        /// <returns>a list of trips shared with mes</returns>
+        [HttpGet]
+        [Route("my/shared")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetSharedTrips()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var sharedTripIds = tripSharesService.GetSharedTripIdsByUserId(userId);
+
+            var myTripViewModels = tripsService.GetTripsByParams(
+                ids: sharedTripIds,
+                isHidden: false,
+                isRestricted: true
+            );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);
         }
@@ -104,56 +164,47 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
         {
-            try
-            {
-                // check the trip is either public or the user is the owner
-                var tripViewModel = tripsService.GetTripByTripId(id);
+            // check the trip is either public or the user is the owner or shared user
+            var trip = tripsService.FindTripByParams(id);
 
-                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            if (trip is null)
+                return NotFound(Messages.TripNotFound);
 
-                if (tripViewModel.IsPublic || tripViewModel.CreatedBy!.Id == userId)
-                {
-                    var geoTripList = taosService.GetTaoGeosByTripId(id);
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var isShared = tripSharesService.IsTripSharedWithUser(id, userId);
 
-                    return Ok(geoTripList);
-                }
-                else
-                    return NotFound(Messages.TripNotFound);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
-            }
+            var isRestricted = trip.CreatedBy == userId || isShared;
+
+            if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
+                return BadRequest(Messages.TripUnauthorized);
+
+            var geoTripList = taosService.GetTaoGeosByTripId(id, isRestricted);
+
+            return Ok(geoTripList);
         }
 
         /// <summary>
         /// Post a new trip to db
         /// </summary>
-        /// <param name="name">a new trip title</param>
+        /// <param name="newTrip">new trip</param>
         /// <returns>the new trip posted to db</returns>
         [HttpPost]
-        [Route("{name}")]
+        [Route("")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<TripViewModel>> PostNewTrip(string name)
+        public async Task<ActionResult<TripViewModel>> PostNewTrip(
+            [FromBody] TripPostViewModel newTrip
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            // validate the trip name
-            var invalidParams = tripsService.ValidatePost(name);
-            if (invalidParams.Count > 0)
-            {
-                var invalidInputs = string.Join(", ", invalidParams);
-                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
-            }
-
-            var tripViewModel = await tripsService.PostNewTripAsync(userId, name);
-            return CreatedAtAction(nameof(PostNewTrip), new { tripViewModel?.Id }, tripViewModel);
+            var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip.Title);
+            return Ok(tripViewModel);
         }
 
         /// <summary>
         /// Update a trip's information
         /// </summary>
-        /// <param name="id">the id of the trip</param>
+        /// <param name="id">trip id</param>
         /// <param name="tripPatch">the trip information to be updated</param>
         /// <returns>the updated trip</returns>
         [HttpPatch]
@@ -164,23 +215,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] TripPatchViewModel tripPatch
         )
         {
-            Trip trip;
-            try
-            {
-                trip = tripsService.FindTripByParams(id);
-            }
-            catch (Exception ex)
-            {
-                return NotFound(ex.Message);
-            }
+            var trip = tripsService.FindTripByParams(id);
 
-            // validate the inputs
-            var invalidParams = tripsService.ValidatePatch(tripPatch);
-            if (invalidParams.Count > 0)
-            {
-                var invalidInputs = string.Join(", ", invalidParams);
-                return BadRequest(string.Format(Messages.InputInvalid, invalidInputs));
-            }
+            if (trip is null)
+                return NotFound(Messages.TripNotFound);
 
             var tripPatchViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
             return Ok(tripPatchViewModel);
@@ -249,7 +287,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPatch]
         [Route("{id}/region")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<RegionCompleteViewModel?>> UpdateTripRegion(
+        public async Task<ActionResult<RegionCompleteViewModel>> UpdateTripRegion(
             int id,
             [FromBody] int? regionId
         )
@@ -261,6 +299,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     return NotFound(Messages.TripNotFound);
 
                 var regionComplete = await tripsService.UpdateRegionAsync(trip, regionId);
+
                 return Ok(regionComplete);
             }
             catch (Exception ex)
@@ -278,7 +317,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPatch]
         [Route("{id}/budget")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult<int?>> UpdateTripBudget(int id, [FromBody] int? budget)
+        public async Task<ActionResult<int>> UpdateTripBudget(int id, [FromBody] int? budget)
         {
             try
             {
@@ -287,6 +326,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     return NotFound(Messages.TripNotFound);
 
                 var newBudget = await tripsService.UpdateBudgetAsync(trip, budget);
+
                 return Ok(newBudget);
             }
             catch (Exception ex)
@@ -294,6 +334,131 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 return BadRequest(ex.Message);
             }
         }
+
+        // trip shares
+
+        /// <summary>
+        /// Get a list of shared users by trip id
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>a list of shared users</returns>
+        [HttpGet]
+        [Route("{id}/share")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public ActionResult<IEnumerable<UserSimpleViewModel>> GetSharedUsersByTripIdAsync(int id)
+        {
+            try
+            {
+                var sharedUserIds = tripSharesService.GetSharedUserIdsByTripId(id);
+                var sharedUsers = usersService.GetUsersByIds(sharedUserIds);
+
+                var sharedUserViewModels = sharedUsers.Select(u => (UserSimpleViewModel)u);
+                return Ok(sharedUserViewModels);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Share trip with another user
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <param name="userAuthId">shared user auth0 id</param>
+        /// <returns>shared user information</returns>
+        [HttpPost]
+        [Route("{id}/share/{userAuthId}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<UserSimpleViewModel>> ShareTripWithUserAsync(
+            int id,
+            string userAuthId
+        )
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var sharedUser = usersService.GetUserByUserId(userAuthId);
+
+            if (sharedUser is null)
+            {
+                return NotFound(Messages.UserNotFound);
+            }
+
+            if (userId == sharedUser.Id)
+            {
+                return BadRequest(Messages.TripShareWithSelf);
+            }
+
+            try
+            {
+                await tripSharesService.ShareTripWithUser(id, sharedUser.Id);
+                return Ok((UserSimpleViewModel)sharedUser);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Unshare trip with another user
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <param name="userAuthId">shared user auth0 id</param>
+        /// <returns>unshared user information</returns>
+        [HttpDelete]
+        [Route("{id}/unshare/{userAuthId}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<UserSimpleViewModel>> UnshareTripWithUserAsync(
+            int id,
+            string userAuthId
+        )
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var unshareUser = usersService.GetUserByUserId(userAuthId);
+
+            if (unshareUser is null)
+            {
+                return NotFound(Messages.UserNotFound);
+            }
+
+            if (userId == unshareUser.Id)
+            {
+                return BadRequest(Messages.TripUnshareWithSelf);
+            }
+
+            try
+            {
+                await tripSharesService.UnshareTripWithUser(id, unshareUser.Id);
+                return Ok((UserSimpleViewModel)unshareUser);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Unshare trip with all shared users
+        /// </summary>
+        /// <param name="id">trip id</param>
+        /// <returns>the number of shared users removed</returns>
+        [HttpDelete]
+        [Route("{id}/unshare")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<int>> UnshareTripWithAllAsync(int id)
+        {
+            try
+            {
+                var numDeleted = await tripSharesService.UnshareTripWithAll(id);
+                return Ok(numDeleted);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // images
 
         /// <summary>
         /// Get a list of images by trip id
@@ -311,6 +476,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var trip = tripsService.FindTripByParams(id);
+
+                if (trip is null)
+                    return NotFound(Messages.TripNotFound);
 
                 if (trip.IsPublic == false && userId != trip.CreatedBy)
                 {

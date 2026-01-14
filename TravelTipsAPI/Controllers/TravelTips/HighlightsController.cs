@@ -1,9 +1,7 @@
-﻿using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Models;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
@@ -61,22 +59,26 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// Update a highlight description
         /// </summary>
         /// <param name="id">highlight id</param>
-        /// <param name="description">highlight description to be updated</param>
+        /// <param name="highlightPatch">highlight patch</param>
         /// <returns>update highlight</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.HIGHLIGHTS)]
         public async Task<ActionResult<HighlightViewModel>> PatchHighlightAsync(
             int id,
-            [FromBody] string description
+            [FromBody] HighlightPatchViewModel highlightPatch
         )
         {
+            var highlight = highlightsService.FindHighlightById(id);
+
+            if (highlight is null)
+                return NotFound(Messages.HighlightNotFound);
+
             try
             {
-                var highlight = highlightsService.FindHighlightById(id);
                 var highlightViewModel = await highlightsService.UpdateHighlightAsync(
                     highlight,
-                    description
+                    highlightPatch.Description
                 );
 
                 return Ok(highlightViewModel);
@@ -93,6 +95,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
         public async Task<ActionResult<HighlightViewModel>> DeleteHighlightAsync(int id)
         {
             var highlight = highlightsService.FindHighlightById(id);
+            if (highlight is null)
+                return NotFound(Messages.HighlightNotFound);
+
             var highlightViewModel = await highlightsService.DeleteHighlightAsync(highlight);
 
             return Ok(highlightViewModel);

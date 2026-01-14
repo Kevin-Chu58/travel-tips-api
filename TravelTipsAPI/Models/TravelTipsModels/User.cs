@@ -9,7 +9,7 @@ public partial class User
 
     public string UserId { get; set; } = null!;
 
-    public string? Username { get; set; }
+    public string Username { get; set; } = null!;
 
     public string Email { get; set; } = null!;
 
@@ -24,6 +24,8 @@ public partial class User
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
+
+    public virtual ICollection<TripShare> TripShares { get; set; } = new List<TripShare>();
 
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 }

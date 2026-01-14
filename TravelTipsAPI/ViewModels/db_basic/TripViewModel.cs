@@ -12,10 +12,12 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public UserViewModel? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsPublic { get; set; }
+        public bool IsHidden { get; set; }
         public int? Budget { get; set; }
         public int? NumDays { get; set; }
         public RegionCompleteViewModel? Region { get; set; }
         public IEnumerable<ImageViewModel>? Images { get; set; }
+        public IEnumerable<UserSimpleViewModel>? SharedUsers { get; set; }
 
         public static explicit operator TripViewModel(Trip trip)
         {
@@ -26,6 +28,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Description = trip.Description,
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
+                IsHidden = trip.IsHidden,
                 Budget = trip.Budget,
             };
         }

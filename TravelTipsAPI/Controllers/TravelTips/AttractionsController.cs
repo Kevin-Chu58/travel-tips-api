@@ -107,7 +107,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<AttractionViewModel>> GetAllAttractionsByParams(
+        public ActionResult<IEnumerable<AttractionViewModel>> GetAttractionsByParams(
             [FromQuery] string? Title = null,
             string? Category = null,
             string? ResultType = null,

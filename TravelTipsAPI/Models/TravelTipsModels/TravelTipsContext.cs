@@ -29,10 +29,12 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<TripImage> TripImages { get; set; }
 
+    public virtual DbSet<TripShare> TripShares { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
+        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -41,6 +43,8 @@ public partial class TravelTipsContext : DbContext
             entity.HasKey(e => e.UserId).HasName("pk_admins");
 
             entity.ToTable("Admins", "db_role");
+
+            entity.HasIndex(e => e.UserId, "idx_admin_user_id");
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
@@ -94,6 +98,10 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Days", "db_basic");
 
+            entity.HasIndex(e => e.TripId, "idx_day_trip_id");
+
+            entity.HasIndex(e => e.CreatedBy, "idx_day_user_id");
+
             entity
                 .HasOne(d => d.CreatedByNavigation)
                 .WithMany(p => p.Days)
@@ -115,6 +123,10 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Highlights", "db_basic");
 
+            entity.HasIndex(e => e.AttractionId, "idx_highlight_attraction_id");
+
+            entity.HasIndex(e => e.CreatedBy, "idx_highlight_user_id");
+
             entity
                 .HasOne(d => d.Attraction)
                 .WithMany(p => p.Highlights)
@@ -126,6 +138,7 @@ public partial class TravelTipsContext : DbContext
                 .HasOne(d => d.CreatedByNavigation)
                 .WithMany(p => p.Highlights)
                 .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_highlights");
         });
 
@@ -134,6 +147,8 @@ public partial class TravelTipsContext : DbContext
             entity.HasKey(e => e.Id).HasName("pk_images");
 
             entity.ToTable("Images", "db_image");
+
+            entity.HasIndex(e => e.CreatedBy, "idx_image_user_id");
 
             entity.Property(e => e.Name).HasMaxLength(50).IsUnicode(false);
 
@@ -152,6 +167,8 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("Regions", "db_search");
 
             entity.HasIndex(e => e.Name, "idx_regions_name");
+
+            entity.HasIndex(e => e.ParentRegionId, "idx_regions_parent_region_id");
 
             entity.HasIndex(e => e.Type, "idx_regions_type");
 
@@ -178,8 +195,12 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => e.IsPublic, "idx_trips_isPublic");
 
+            entity.HasIndex(e => e.RegionId, "idx_trips_region_id");
+
+            entity.HasIndex(e => e.CreatedBy, "idx_trips_user_id");
+
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.Title).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Title).HasMaxLength(50);
 
             entity
                 .HasOne(d => d.CreatedByNavigation)
@@ -201,7 +222,15 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("TripAttractionOrders", "db_basic");
 
+            entity.HasIndex(e => e.AttractionId, "idx_tao_attraction_id");
+
+            entity.HasIndex(e => e.DayId, "idx_tao_day_id");
+
             entity.HasIndex(e => e.HighlightId, "idx_tao_highlight_id");
+
+            entity.HasIndex(e => e.IsPrivate, "idx_tao_isPrivate");
+
+            entity.HasIndex(e => e.CreatedBy, "idx_tao_user_id");
 
             entity.Property(e => e.TransportMode).HasMaxLength(20).IsUnicode(false);
 
@@ -239,6 +268,10 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("TripImages", "db_image");
 
+            entity.HasIndex(e => e.ImageId, "idx_trip_image_image_id");
+
+            entity.HasIndex(e => e.TripId, "idx_trip_image_trip_id");
+
             entity
                 .HasOne(d => d.Image)
                 .WithMany(p => p.TripImages)
@@ -254,13 +287,38 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_trips_trip_images");
         });
 
+        modelBuilder.Entity<TripShare>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_trip_shares");
+
+            entity.ToTable("TripShares", "db_basic");
+
+            entity.HasIndex(e => e.TripId, "idx_trip_shares_trip_id");
+
+            entity.HasIndex(e => e.ShareWith, "idx_trip_shares_user_id");
+
+            entity
+                .HasOne(d => d.ShareWithNavigation)
+                .WithMany(p => p.TripShares)
+                .HasForeignKey(d => d.ShareWith)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_trip_shares_user");
+
+            entity
+                .HasOne(d => d.Trip)
+                .WithMany(p => p.TripShares)
+                .HasForeignKey(d => d.TripId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_trip_shares_trip");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_users");
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D7D8D0D21").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);

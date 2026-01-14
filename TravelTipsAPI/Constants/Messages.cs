@@ -23,6 +23,12 @@
         public static readonly string TripUnauthorized = "Trip access unauthorized.";
         public static readonly string TripBudgetInvalid = "Trip budget is invalid.";
 
+        // TripShares
+        public static readonly string TripShareNotFound = "Trip share not found.";
+        public static readonly string TripAlreadyShared = "Trip already shared with the user.";
+        public static readonly string TripShareWithSelf = "Cannot share trip with yourself.";
+        public static readonly string TripUnshareWithSelf = "Cannot unshare trip with yourself.";
+
         // Days
         public static readonly string DayNotFound = "Day not found.";
         public static readonly string DayUnauthorized = "Day access unauthorized.";
@@ -53,6 +59,7 @@
 
         // TripAttractionOrders
         public static readonly string TaoNotFound = "Event not found.";
+        public static readonly string TaoUnauthorized = "Event access unauthorized.";
         public static readonly string TaoTimeInvalid =
             "Event time is not aligned to 15-minute interval.";
         public static readonly string TaoTimeConflicted = "Event has time conflict.";
