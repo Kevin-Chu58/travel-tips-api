@@ -17,6 +17,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 string? name = null,
                 int? parentRegionId = null
             );
+            RegionViewModel GetRegionByCountryAndState(string countrySlug, string? stateSlug);
             RegionCompleteViewModel BuildRegionComplete(int regionId);
         }
     }
@@ -41,12 +42,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<TripViewModel> GetTripsByParams(
                 IEnumerable<int>? ids = null,
                 string? title = null,
-                int? userId = null,
+                int? createdBy = null,
                 bool? isPublic = null,
                 bool? isHidden = null,
-                int? regionId = null,
+                RegionViewModel? region = null,
                 int? budget = null,
-                bool isRestricted = false
+                bool isRestricted = false,
+                DateTime? createdAtSort = null,
+                int? idSort = null,
+                bool? isDesc = true,
+                int? limit = null
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);

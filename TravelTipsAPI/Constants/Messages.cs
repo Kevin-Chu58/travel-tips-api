@@ -9,6 +9,9 @@
         // parameters
         public static readonly string InputInvalid = "Following inputs are invalid: {0}.";
 
+        // Cursor
+        public static readonly string CursorInvalid = "Cursor is invalid.";
+
         // Users
         public static readonly string UserNotFound = "User not found";
         public static readonly string UserIdNotFound = "User Auth Id not found.";

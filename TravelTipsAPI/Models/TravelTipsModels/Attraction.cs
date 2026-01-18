@@ -11,8 +11,6 @@ public partial class Attraction
 
     public string Title { get; set; } = null!;
 
-    public string ResultType { get; set; } = null!;
-
     public string? Category { get; set; }
 
     public bool IsDeprecated { get; set; }
@@ -29,8 +27,9 @@ public partial class Attraction
 
     public string? Country { get; set; }
 
+    public string ResultType { get; set; } = null!;
+
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
-    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } =
-        new List<TripAttractionOrder>();
+    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 }

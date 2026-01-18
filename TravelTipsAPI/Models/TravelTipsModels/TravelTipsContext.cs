@@ -34,7 +34,7 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
+        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -191,6 +191,10 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => e.Budget, "idx_trips_budget");
 
+            entity
+                .HasIndex(e => new { e.CreatedAt, e.Id }, "idx_trips_createdAt_id")
+                .IsDescending();
+
             entity.HasIndex(e => e.IsHidden, "idx_trips_isHidden");
 
             entity.HasIndex(e => e.IsPublic, "idx_trips_isPublic");
@@ -318,7 +322,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D7D8D0D21").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);

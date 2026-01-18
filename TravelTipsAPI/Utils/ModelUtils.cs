@@ -1,5 +1,4 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.HereMap;
 
 namespace TravelTipsAPI.Utils
