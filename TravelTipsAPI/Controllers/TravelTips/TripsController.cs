@@ -48,7 +48,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<SearchResult<TripViewModel>>> GetTripsByParams(
             [FromQuery] string? title,
-            int? createdBy = null,
+            string? createdByAuthId = null,
             string? countrySlug = null,
             string? stateSlug = null,
             int? budget = null,
@@ -56,11 +56,30 @@ namespace TravelTipsAPI.Controllers.TravelTips
             bool? isDesc = true
         )
         {
+            // get createdBy user id (not user's userId)
+            int? createdBy = null;
+            if (!string.IsNullOrEmpty(createdByAuthId))
+            {
+                var createdByUser = usersService.GetUserByUserId(createdByAuthId);
+                if (createdByUser is null)
+                    return NotFound(Messages.UserNotFound);
+                createdBy = createdByUser.Id;
+            }
+
             // get region
             RegionViewModel? region = null;
-            if (!string.IsNullOrEmpty(countrySlug))
+            try
             {
-                region = regionsService.GetRegionByCountryAndState(countrySlug, stateSlug);
+                if (!string.IsNullOrEmpty(countrySlug))
+                {
+                    region = regionsService.GetRegionByCountryAndState(countrySlug, stateSlug);
+                }
+                else if (!string.IsNullOrEmpty(stateSlug))
+                    return NotFound(Messages.RegionInvalid);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
             }
 
             // decode cursor if provided
@@ -85,7 +104,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 budget: budget,
                 createdAtSort: createdAtSort,
                 idSort: idSort,
-                isDesc: isDesc
+                isDesc: isDesc,
+                limit: Global.TRIP_DEFAULT_LIMIT
             );
 
             tripViewModels = await AppendImagesToTripsAsync(tripViewModels);

@@ -18,6 +18,7 @@
 
         // Regions
         public static readonly string RegionNotFound = "Region not found.";
+        public static readonly string RegionInvalid = "Region invalid.";
 
         //public static readonly string RegionRootInvalid = "Region hierarchy is missing Country";
 
