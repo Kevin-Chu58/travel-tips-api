@@ -128,6 +128,10 @@ public partial class TravelTipsContext : DbContext
             entity.HasIndex(e => e.CreatedBy, "idx_highlight_user_id");
 
             entity
+                .HasIndex(e => new { e.UsageCount, e.Id }, "idx_highlights_usageCount_id")
+                .IsDescending();
+
+            entity
                 .HasOne(d => d.Attraction)
                 .WithMany(p => p.Highlights)
                 .HasForeignKey(d => d.AttractionId)

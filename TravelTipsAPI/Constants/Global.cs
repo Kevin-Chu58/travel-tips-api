@@ -7,5 +7,6 @@
 
         // Default Search Result Limit
         public static readonly int TRIP_DEFAULT_LIMIT = 20;
+        public static readonly int HIGHLIGHT_DEFAULT_LIMIT = 20;
     }
 }

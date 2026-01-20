@@ -1,10 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -119,8 +121,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="region">region</param>
         /// <param name="budget">budget</param>
         /// <param name="isRestricted">is user owner or shared with</param>
-        /// <param name="createdAtSort">created at for sort</param>
-        /// <param name="idSort">trip id for sort</param>
+        /// <param name="cursor">trip cursor</param>
         /// <param name="isDesc">is descending or ascending</param>
         /// <param name="limit">limit</param>
         /// <returns>a list of trips</returns>
@@ -133,8 +134,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             RegionViewModel? region = null,
             int? budget = null,
             bool isRestricted = false,
-            DateTime? createdAtSort = null,
-            int? idSort = null,
+            TripCursor? cursor = null,
             bool? isDesc = null,
             int? limit = null
         )
@@ -185,7 +185,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             if (isDesc != null)
             {
-                query = ApplyCursor(query, createdAtSort, idSort, isDesc.Value);
+                query = ApplyCursor(query, cursor, isDesc.Value);
             }
 
             if (limit != null)
@@ -201,35 +201,33 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Apply cursor to the query
         /// </summary>
         /// <param name="query">query</param>
-        /// <param name="createdAtSort">created at for sort</param>
-        /// <param name="idSort">trip id for sort</param>
+        /// <param name="cursor">trip cursor</param>
         /// <param name="isDesc">is descending or ascending</param>
         /// <returns>the query with applied cursor</returns>
         public static IQueryable<Trip> ApplyCursor(
             IQueryable<Trip> query,
-            DateTime? createdAtSort,
-            int? idSort,
+            TripCursor? cursor,
             bool isDesc
         )
         {
-            // Apply cursor-based pagination
-            if (createdAtSort.HasValue && idSort.HasValue)
-            {
-                query = isDesc
-                    ? query.Where(t =>
-                        t.CreatedAt < createdAtSort
-                        || (t.CreatedAt == createdAtSort && t.Id < idSort)
-                    )
-                    : query.Where(t =>
-                        t.CreatedAt > createdAtSort
-                        || (t.CreatedAt == createdAtSort && t.Id > idSort)
-                    );
-            }
-
-            // sort query based on isDesc
+            // Sort query based on isDesc
             query = isDesc
                 ? query.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id)
                 : query.OrderBy(t => t.CreatedAt).ThenBy(t => t.Id);
+
+            // Apply cursor-based pagination
+            if (cursor != null)
+            {
+                query = isDesc
+                    ? query.Where(t =>
+                        t.CreatedAt < cursor.CreatedAt
+                        || (t.CreatedAt == cursor.CreatedAt && t.Id < cursor.Id)
+                    )
+                    : query.Where(t =>
+                        t.CreatedAt > cursor.CreatedAt
+                        || (t.CreatedAt == cursor.CreatedAt && t.Id > cursor.Id)
+                    );
+            }
 
             return query;
         }

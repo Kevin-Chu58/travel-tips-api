@@ -18,8 +18,8 @@ namespace TravelTipsAPI.Utils
         }
 
         /// encode/decode cursors
-        ///
-        public static string EncodeTripCursor(TripCursor cursor)
+
+        public static string EncodeCursor<T>(T cursor)
         {
             // Serialize to JSON
             var json = JsonSerializer.Serialize(cursor);
@@ -29,10 +29,10 @@ namespace TravelTipsAPI.Utils
             return Convert.ToBase64String(bytes);
         }
 
-        public static TripCursor? DecodeTripCursor(string cursor)
+        public static T? DecodeCursor<T>(string cursor)
         {
             if (string.IsNullOrEmpty(cursor))
-                return null;
+                return default;
 
             try
             {
@@ -40,13 +40,13 @@ namespace TravelTipsAPI.Utils
                 var jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(cursor));
 
                 // JSON → TripCursor object
-                var cursorObj = JsonSerializer.Deserialize<TripCursor>(jsonString);
+                var cursorObj = JsonSerializer.Deserialize<T>(jsonString);
                 return cursorObj;
             }
             catch
             {
                 // Invalid cursor format
-                return null;
+                return default;
             }
         }
     }

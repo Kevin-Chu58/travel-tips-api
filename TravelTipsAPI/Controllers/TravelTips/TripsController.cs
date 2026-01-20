@@ -35,13 +35,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// Get public trips by params
         /// </summary>
         /// <param name="title">the title of the trips</param>
-        /// <param name="createdBy">the creator user id</param>
+        /// <param name="createdByAuthId">the creator user id</param>
         /// <param name="countrySlug">the country slug</param>
         /// <param name="stateSlug">the state slug</param>
         /// <param name="budget">the budget</param>
         /// <param name="cursor">the pagination cursor</param>
         /// <param name="isDesc">the sort order</param>
-        /// <returns>a list of trips that includes the title</returns>
+        /// <returns>research result of trips that fit the params with cursor optionally</returns>
         [HttpGet]
         [Route("")]
         //[AllowAnonymous]
@@ -83,16 +83,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
 
             // decode cursor if provided
-            DateTime? createdAtSort = null;
-            int? idSort = null;
+            TripCursor? tripCursor = null;
             if (!string.IsNullOrEmpty(cursor))
             {
-                var tripCursor = DecodeTripCursor(cursor);
+                tripCursor = DecodeCursor<TripCursor>(cursor);
                 if (tripCursor is null)
                     return BadRequest(Messages.CursorInvalid);
-
-                createdAtSort = tripCursor.CreatedAt;
-                idSort = tripCursor.Id;
             }
 
             var tripViewModels = tripsService.GetTripsByParams(
@@ -102,8 +98,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 createdBy: createdBy,
                 region: region,
                 budget: budget,
-                createdAtSort: createdAtSort,
-                idSort: idSort,
+                cursor: tripCursor,
                 isDesc: isDesc,
                 limit: Global.TRIP_DEFAULT_LIMIT
             );
@@ -116,7 +111,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             if (tripList.Count > 0)
             {
                 var lastTrip = tripList.Last();
-                newCursor = EncodeTripCursor(
+                newCursor = EncodeCursor(
                     new TripCursor { CreatedAt = lastTrip.CreatedAt, Id = lastTrip.Id }
                 );
             }

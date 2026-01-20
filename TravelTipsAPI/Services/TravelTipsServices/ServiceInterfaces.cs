@@ -3,6 +3,8 @@ using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -48,8 +50,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 RegionViewModel? region = null,
                 int? budget = null,
                 bool isRestricted = false,
-                DateTime? createdAtSort = null,
-                int? idSort = null,
+                TripCursor? cursor = null,
                 bool? isDesc = true,
                 int? limit = null
             );
@@ -105,7 +106,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IHighlightsService
         {
             Highlight? FindHighlightById(int id);
-            IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId = null);
+            IEnumerable<HighlightViewModel> GetHighlightsByParams(
+                int? attractionId = null,
+                int? createdBy = null,
+                HighlightCursor? cursor = null,
+                HighlightOrderByEnum? highlightOrderByEnum = null,
+                int? limit = null
+            );
             HighlightViewModel GetHighlightViewModel(Highlight highlight);
             IEnumerable<int> GetMyHighlights(int id);
             Task<HighlightViewModel> PostNewHighlightAsync(
