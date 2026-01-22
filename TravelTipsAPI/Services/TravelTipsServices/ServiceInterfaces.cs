@@ -120,6 +120,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int userId
             );
             Task<HighlightViewModel> UpdateHighlightAsync(Highlight highlight, string description);
+            Task UpdateHighlightUsageCountAsync(int? oldId, int? newId);
             Task<HighlightViewModel> DeleteHighlightAsync(Highlight highlight);
         }
 

@@ -1,10 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Services;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
@@ -66,8 +63,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
 
             var highlightViewModels = highlightsService.GetHighlightsByParams(
-                attractionId,
-                createdBy,
+                attractionId: attractionId,
+                createdBy: createdBy,
                 cursor: highlightCursor,
                 highlightOrderByEnum: highlightOrderByEnum,
                 limit: Global.HIGHLIGHT_DEFAULT_LIMIT

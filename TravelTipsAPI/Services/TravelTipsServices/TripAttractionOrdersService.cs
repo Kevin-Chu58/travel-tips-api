@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
@@ -13,7 +14,10 @@ using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 /// The service of Trip Attraction Orders
 /// </summary>
 /// <param name="context">travel tips context</param>
-public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttractionOrdersService
+public class TripAttractionOrdersService(
+    TravelTipsContext context,
+    IHighlightsService highlightsService
+) : ITripAttractionOrdersService
 {
     /// <summary>
     /// Get all your trip attraction order ids
@@ -268,7 +272,26 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         TripAttractionOrder tao
     )
     {
+        // About highlightId, 6 conditions that may cause the change of highlightId:
+        // 1. null -> h: attach highlight h
+        // 2. h1 -> h2: change highlight from h1 to h2
+        // 3. a1 -> a2, h -> null: change attraction from a1 to a2, detach highlight PASSIVELY
+        // 4. h -> null: detach highlight ACTIVELY
+        // 5. delete tao by taoId, h -> null
+        // 6. delete taos by dayId, h(day) -> null
+        //
+        // PatchTao deals with conditions 1, 2, and 3
+        // PatchTaoDetachHighlight deals with condition 4
+        // DeleteTaoById deals with condition 5
+        // DeleteTaosByDayId deals with condition 6
+
+        using var tx = await context.Database.BeginTransactionAsync();
+
+        var oldHighlightId = tao.HighlightId;
+
         tao!.AttractionId = taoPatch.AttractionId ?? tao.AttractionId;
+        // taoPatch cannot do two things at the same time:
+        // either update highlightId or set highlightId to null when attractionId is being updated
         tao.HighlightId =
             taoPatch.AttractionId != null ? null : taoPatch.HighlightId ?? tao.HighlightId;
         tao.DayId = taoPatch.DayId ?? tao.DayId;
@@ -285,7 +308,13 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
         }
         tao.TransportMode = taoPatch?.TransportMode ?? tao.TransportMode;
 
+        var newHighlightId = tao.HighlightId;
+
+        // update highlight usage count if highlight is changed
+        await highlightsService.UpdateHighlightUsageCountAsync(oldHighlightId, newHighlightId);
+
         await context.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return tao.Id;
     }
@@ -297,8 +326,16 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <returns>tao id</returns>
     public async Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao)
     {
+        using var tx = await context.Database.BeginTransactionAsync();
+
+        var oldHighlightId = tao.HighlightId;
         tao.HighlightId = null;
+
+        // update highlight usage count
+        await highlightsService.UpdateHighlightUsageCountAsync(oldHighlightId, null);
+
         await context.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return tao.Id;
     }
@@ -323,8 +360,16 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <returns>deleted tao id</returns>
     public async Task<int> DeleteTaoById(TripAttractionOrder tao)
     {
+        using var tx = await context.Database.BeginTransactionAsync();
+
+        var oldHighlightId = tao.HighlightId;
+
         context.TripAttractionOrders.Remove(tao);
+
+        await highlightsService.UpdateHighlightUsageCountAsync(oldHighlightId, null);
+
         await context.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return tao.Id;
     }
@@ -336,10 +381,19 @@ public class TripAttractionOrdersService(TravelTipsContext context) : ITripAttra
     /// <returns></returns>
     public async Task<int> DeleteTaosByDayId(int dayId)
     {
+        using var tx = await context.Database.BeginTransactionAsync();
+
         var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
+        var oldHighlightIds = taos.Select(tao => tao.HighlightId).ToList();
 
         context.TripAttractionOrders.RemoveRange(taos);
+
+        oldHighlightIds.ForEach(async id =>
+            await highlightsService.UpdateHighlightUsageCountAsync(id, null)
+        );
+
         await context.SaveChangesAsync();
+        await tx.CommitAsync();
 
         return taos.Count;
     }

@@ -1,8 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TravelTipsAPI.Constants;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
-using static TravelTipsAPI.Constants.OrderBy;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -186,6 +185,33 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return GetHighlightViewModel(highlight);
+        }
+
+        /// <summary>
+        /// Update highlight usage count when a TAO's highlight is changed
+        /// </summary>
+        /// <param name="oldId">old highlight id</param>
+        /// <param name="newId">new highlight id</param>
+        /// <returns></returns>
+        public async Task UpdateHighlightUsageCountAsync(int? oldId, int? newId)
+        {
+            if (oldId == newId)
+                return;
+
+            if (oldId != null)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE db_basic.Highlights SET UsageCount = UsageCount - 1 WHERE Id = @id",
+                    new SqlParameter("@id", oldId)
+                );
+            }
+            if (newId != null)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE db_basic.Highlights SET UsageCount = UsageCount + 1 WHERE Id = @id",
+                    new SqlParameter("@id", newId)
+                );
+            }
         }
 
         /// <summary>
