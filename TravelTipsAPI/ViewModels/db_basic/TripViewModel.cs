@@ -9,7 +9,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int Id { get; set; }
         public required string Title { get; set; }
         public string? Description { get; set; }
-        public UserViewModel? CreatedBy { get; set; }
+        public UserSimpleViewModel? CreatedBy { get; set; }
         public DateTime CreatedAt { get; set; }
         public bool IsPublic { get; set; }
         public bool IsHidden { get; set; }

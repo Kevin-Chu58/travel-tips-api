@@ -75,7 +75,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Id = trip.Id,
                 Title = trip.Title,
                 Description = trip.Description,
-                CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
+                CreatedBy = (UserSimpleViewModel)usersService.GetUserById(trip.CreatedBy),
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 IsHidden = trip.IsHidden,

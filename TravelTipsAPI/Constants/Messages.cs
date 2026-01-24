@@ -90,5 +90,13 @@
         // Wiki Commons
         public static readonly string WikiCommonsQueryNotFound = "WikiImage:Query not found.";
         public static readonly string WikiCommonsPagesNotFound = "WikiImage:Pages not found.";
+
+        // Sermons
+        public static readonly string SermonNotFound = "Sermon not found.";
+        public static readonly string SermonUnauthorized = "Sermon unauthorized.";
+
+        // - sermon labels
+        public static readonly string SermonLabelNotFound = "Sermon label not found";
+        public static readonly string SermonLabelExist = "Sermon label already exists.";
     }
 }

@@ -20,5 +20,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             return isAdmin != null;
         }
+
+        /// <summary>
+        /// Check if the user is writer
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>whether is writer</returns>
+        public bool IsWriter(int id)
+        {
+            var isWriter = context.Writers.Find(id);
+
+            return isWriter != null;
+        }
     }
 }

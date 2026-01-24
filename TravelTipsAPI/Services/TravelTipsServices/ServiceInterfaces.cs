@@ -1,7 +1,9 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_gospel;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
+using TravelTipsAPI.ViewModels.db_sermon;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -163,6 +165,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IUserRolesService
         {
             bool IsAdmin(int userId);
+            bool IsWriter(int userId);
         }
     }
 
@@ -186,6 +189,43 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);
             Task DeleteImageAsync(Image image);
             bool IsOwner(int userId, int imageId);
+        }
+    }
+
+    public class GospelSchema
+    {
+        public interface ISermonsService
+        {
+            // sermons
+            Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = true);
+            IEnumerable<SermonViewModel> GetLatestSermons();
+            SermonViewModel GetSermonViewModel(Sermon sermon, bool hasContent = false);
+            IEnumerable<SermonViewModel> GetSermonsByParams(
+                int? createdBy = null,
+                string? title = null,
+                SermonLabelViewModel? label = null,
+                bool? isBanner = null,
+                bool isRestricted = true,
+                bool isDesc = false
+            );
+            IEnumerable<int> GetMySermons(int userId);
+            Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost);
+            Task<SermonViewModel> PatchSermon(Sermon sermon, SermonPatchViewModel sermonPatch);
+            Task<int> DeleteSermon(Sermon sermon);
+
+            // sermon labels
+            SermonLabel? GetLabelById(int id, bool allowNull = false);
+            SermonLabel GetLabelBySlug(string slug);
+            IEnumerable<SermonLabelViewModel> GetLabelsByParams(
+                string? name = null,
+                int? parentLabelId = null,
+                string? type = null
+            );
+            SermonLabelCompleteViewModel? BuildSermonLabelComplete(int? id);
+            Task<SermonLabelViewModel> PostNewLabel(string name, string type);
+            Task<SermonLabelViewModel> UpdateLabel(SermonLabel label, string newName);
+            Task<int> DeleteLabel(SermonLabel label);
+            bool DoesNameExist(string name);
         }
     }
 }

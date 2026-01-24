@@ -23,6 +23,10 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Region> Regions { get; set; }
 
+    public virtual DbSet<Sermon> Sermons { get; set; }
+
+    public virtual DbSet<SermonLabel> SermonLabels { get; set; }
+
     public virtual DbSet<Trip> Trips { get; set; }
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
@@ -32,6 +36,8 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<TripShare> TripShares { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<Writer> Writers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
@@ -187,25 +193,89 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_regions_parent");
         });
 
+        modelBuilder.Entity<Sermon>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_sermons");
+
+            entity.ToTable("Sermons", "db_gospel");
+
+            entity
+                .HasIndex(e => new { e.PublishAt, e.IsBanner }, "idx_sermons_banner_filter")
+                .IsDescending();
+
+            entity.HasIndex(
+                e => new
+                {
+                    e.LabelId,
+                    e.Title,
+                    e.CreatedBy,
+                },
+                "idx_sermons_filter"
+            );
+
+            entity.Property(e => e.Title).HasMaxLength(50);
+
+            entity
+                .HasOne(d => d.CreatedByNavigation)
+                .WithMany(p => p.Sermons)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_sermons");
+
+            entity
+                .HasOne(d => d.Label)
+                .WithMany(p => p.Sermons)
+                .HasForeignKey(d => d.LabelId)
+                .HasConstraintName("fk_sermons_sermon_labels");
+        });
+
+        modelBuilder.Entity<SermonLabel>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_sermon_labels");
+
+            entity.ToTable("SermonLabels", "db_gospel");
+
+            entity.HasIndex(
+                e => new
+                {
+                    e.Type,
+                    e.Slug,
+                    e.Name,
+                },
+                "idx_sermon_labels_filter"
+            );
+
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Slug).HasMaxLength(100);
+            entity.Property(e => e.Type).HasMaxLength(10).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.ParentLabel)
+                .WithMany(p => p.InverseParentLabel)
+                .HasForeignKey(d => d.ParentLabelId)
+                .HasConstraintName("fk_sermon_labels_parent");
+        });
+
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
 
             entity.ToTable("Trips", "db_basic");
 
-            entity.HasIndex(e => e.Budget, "idx_trips_budget");
-
             entity
                 .HasIndex(e => new { e.CreatedAt, e.Id }, "idx_trips_createdAt_id")
                 .IsDescending();
 
-            entity.HasIndex(e => e.IsHidden, "idx_trips_isHidden");
-
-            entity.HasIndex(e => e.IsPublic, "idx_trips_isPublic");
-
-            entity.HasIndex(e => e.RegionId, "idx_trips_region_id");
-
-            entity.HasIndex(e => e.CreatedBy, "idx_trips_user_id");
+            entity.HasIndex(
+                e => new
+                {
+                    e.RegionId,
+                    e.Budget,
+                    e.IsPublic,
+                    e.IsHidden,
+                },
+                "idx_trips_filter"
+            );
 
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Title).HasMaxLength(50);
@@ -331,6 +401,24 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50).IsUnicode(false);
+        });
+
+        modelBuilder.Entity<Writer>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_writers");
+
+            entity.ToTable("Writers", "db_role");
+
+            entity.HasIndex(e => e.UserId, "idx_writer_user_id");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+
+            entity
+                .HasOne(d => d.User)
+                .WithOne(p => p.Writer)
+                .HasForeignKey<Writer>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_writers");
         });
 
         OnModelCreatingPartial(modelBuilder);

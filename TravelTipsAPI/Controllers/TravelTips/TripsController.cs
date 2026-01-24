@@ -46,7 +46,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [Route("")]
         //[AllowAnonymous]
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
-        public async Task<ActionResult<SearchResult<TripViewModel>>> GetTripsByParams(
+        public async Task<ActionResult<SearchResults<TripViewModel>>> GetTripsByParams(
             [FromQuery] string? title,
             string? createdByAuthId = null,
             string? countrySlug = null,
@@ -116,7 +116,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 );
             }
 
-            var result = new SearchResult<TripViewModel> { Results = tripList, Cursor = newCursor };
+            var result = new SearchResults<TripViewModel>
+            {
+                Results = tripList,
+                Cursor = newCursor,
+            };
 
             return Ok(result);
         }

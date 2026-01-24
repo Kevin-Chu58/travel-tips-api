@@ -32,7 +32,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<SearchResult<HighlightViewModel>> GetHighlightsByAttractionId(
+        public ActionResult<SearchResults<HighlightViewModel>> GetHighlightsByAttractionId(
             [FromQuery] int? attractionId,
             string? createdByAuthId,
             string? cursor,
@@ -85,7 +85,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 );
             }
 
-            var result = new SearchResult<HighlightViewModel>
+            var result = new SearchResults<HighlightViewModel>
             {
                 Cursor = newCursor,
                 Results = highlightViewModels,

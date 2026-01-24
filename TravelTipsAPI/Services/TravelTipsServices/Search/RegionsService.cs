@@ -116,8 +116,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <returns>a complete region built from the leaf region</returns>
         public RegionCompleteViewModel BuildRegionComplete(int regionId)
         {
-            if (!_regionCache.TryGetValue(regionId, out var region))
-                throw new ArgumentException(Messages.RegionNotFound);
+            var region = GetRegionById(regionId);
 
             var result = new RegionCompleteViewModel();
 
