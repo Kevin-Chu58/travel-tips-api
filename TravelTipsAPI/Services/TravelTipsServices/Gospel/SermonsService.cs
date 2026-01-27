@@ -22,17 +22,50 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="allowNull">allow null</param>
         /// <param name="isRestricted">whether user can see future sermons</param>
         /// <returns>the sermon with the id</returns>
-        public Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = true)
+        public Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = false)
         {
             var sermon = context.Sermons.Find(id);
             if (sermon is null && !allowNull)
                 throw new Exception(Messages.SermonNotFound);
 
             var today = DateOnly.FromDateTime(DateTime.Now);
-            if (isRestricted && sermon?.PublishAt > today)
+            if (!isRestricted && (sermon?.PublishAt > today || sermon?.LabelId is null))
                 throw new Exception(Messages.SermonUnauthorized);
 
             return sermon;
+        }
+
+        /// <summary>
+        /// Get a sermon by label and order
+        /// </summary>
+        /// <param name="label">sermon label</param>
+        /// <param name="order">nth in order</param>
+        /// <returns>the sermon</returns>
+        public Sermon? GetSermonByLabelOrder(SermonLabel label, int order)
+        {
+            var sermon = context
+                .Sermons.Where(s => s.LabelId == label.Id)
+                .OrderBy(s => s.PublishAt)
+                .Skip(order - 1)
+                .FirstOrDefault();
+
+            return sermon;
+        }
+
+        /// <summary>
+        /// Get the sermon order based on sermon
+        /// </summary>
+        /// <param name="sermon">sermon</param>
+        /// <returns>the sermon order</returns>
+        public int GetSermonOrder(Sermon sermon)
+        {
+            // Count how many sermons have smaller Id in the same label
+            var order = context
+                .Sermons.Where(s => s.LabelId == sermon.LabelId && s.PublishAt <= sermon.PublishAt)
+                .OrderBy(s => s.PublishAt) // ascending by publish date
+                .Count();
+
+            return order;
         }
 
         /// <summary>
@@ -47,7 +80,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 .Sermons.Where(s =>
                     s.IsBanner
                     && s.PublishAt
-                        == context.Sermons.Where(s => s.PublishAt <= today).Max(s => s.PublishAt)
+                        == context
+                            .Sermons.Where(s => s.PublishAt <= today && s.LabelId != null)
+                            .Max(s => s.PublishAt)
                 )
                 .ToList();
 
@@ -67,10 +102,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public IEnumerable<SermonViewModel> GetSermonsByParams(
             int? createdBy = null,
             string? title = null,
-            SermonLabelViewModel? label = null,
+            SermonLabel? label = null,
             bool? isBanner = null,
-            bool isRestricted = true,
-            bool isDesc = false
+            bool isRestricted = false,
+            bool isDesc = true
         )
         {
             var query = context.Sermons.AsQueryable();
@@ -91,10 +126,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             {
                 query = query.Where(s => s.IsBanner == isBanner);
             }
-            if (isRestricted)
+            if (!isRestricted)
             {
                 var today = DateOnly.FromDateTime(DateTime.Now);
-                query = query.Where(s => s.PublishAt <= today);
+                query = query.Where(s => s.PublishAt <= today).Where(s => s.LabelId != null);
             }
 
             query = isDesc
@@ -219,11 +254,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="slug">slug</param>
         /// <returns>sermon label with that slug</returns>
-        public SermonLabel GetLabelBySlug(string slug)
+        public SermonLabel? GetLabelBySlug(string slug)
         {
             var sermonLabel = context.SermonLabels.FirstOrDefault(l => l.Slug == slug);
-            if (sermonLabel is null)
-                throw new Exception(Messages.SermonLabelNotFound);
 
             return sermonLabel;
         }
@@ -309,13 +342,19 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>the created sermon label</returns>
         public async Task<SermonLabelViewModel> PostNewLabel(string name, string type)
         {
-            if (DoesNameExist(name))
-                throw new Exception(Messages.SermonLabelExist);
+            var slug = StrToSlug(name);
+
+            if (DoesNameExist(slug))
+                throw new Exception(Messages.SermonLabelExists);
+
+            IEnumerable<string> validTypes = ["Category", "Topic"];
+            if (validTypes.All(t => t != type))
+                throw new Exception(Messages.SermonLabelTypeInvalid);
 
             var newLabel = new SermonLabel
             {
                 Name = name,
-                Slug = StrToSlug(name),
+                Slug = slug,
                 Type = type,
             };
 
@@ -326,17 +365,20 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Update an existing sermon label
+        /// Update an existing sermon label name
         /// </summary>
         /// <param name="label">existing label</param>
         /// <param name="newName">the new label name to be updated</param>
         /// <returns>the updated sermon label</returns>
         public async Task<SermonLabelViewModel> UpdateLabel(SermonLabel label, string newName)
         {
-            if (DoesNameExist(newName))
-                throw new Exception(Messages.SermonLabelExist);
+            var newSlug = StrToSlug(newName);
+
+            if (DoesNameExist(newSlug))
+                throw new Exception(Messages.SermonLabelExists);
 
             label.Name = newName;
+            label.Slug = newSlug;
 
             await context.SaveChangesAsync();
             return (SermonLabelViewModel)label;
@@ -359,7 +401,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             // remove all sermons with the labels
             var labelIds = labels.Select(l => l.Id).ToList();
 
-            var sermons = context.Sermons.Where(s => labelIds.Contains((int)s.LabelId)).ToList();
+            var sermons = context.Sermons.Where(s => labelIds.Contains(s.LabelId ?? 0)).ToList();
 
             foreach (Sermon s in sermons)
             {
@@ -372,9 +414,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return id;
         }
 
-        public bool DoesNameExist(string name)
+        public bool DoesNameExist(string slug)
         {
-            return context.SermonLabels.Any(l => l.Name == name);
+            return context.SermonLabels.Any(l => l.Slug == slug);
         }
     }
 }

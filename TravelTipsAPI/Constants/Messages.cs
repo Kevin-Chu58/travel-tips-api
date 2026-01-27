@@ -97,6 +97,7 @@
 
         // - sermon labels
         public static readonly string SermonLabelNotFound = "Sermon label not found";
-        public static readonly string SermonLabelExist = "Sermon label already exists.";
+        public static readonly string SermonLabelTypeInvalid = "Sermon label type is invalid.";
+        public static readonly string SermonLabelExists = "Sermon label already exists.";
     }
 }

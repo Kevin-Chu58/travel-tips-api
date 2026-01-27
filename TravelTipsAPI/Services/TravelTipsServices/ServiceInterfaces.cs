@@ -197,16 +197,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ISermonsService
         {
             // sermons
-            Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = true);
+            Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = false);
+            Sermon? GetSermonByLabelOrder(SermonLabel label, int order);
+            int GetSermonOrder(Sermon sermon);
             IEnumerable<SermonViewModel> GetLatestSermons();
             SermonViewModel GetSermonViewModel(Sermon sermon, bool hasContent = false);
             IEnumerable<SermonViewModel> GetSermonsByParams(
                 int? createdBy = null,
                 string? title = null,
-                SermonLabelViewModel? label = null,
+                SermonLabel? label = null,
                 bool? isBanner = null,
-                bool isRestricted = true,
-                bool isDesc = false
+                bool isRestricted = false,
+                bool isDesc = true
             );
             IEnumerable<int> GetMySermons(int userId);
             Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost);
@@ -215,7 +217,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             // sermon labels
             SermonLabel? GetLabelById(int id, bool allowNull = false);
-            SermonLabel GetLabelBySlug(string slug);
+            SermonLabel? GetLabelBySlug(string slug);
             IEnumerable<SermonLabelViewModel> GetLabelsByParams(
                 string? name = null,
                 int? parentLabelId = null,
