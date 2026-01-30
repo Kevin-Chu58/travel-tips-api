@@ -216,17 +216,19 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
             [FromBody] SermonPostViewModel newSermon
         )
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
             if (newSermon.LabelId != null)
             {
                 var sermonLabel = sermonsService.GetLabelById((int)newSermon.LabelId, true);
 
-                if (sermonLabel?.Type != "Type")
+                if (sermonLabel?.Type != "Topic")
                     return BadRequest(Messages.SermonLabelTypeInvalid);
             }
 
             try
             {
-                var sermon = await sermonsService.PostSermon(newSermon);
+                var sermon = await sermonsService.PostSermon(newSermon, userId);
                 return Ok(sermon);
             }
             catch (Exception ex)
@@ -254,7 +256,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
             {
                 var sermonLabel = sermonsService.GetLabelById((int)sermonPatch.LabelId, true);
 
-                if (sermonLabel?.Type != "Type")
+                if (sermonLabel?.Type != "Topic")
                     return BadRequest(Messages.SermonLabelTypeInvalid);
             }
 
@@ -348,18 +350,30 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         /// </summary>
         /// <param name="name">label name</param>
         /// <param name="type">label type</param>
+        /// <param name="parentLabelId">parent label id</param>
         /// <returns>the new label</returns>
         [HttpPost]
         [Route("labels")]
         [HasRole(Role = UserRoles.WRITER)]
         public async Task<ActionResult<SermonLabelViewModel>> PostNewLabel(
             [FromQuery] string name,
-            string type
+            string type,
+            int? parentLabelId = null
         )
         {
             try
             {
-                var label = await sermonsService.PostNewLabel(name, type);
+                if (type == "Category" && parentLabelId != null)
+                {
+                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                }
+
+                if (type == "Topic" && parentLabelId is null)
+                {
+                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                }
+
+                var label = await sermonsService.PostNewLabel(name, type, parentLabelId);
                 return Ok(label);
             }
             catch (Exception ex)
@@ -373,13 +387,15 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         /// </summary>
         /// <param name="id">label id</param>
         /// <param name="name">label new name</param>
+        /// <param name="parentLabelId">parent label id</param>
         /// <returns>the updated label</returns>
         [HttpPatch]
         [Route("labels/{id}")]
         [HasRole(Role = UserRoles.WRITER)]
         public async Task<ActionResult<SermonLabelViewModel>> UpdateLabel(
             int id,
-            [FromQuery] string name
+            [FromQuery] string name,
+            int? parentLabelId = null
         )
         {
             try
@@ -387,6 +403,16 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
                 var oldLabel = sermonsService.GetLabelById(id, true);
                 if (oldLabel is null)
                     return NotFound(Messages.SermonLabelNotFound);
+
+                if (oldLabel.Type == "Category" && parentLabelId != null)
+                {
+                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                }
+
+                if (oldLabel.Type == "Topic" && parentLabelId is null)
+                {
+                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                }
 
                 var label = await sermonsService.UpdateLabel(oldLabel, name);
                 return Ok(label);

@@ -211,7 +211,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 bool isDesc = true
             );
             IEnumerable<int> GetMySermons(int userId);
-            Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost);
+            Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost, int createdBy);
             Task<SermonViewModel> PatchSermon(Sermon sermon, SermonPatchViewModel sermonPatch);
             Task<int> DeleteSermon(Sermon sermon);
 
@@ -224,8 +224,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 string? type = null
             );
             SermonLabelCompleteViewModel? BuildSermonLabelComplete(int? id);
-            Task<SermonLabelViewModel> PostNewLabel(string name, string type);
-            Task<SermonLabelViewModel> UpdateLabel(SermonLabel label, string newName);
+            Task<SermonLabelViewModel> PostNewLabel(
+                string name,
+                string type,
+                int? parentLabelId = null
+            );
+            Task<SermonLabelViewModel> UpdateLabel(
+                SermonLabel label,
+                string newName,
+                int? parentLabelId = null
+            );
             Task<int> DeleteLabel(SermonLabel label);
             bool DoesNameExist(string name);
         }

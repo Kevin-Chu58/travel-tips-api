@@ -157,6 +157,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Title = sermon.Title,
                 Content = hasContent ? sermon.Content : null,
                 Label = BuildSermonLabelComplete(sermon.LabelId),
+                IsBanner = sermon.IsBanner,
                 PublishAt = sermon.PublishAt,
             };
 
@@ -178,7 +179,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="sermonPost">new sermon</param>
         /// <returns>the new sermon</returns>
-        public async Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost)
+        public async Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost, int createdBy)
         {
             var newSermon = new Sermon
             {
@@ -187,6 +188,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 LabelId = sermonPost.LabelId,
                 PublishAt = sermonPost.PublishAt,
                 IsBanner = sermonPost.IsBanner ?? false,
+                CreatedBy = createdBy,
             };
 
             await context.Sermons.AddAsync(newSermon);
@@ -339,8 +341,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="name">sermon label name</param>
         /// <param name="type">sermon label type</param>
+        /// <param name="parentLabelId">parent label id</param>
         /// <returns>the created sermon label</returns>
-        public async Task<SermonLabelViewModel> PostNewLabel(string name, string type)
+        public async Task<SermonLabelViewModel> PostNewLabel(
+            string name,
+            string type,
+            int? parentLabelId = null
+        )
         {
             var slug = StrToSlug(name);
 
@@ -356,6 +363,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Name = name,
                 Slug = slug,
                 Type = type,
+                ParentLabelId = parentLabelId,
             };
 
             await context.AddAsync(newLabel);
@@ -370,7 +378,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="label">existing label</param>
         /// <param name="newName">the new label name to be updated</param>
         /// <returns>the updated sermon label</returns>
-        public async Task<SermonLabelViewModel> UpdateLabel(SermonLabel label, string newName)
+        /// <param name="parentLabelId">parent label id</param>
+        public async Task<SermonLabelViewModel> UpdateLabel(
+            SermonLabel label,
+            string newName,
+            int? parentLabelId = null
+        )
         {
             var newSlug = StrToSlug(newName);
 
@@ -379,6 +392,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             label.Name = newName;
             label.Slug = newSlug;
+            label.ParentLabelId = parentLabelId ?? label.ParentLabelId;
 
             await context.SaveChangesAsync();
             return (SermonLabelViewModel)label;
