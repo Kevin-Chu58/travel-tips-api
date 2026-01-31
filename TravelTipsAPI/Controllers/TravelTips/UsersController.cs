@@ -4,6 +4,7 @@ using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -12,7 +13,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// </summary>
     /// <param name="usersService">users service</param>
     [Route("api/[controller]")]
-    public class UsersController(IUsersService usersService) : TravelTipsControllerBase
+    public class UsersController(IUsersService usersService, IUserRolesService userRolesService)
+        : TravelTipsControllerBase
     {
         /// <summary>
         /// Get your current user basic information
@@ -28,7 +30,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
                 var user = usersService.GetUserById(userId);
-                return Ok((UserViewModel)user);
+                var userViewModel = (UserViewModel)user;
+
+                userViewModel.IsAdmin = userRolesService.IsAdmin(userId);
+                userViewModel.IsWriter = userRolesService.IsWriter(userId);
+
+                return Ok(userViewModel);
             }
             catch (Exception ex)
             {

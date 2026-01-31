@@ -1,8 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TravelTipsAPI.Constants;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -28,20 +30,44 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Get a list of highlights by attraction id
         /// </summary>
-        /// <param name="id">attraction id</param>
-        /// <param name="userId">user id</param>
+        /// <param name="attractionId">attraction id</param>
+        /// <param name="createdBy">user id</param>
+        /// <param name="cursor">highlight cursor</param>
+        /// <param name="highlightOrderByEnum">order by enum</param>
+        /// <param name="limit">limit</param>
         /// <returns>a list of highlights</returns>
-        public IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId = null)
+        public IEnumerable<HighlightViewModel> GetHighlightsByParams(
+            int? attractionId = null,
+            int? createdBy = null,
+            HighlightCursor? cursor = null,
+            HighlightOrderByEnum? highlightOrderByEnum = null,
+            int? limit = null
+        )
         {
             var query = context.Highlights.AsQueryable();
 
-            query = query.Where(h => h.AttractionId == id);
-            if (userId != null)
+            if (attractionId != null)
             {
-                query = query.Where(h => h.CreatedBy == userId);
+                query = query.Where(h => h.AttractionId == attractionId);
+            }
+            if (createdBy != null)
+            {
+                query = query.Where(h => h.CreatedBy == createdBy);
             }
 
-            return query.ToList();
+            // still order the query even if cursor is null
+            if (highlightOrderByEnum != null)
+            {
+                query = ApplyCursor(query, cursor, highlightOrderByEnum);
+            }
+
+            if (limit != null)
+            {
+                query = query.Take(limit.Value);
+            }
+            var highlights = query.ToList();
+
+            return highlights.Select(h => GetHighlightViewModel(h));
         }
 
         /// <summary>
@@ -58,6 +84,56 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             highlightViewModel.CreatedBy = userViewModel;
 
             return highlightViewModel;
+        }
+
+        /// <summary>
+        /// Apply cursor to the query
+        /// </summary>
+        /// <param name="query">query</param>
+        /// <param name="cursor">highlight cursor</param>
+        /// <param name="highlightOrderByEnum">order by</param>
+        /// <returns>the query with applied cursor</returns>
+        public static IQueryable<Highlight> ApplyCursor(
+            IQueryable<Highlight> query,
+            HighlightCursor? cursor,
+            HighlightOrderByEnum? highlightOrderByEnum
+        )
+        {
+            // Apply cursor and sort query based on order by enum
+            switch (highlightOrderByEnum)
+            {
+                case HighlightOrderByEnum.Newest:
+                    query = query.OrderByDescending(h => h.Id);
+                    if (cursor != null)
+                        query = query.Where(h => h.Id < cursor.Id);
+                    break;
+
+                case HighlightOrderByEnum.Oldest:
+                    query = query.OrderBy(h => h.Id);
+                    if (cursor != null)
+                        query = query.Where(h => h.Id > cursor.Id);
+                    break;
+
+                case HighlightOrderByEnum.MostUsed:
+                    query = query.OrderByDescending(h => h.UsageCount).ThenByDescending(h => h.Id);
+                    if (cursor != null)
+                        query = query.Where(h =>
+                            h.UsageCount < cursor.UsageCount
+                            || (h.UsageCount == cursor.UsageCount && h.Id < cursor.Id)
+                        );
+                    break;
+
+                case HighlightOrderByEnum.LeastUsed:
+                    query = query.OrderBy(h => h.UsageCount).ThenBy(h => h.Id);
+                    if (cursor != null)
+                        query = query.Where(h =>
+                            h.UsageCount > cursor.UsageCount
+                            || (h.UsageCount == cursor.UsageCount && h.Id > cursor.Id)
+                        );
+                    break;
+            }
+
+            return query;
         }
 
         /// <summary>
@@ -109,6 +185,33 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return GetHighlightViewModel(highlight);
+        }
+
+        /// <summary>
+        /// Update highlight usage count when a TAO's highlight is changed
+        /// </summary>
+        /// <param name="oldId">old highlight id</param>
+        /// <param name="newId">new highlight id</param>
+        /// <returns></returns>
+        public async Task UpdateHighlightUsageCountAsync(int? oldId, int? newId)
+        {
+            if (oldId == newId)
+                return;
+
+            if (oldId != null)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE db_basic.Highlights SET UsageCount = UsageCount - 1 WHERE Id = @id",
+                    new SqlParameter("@id", oldId)
+                );
+            }
+            if (newId != null)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE db_basic.Highlights SET UsageCount = UsageCount + 1 WHERE Id = @id",
+                    new SqlParameter("@id", newId)
+                );
+            }
         }
 
         /// <summary>

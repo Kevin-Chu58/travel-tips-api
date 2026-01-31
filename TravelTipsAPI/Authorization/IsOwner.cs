@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.GospelSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
 namespace TravelTipsAPI.Authorization
@@ -24,6 +25,7 @@ namespace TravelTipsAPI.Authorization
         private IHighlightsService _highlightsService;
         private ITripAttractionOrdersService _tripAttractionOrdersService;
         private IImagesService _imagesService;
+        private ISermonsService _sermonsService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -43,6 +45,8 @@ namespace TravelTipsAPI.Authorization
                 context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
             _imagesService =
                 context.HttpContext.RequestServices.GetRequiredService<IImagesService>();
+            _sermonsService =
+                context.HttpContext.RequestServices.GetRequiredService<ISermonsService>();
 
             var auth0Id =
                 context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
@@ -79,7 +83,8 @@ namespace TravelTipsAPI.Authorization
                 myDays,
                 myAttractions,
                 myHighlights,
-                myTripAttractionOrders;
+                myTripAttractionOrders,
+                mySermons;
 
             switch (resource)
             {
@@ -105,6 +110,10 @@ namespace TravelTipsAPI.Authorization
 
                 case Resources.IMAGES:
                     return _imagesService.IsOwner(UserId, ResourceId);
+
+                case Resources.SERMONS:
+                    mySermons = _sermonsService.GetMySermons(UserId);
+                    return mySermons.Any(sermonId => sermonId == ResourceId);
             }
             return false;
         }

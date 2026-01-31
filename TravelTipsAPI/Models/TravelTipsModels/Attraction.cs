@@ -31,6 +31,5 @@ public partial class Attraction
 
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
-    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } =
-        new List<TripAttractionOrder>();
+    public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 }

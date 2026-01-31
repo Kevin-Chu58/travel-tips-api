@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using TravelTipsAPI.BackgroundServices;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.HereMapServices;
@@ -65,6 +66,9 @@ builder.Services.AddServices();
 builder.Services.AddAuth0Services();
 builder.Services.AddHereMapServices();
 builder.Services.AddWikiCommonsServices();
+
+// Add Background Services
+builder.Services.AddHostedService<HighlightUsageRebuildService>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];

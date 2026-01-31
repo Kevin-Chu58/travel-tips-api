@@ -1,10 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -73,7 +75,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Id = trip.Id,
                 Title = trip.Title,
                 Description = trip.Description,
-                CreatedBy = (UserViewModel)usersService.GetUserById(trip.CreatedBy),
+                CreatedBy = (UserSimpleViewModel)usersService.GetUserById(trip.CreatedBy),
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 IsHidden = trip.IsHidden,
@@ -111,24 +113,30 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Get trips by params
         /// </summary>
-        /// <param name="id">trip id</param>
+        /// <param name="ids">trip ids</param>
         /// <param name="title">title</param>
-        /// <param name="userId">user id</param>
+        /// <param name="createdBy">createdBy</param>
         /// <param name="isPublic">is public</param>
         /// <param name="isHidden">is hidden</param>
-        /// <param name="regionId">region id</param>
+        /// <param name="region">region</param>
         /// <param name="budget">budget</param>
         /// <param name="isRestricted">is user owner or shared with</param>
+        /// <param name="cursor">trip cursor</param>
+        /// <param name="isDesc">is descending or ascending</param>
+        /// <param name="limit">limit</param>
         /// <returns>a list of trips</returns>
         public IEnumerable<TripViewModel> GetTripsByParams(
             IEnumerable<int>? ids = null,
             string? title = null,
-            int? userId = null,
+            int? createdBy = null,
             bool? isPublic = null,
             bool? isHidden = null,
-            int? regionId = null,
+            RegionViewModel? region = null,
             int? budget = null,
-            bool isRestricted = false
+            bool isRestricted = false,
+            TripCursor? cursor = null,
+            bool? isDesc = null,
+            int? limit = null
         )
         {
             var query = context.Trips.AsQueryable();
@@ -142,9 +150,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 title = title.Trim().ToLower();
                 query = query.Where(t => t.Title.Contains(title));
             }
-            if (userId != null)
+            if (createdBy != null)
             {
-                query = query.Where(t => t.CreatedBy == userId);
+                query = query.Where(t => t.CreatedBy == createdBy);
             }
             if (isPublic != null)
             {
@@ -154,18 +162,74 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             {
                 query = query.Where(t => t.IsHidden == isHidden);
             }
-            if (regionId != null)
+            if (region != null)
             {
-                query = query.Where(t => t.RegionId == regionId);
+                if (region.Type == "State")
+                    query = query.Where(t => t.RegionId == region.Id);
+                // if region is country, then also include all its states
+                else if (region.Type == "Country")
+                {
+                    var stateIds = context
+                        .Regions.Where(r => r.ParentRegionId == region.Id || r.Id == region.Id)
+                        .Select(r => r.Id)
+                        .ToList();
+                    query = query.Where(t =>
+                        t.RegionId != null && stateIds.Contains(t.RegionId.Value)
+                    );
+                }
             }
             if (budget != null)
             {
                 query = query.Where(t => t.Budget == budget);
             }
 
+            if (isDesc != null)
+            {
+                query = ApplyCursor(query, cursor, isDesc.Value);
+            }
+
+            if (limit != null)
+            {
+                query = query.Take(limit.Value);
+            }
             var trips = query.ToList();
 
             return trips.Select(trip => GetTripViewModel(trip, isRestricted));
+        }
+
+        /// <summary>
+        /// Apply cursor to the query
+        /// </summary>
+        /// <param name="query">query</param>
+        /// <param name="cursor">trip cursor</param>
+        /// <param name="isDesc">is descending or ascending</param>
+        /// <returns>the query with applied cursor</returns>
+        public static IQueryable<Trip> ApplyCursor(
+            IQueryable<Trip> query,
+            TripCursor? cursor,
+            bool isDesc
+        )
+        {
+            // Sort query based on isDesc
+            query = isDesc
+                ? query.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id)
+                : query.OrderBy(t => t.CreatedAt).ThenBy(t => t.Id);
+
+            // Apply cursor-based pagination
+            if (cursor != null)
+            {
+                query = isDesc
+                    ? query.Where(t =>
+                        t.CreatedAt < cursor.CreatedAt
+                        || (t.CreatedAt == cursor.CreatedAt && t.Id < cursor.Id)
+                    )
+                    : query.Where(t =>
+                        t.CreatedAt > cursor.CreatedAt
+                        || (t.CreatedAt == cursor.CreatedAt && t.Id > cursor.Id)
+                    );
+            }
+
+            return query;
         }
 
         /// <summary>
@@ -309,35 +373,5 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             var myTripIds = GetMyTripIds(id);
             return tripIds.All(tripId => myTripIds.Contains(tripId));
         }
-
-        /// <summary>
-        /// Check if new trip's detail is valid
-        /// </summary>
-        /// <param name="name">new trip name</param>
-        /// <returns>true if is valid, false otherwise</returns>
-        //public List<string> ValidatePost(string name)
-        //{
-        //    var invalidParams = new List<string>();
-
-        //    if (name.Length > 50)
-        //        invalidParams.Add("name");
-
-        //    return invalidParams;
-        //}
-
-        /// <summary>
-        /// Check if trip's detail is valid
-        /// </summary>
-        /// <param name="trip">existing trip</param>
-        /// <returns>true if is valid, false otherwise</returns>
-        //public List<string> ValidatePatch(TripPatchViewModel trip)
-        //{
-        //    var invalidParams = new List<string>();
-
-        //    if (trip.Title?.Length == 0 || trip.Title?.Length > 50)
-        //        invalidParams.Add("name");
-
-        //    return invalidParams;
-        //}
     }
 }

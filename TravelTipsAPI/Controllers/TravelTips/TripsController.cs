@@ -7,6 +7,9 @@ using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.Utils.ObjectUtils;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -20,6 +23,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <param name="taosService">trip attraction orders service</param>
     [Route("api/[controller]")]
     public class TripsController(
+        IRegionsService regionsService,
         IUsersService usersService,
         ITripsService tripsService,
         ITripSharesService tripSharesService,
@@ -28,27 +32,97 @@ namespace TravelTipsAPI.Controllers.TravelTips
     ) : TravelTipsControllerBase
     {
         /// <summary>
-        /// Get public trips by title
+        /// Get public trips by params
         /// </summary>
         /// <param name="title">the title of the trips</param>
-        /// <returns>a list of trips that includes the title</returns>
+        /// <param name="createdByAuthId">the creator user id</param>
+        /// <param name="countrySlug">the country slug</param>
+        /// <param name="stateSlug">the state slug</param>
+        /// <param name="budget">the budget</param>
+        /// <param name="cursor">the pagination cursor</param>
+        /// <param name="isDesc">the sort order</param>
+        /// <returns>research result of trips that fit the params with cursor optionally</returns>
         [HttpGet]
         [Route("")]
         //[AllowAnonymous]
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
-        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetTripsByTitle(
-            [FromQuery] string title
+        public async Task<ActionResult<SearchResults<TripViewModel>>> GetTripsByParams(
+            [FromQuery] string? title,
+            string? createdByAuthId = null,
+            string? countrySlug = null,
+            string? stateSlug = null,
+            int? budget = null,
+            string? cursor = null,
+            bool? isDesc = true
         )
         {
+            // get createdBy user id (not user's userId)
+            int? createdBy = null;
+            if (!string.IsNullOrEmpty(createdByAuthId))
+            {
+                var createdByUser = usersService.GetUserByUserId(createdByAuthId);
+                if (createdByUser is null)
+                    return NotFound(Messages.UserNotFound);
+                createdBy = createdByUser.Id;
+            }
+
+            // get region
+            RegionViewModel? region = null;
+            try
+            {
+                if (!string.IsNullOrEmpty(countrySlug))
+                {
+                    region = regionsService.GetRegionByCountryAndState(countrySlug, stateSlug);
+                }
+                else if (!string.IsNullOrEmpty(stateSlug))
+                    return NotFound(Messages.RegionInvalid);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+
+            // decode cursor if provided
+            TripCursor? tripCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                tripCursor = DecodeCursor<TripCursor>(cursor);
+                if (tripCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
             var tripViewModels = tripsService.GetTripsByParams(
                 title: title,
                 isPublic: true,
-                isHidden: false
+                isHidden: false,
+                createdBy: createdBy,
+                region: region,
+                budget: budget,
+                cursor: tripCursor,
+                isDesc: isDesc,
+                limit: Global.TRIP_DEFAULT_LIMIT
             );
 
             tripViewModels = await AppendImagesToTripsAsync(tripViewModels);
 
-            return Ok(tripViewModels);
+            // encode cursor
+            var tripList = tripViewModels.ToList();
+            string? newCursor = null;
+            if (tripList.Count > 0)
+            {
+                var lastTrip = tripList.Last();
+                newCursor = EncodeCursor(
+                    new TripCursor { CreatedAt = lastTrip.CreatedAt, Id = lastTrip.Id }
+                );
+            }
+
+            var result = new SearchResults<TripViewModel>
+            {
+                Results = tripList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -101,7 +175,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var myTripViewModels = tripsService.GetTripsByParams(
-                userId: userId,
+                createdBy: userId,
                 isHidden: false,
                 isRestricted: true
             );
@@ -121,7 +195,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var myTripViewModels = tripsService.GetTripsByParams(
-                userId: userId,
+                createdBy: userId,
                 isPublic: false,
                 isHidden: true,
                 isRestricted: true

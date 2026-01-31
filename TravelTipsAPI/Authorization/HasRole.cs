@@ -40,12 +40,17 @@ namespace TravelTipsAPI.Authorization
         private bool UserHasRole(string role)
         {
             // arrange the roles from the highest to the lowest
-            bool isAdmin;
+            bool isAdmin,
+                isWriter;
             switch (role)
             {
                 case UserRoles.ADMIN:
                     isAdmin = _userRolesService.IsAdmin(UserId);
                     return isAdmin;
+
+                case UserRoles.WRITER:
+                    isWriter = _userRolesService.IsWriter(UserId);
+                    return isWriter;
             }
 
             return false;

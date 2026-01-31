@@ -9,6 +9,8 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public required string Username { get; set; }
         public required string Email { get; set; }
         public bool UserAgreement { get; set; }
+        public bool? IsAdmin { get; set; }
+        public bool? IsWriter { get; set; }
 
         public static explicit operator UserViewModel(User user)
         {

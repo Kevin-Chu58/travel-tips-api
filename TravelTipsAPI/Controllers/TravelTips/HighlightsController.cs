@@ -3,7 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_search;
+using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Utils.ObjectUtils;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -12,28 +16,82 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// </summary>
     /// <param name="highlightsService">highlights service</param>
     [Route("api/[controller]")]
-    public class HighlightsController(IHighlightsService highlightsService)
-        : TravelTipsControllerBase
+    public class HighlightsController(
+        IUsersService usersService,
+        IHighlightsService highlightsService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
-        /// Get a list of highlights by attraction id, optional other params
+        /// Get highlights by params
         /// </summary>
-        /// <param name="id">attraction id</param>
-        /// <param name="userId">user id</param>
-        /// <returns>a list of highlights</returns>
+        /// <param name="attractionId">the attraction id</param>
+        /// <param name="createdByAuthId">the creator user id</param>
+        /// <param name="cursor">the pagination cursor</param>
+        /// <param name="highlightOrderByEnum">the order by enum</param>
+        /// <returns>search result of highlights that fits the params with cursor optionally</returns>
         [HttpGet]
-        [Route("{id}")]
+        [Route("")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<HighlightViewModel>> GetHighlightsByAttractionId(
-            int id,
-            [FromQuery] int? userId
+        public ActionResult<SearchResults<HighlightViewModel>> GetHighlightsByAttractionId(
+            [FromQuery] int? attractionId,
+            string? createdByAuthId,
+            string? cursor,
+            HighlightOrderByEnum? highlightOrderByEnum = null
         )
         {
-            var highlights = highlightsService.GetHighlightsByParams(id, userId);
-            var highlightViewModels = highlights
-                .Select(h => highlightsService.GetHighlightViewModel(h))
-                .ToList();
-            return Ok(highlightViewModels);
+            // get createdBy user id (not user's userId)
+            int? createdBy = null;
+            if (!string.IsNullOrEmpty(createdByAuthId))
+            {
+                var createdByUser = usersService.GetUserByUserId(createdByAuthId);
+                if (createdByUser is null)
+                    return NotFound(Messages.UserNotFound);
+                createdBy = createdByUser.Id;
+            }
+
+            // set default order by id desc if no order provided
+            if (highlightOrderByEnum is null)
+                highlightOrderByEnum = HighlightOrderByEnum.Newest;
+
+            // decode cursor if provided
+            HighlightCursor? highlightCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                highlightCursor = DecodeCursor<HighlightCursor>(cursor);
+                if (highlightCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
+            var highlightViewModels = highlightsService.GetHighlightsByParams(
+                attractionId: attractionId,
+                createdBy: createdBy,
+                cursor: highlightCursor,
+                highlightOrderByEnum: highlightOrderByEnum,
+                limit: Global.HIGHLIGHT_DEFAULT_LIMIT
+            );
+
+            // encode cursor
+            var highlightList = highlightViewModels.ToList();
+            string? newCursor = null;
+            if (highlightList.Count > 0)
+            {
+                var lastHighlight = highlightList.Last();
+                newCursor = EncodeCursor(
+                    new HighlightCursor
+                    {
+                        Id = lastHighlight.Id,
+                        UsageCount = lastHighlight.UsageCount,
+                    }
+                );
+            }
+
+            var result = new SearchResults<HighlightViewModel>
+            {
+                Cursor = newCursor,
+                Results = highlightViewModels,
+            };
+
+            return Ok(result);
         }
 
         [HttpPost]

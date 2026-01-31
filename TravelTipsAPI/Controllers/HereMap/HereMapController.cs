@@ -5,8 +5,6 @@ using OpenAI.Responses;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Controllers.TravelTips;
-using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;

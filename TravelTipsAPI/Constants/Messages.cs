@@ -9,12 +9,16 @@
         // parameters
         public static readonly string InputInvalid = "Following inputs are invalid: {0}.";
 
+        // Cursor
+        public static readonly string CursorInvalid = "Cursor is invalid.";
+
         // Users
         public static readonly string UserNotFound = "User not found";
         public static readonly string UserIdNotFound = "User Auth Id not found.";
 
         // Regions
         public static readonly string RegionNotFound = "Region not found.";
+        public static readonly string RegionInvalid = "Region invalid.";
 
         //public static readonly string RegionRootInvalid = "Region hierarchy is missing Country";
 
@@ -86,5 +90,14 @@
         // Wiki Commons
         public static readonly string WikiCommonsQueryNotFound = "WikiImage:Query not found.";
         public static readonly string WikiCommonsPagesNotFound = "WikiImage:Pages not found.";
+
+        // Sermons
+        public static readonly string SermonNotFound = "Sermon not found.";
+        public static readonly string SermonUnauthorized = "Sermon unauthorized.";
+
+        // - sermon labels
+        public static readonly string SermonLabelNotFound = "Sermon label not found";
+        public static readonly string SermonLabelTypeInvalid = "Sermon label type is invalid.";
+        public static readonly string SermonLabelExists = "Sermon label already exists.";
     }
 }

@@ -13,6 +13,8 @@ public partial class Highlight
 
     public int CreatedBy { get; set; }
 
+    public int UsageCount { get; set; }
+
     public virtual Attraction Attraction { get; set; } = null!;
 
     public virtual User CreatedByNavigation { get; set; } = null!;

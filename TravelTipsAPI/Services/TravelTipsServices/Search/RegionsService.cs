@@ -82,14 +82,41 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         }
 
         /// <summary>
+        /// Get a region by country slug and state slug
+        /// </summary>
+        /// <param name="countrySlug">country slug</param>
+        /// <param name="stateSlug">state slug</param>
+        /// <returns>the region</returns>
+        public RegionViewModel GetRegionByCountryAndState(string countrySlug, string? stateSlug)
+        {
+            var countryRegion = _regionCache.Values.FirstOrDefault(r =>
+                r.Type == "Country" && r.Slug == countrySlug
+            );
+
+            if (countryRegion is null)
+                throw new Exception(Messages.RegionNotFound);
+
+            if (string.IsNullOrEmpty(stateSlug))
+                return countryRegion;
+
+            var stateRegion = _regionCache.Values.FirstOrDefault(r =>
+                r.Type == "State" && r.Slug == stateSlug && r.ParentRegionId == countryRegion.Id
+            );
+
+            if (stateRegion is null)
+                throw new Exception(Messages.RegionNotFound);
+
+            return stateRegion;
+        }
+
+        /// <summary>
         /// Build a complete region by leaf region id
         /// </summary>
         /// <param name="regionId">leaf region id</param>
         /// <returns>a complete region built from the leaf region</returns>
         public RegionCompleteViewModel BuildRegionComplete(int regionId)
         {
-            if (!_regionCache.TryGetValue(regionId, out var region))
-                throw new ArgumentException(Messages.RegionNotFound);
+            var region = GetRegionById(regionId);
 
             var result = new RegionCompleteViewModel();
 

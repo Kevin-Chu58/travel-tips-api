@@ -1,8 +1,12 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_gospel;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
+using TravelTipsAPI.ViewModels.db_sermon;
 using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -17,6 +21,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 string? name = null,
                 int? parentRegionId = null
             );
+            RegionViewModel GetRegionByCountryAndState(string countrySlug, string? stateSlug);
             RegionCompleteViewModel BuildRegionComplete(int regionId);
         }
     }
@@ -41,12 +46,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<TripViewModel> GetTripsByParams(
                 IEnumerable<int>? ids = null,
                 string? title = null,
-                int? userId = null,
+                int? createdBy = null,
                 bool? isPublic = null,
                 bool? isHidden = null,
-                int? regionId = null,
+                RegionViewModel? region = null,
                 int? budget = null,
-                bool isRestricted = false
+                bool isRestricted = false,
+                TripCursor? cursor = null,
+                bool? isDesc = true,
+                int? limit = null
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
@@ -100,7 +108,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IHighlightsService
         {
             Highlight? FindHighlightById(int id);
-            IEnumerable<Highlight> GetHighlightsByParams(int id, int? userId = null);
+            IEnumerable<HighlightViewModel> GetHighlightsByParams(
+                int? attractionId = null,
+                int? createdBy = null,
+                HighlightCursor? cursor = null,
+                HighlightOrderByEnum? highlightOrderByEnum = null,
+                int? limit = null
+            );
             HighlightViewModel GetHighlightViewModel(Highlight highlight);
             IEnumerable<int> GetMyHighlights(int id);
             Task<HighlightViewModel> PostNewHighlightAsync(
@@ -108,6 +122,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int userId
             );
             Task<HighlightViewModel> UpdateHighlightAsync(Highlight highlight, string description);
+            Task UpdateHighlightUsageCountAsync(int? oldId, int? newId);
             Task<HighlightViewModel> DeleteHighlightAsync(Highlight highlight);
         }
 
@@ -150,6 +165,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IUserRolesService
         {
             bool IsAdmin(int userId);
+            bool IsWriter(int userId);
         }
     }
 
@@ -173,6 +189,53 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<ImageRelationViewModel> DetachImageFromTrip(int imageId, int tripId);
             Task DeleteImageAsync(Image image);
             bool IsOwner(int userId, int imageId);
+        }
+    }
+
+    public class GospelSchema
+    {
+        public interface ISermonsService
+        {
+            // sermons
+            Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = false);
+            Sermon? GetSermonByLabelOrder(SermonLabel label, int order);
+            int GetSermonOrder(Sermon sermon);
+            IEnumerable<SermonViewModel> GetLatestSermons();
+            SermonViewModel GetSermonViewModel(Sermon sermon, bool hasContent = false);
+            IEnumerable<SermonViewModel> GetSermonsByParams(
+                int? createdBy = null,
+                string? title = null,
+                SermonLabel? label = null,
+                bool? isBanner = null,
+                bool isRestricted = false,
+                bool isDesc = true
+            );
+            IEnumerable<int> GetMySermons(int userId);
+            Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost, int createdBy);
+            Task<SermonViewModel> PatchSermon(Sermon sermon, SermonPatchViewModel sermonPatch);
+            Task<int> DeleteSermon(Sermon sermon);
+
+            // sermon labels
+            SermonLabel? GetLabelById(int id, bool allowNull = false);
+            SermonLabel? GetLabelBySlug(string slug);
+            IEnumerable<SermonLabelViewModel> GetLabelsByParams(
+                string? name = null,
+                int? parentLabelId = null,
+                string? type = null
+            );
+            SermonLabelCompleteViewModel? BuildSermonLabelComplete(int? id);
+            Task<SermonLabelViewModel> PostNewLabel(
+                string name,
+                string type,
+                int? parentLabelId = null
+            );
+            Task<SermonLabelViewModel> UpdateLabel(
+                SermonLabel label,
+                string newName,
+                int? parentLabelId = null
+            );
+            Task<int> DeleteLabel(SermonLabel label);
+            bool DoesNameExist(string name);
         }
     }
 }
