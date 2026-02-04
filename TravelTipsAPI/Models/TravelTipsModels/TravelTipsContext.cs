@@ -40,7 +40,7 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<Writer> Writers { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
-        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
+        optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTipsLocal");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -396,11 +396,18 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Users", "db_basic");
 
-            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D7D8D0D21").IsUnique();
+            entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.ExternalImageUrl).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.Image)
+                .WithMany(p => p.Users)
+                .HasForeignKey(d => d.ImageId)
+                .HasConstraintName("fk_images_users");
         });
 
         modelBuilder.Entity<Writer>(entity =>

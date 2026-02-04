@@ -7,13 +7,15 @@ public partial class Image
 {
     public int Id { get; set; }
 
-    public Guid Guid { get; set; }
-
     public string? Name { get; set; }
 
     public int CreatedBy { get; set; }
 
+    public Guid Guid { get; set; }
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<TripImage> TripImages { get; set; } = new List<TripImage>();
+
+    public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

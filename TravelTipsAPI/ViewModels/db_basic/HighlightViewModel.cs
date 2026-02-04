@@ -7,7 +7,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int Id { get; set; }
         public int AttractionId { get; set; }
         public string? Description { get; set; }
-        public UserViewModel? CreatedBy { get; set; }
+        public UserSimpleViewModel? CreatedBy { get; set; }
         public int UsageCount { get; set; }
 
         public static explicit operator HighlightViewModel(Highlight highlight)
@@ -19,7 +19,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Description = highlight.Description,
                 CreatedBy =
                     highlight.CreatedByNavigation != null
-                        ? (UserViewModel)highlight.CreatedByNavigation
+                        ? (UserSimpleViewModel)highlight.CreatedByNavigation
                         : null,
                 UsageCount = highlight.UsageCount,
             };

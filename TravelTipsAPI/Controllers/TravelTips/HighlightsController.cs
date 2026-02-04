@@ -32,7 +32,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<SearchResults<HighlightViewModel>> GetHighlightsByAttractionId(
+        public async Task<
+            ActionResult<SearchResults<HighlightViewModel>>
+        > GetHighlightsByAttractionId(
             [FromQuery] int? attractionId,
             string? createdByAuthId,
             string? cursor,
@@ -62,7 +64,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     return BadRequest(Messages.CursorInvalid);
             }
 
-            var highlightViewModels = highlightsService.GetHighlightsByParams(
+            var highlightViewModels = await highlightsService.GetHighlightsByParams(
                 attractionId: attractionId,
                 createdBy: createdBy,
                 cursor: highlightCursor,
@@ -150,15 +152,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.HIGHLIGHTS)]
-        public async Task<ActionResult<HighlightViewModel>> DeleteHighlightAsync(int id)
+        public async Task<ActionResult<int>> DeleteHighlightAsync(int id)
         {
             var highlight = highlightsService.FindHighlightById(id);
             if (highlight is null)
                 return NotFound(Messages.HighlightNotFound);
 
-            var highlightViewModel = await highlightsService.DeleteHighlightAsync(highlight);
+            var highlightId = await highlightsService.DeleteHighlightAsync(highlight);
 
-            return Ok(highlightViewModel);
+            return Ok(highlightId);
         }
     }
 }

@@ -91,7 +91,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     return BadRequest(Messages.CursorInvalid);
             }
 
-            var tripViewModels = tripsService.GetTripsByParams(
+            var tripViewModels = await tripsService.GetTripsByParams(
                 title: title,
                 isPublic: true,
                 isHidden: false,
@@ -150,7 +150,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
             if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
                 return BadRequest(Messages.TripUnauthorized);
 
-            var tripViewModel = tripsService.GetTripViewModel(trip, isRestricted: isRestricted);
+            var tripViewModel = await tripsService.GetTripViewModel(
+                trip,
+                isRestricted: isRestricted
+            );
 
             try
             {
@@ -174,7 +177,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var myTripViewModels = tripsService.GetTripsByParams(
+            var myTripViewModels = await tripsService.GetTripsByParams(
                 createdBy: userId,
                 isHidden: false,
                 isRestricted: true
@@ -194,7 +197,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var myTripViewModels = tripsService.GetTripsByParams(
+            var myTripViewModels = await tripsService.GetTripsByParams(
                 createdBy: userId,
                 isPublic: false,
                 isHidden: true,
@@ -217,7 +220,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             var sharedTripIds = tripSharesService.GetSharedTripIdsByUserId(userId);
 
-            var myTripViewModels = tripsService.GetTripsByParams(
+            var myTripViewModels = await tripsService.GetTripsByParams(
                 ids: sharedTripIds,
                 isHidden: false,
                 isRestricted: true
@@ -419,14 +422,16 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/share")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public ActionResult<IEnumerable<UserSimpleViewModel>> GetSharedUsersByTripIdAsync(int id)
+        public async Task<
+            ActionResult<IEnumerable<UserSimpleViewModel>>
+        > GetSharedUsersByTripIdAsync(int id)
         {
             try
             {
                 var sharedUserIds = tripSharesService.GetSharedUserIdsByTripId(id);
                 var sharedUsers = usersService.GetUsersByIds(sharedUserIds);
 
-                var sharedUserViewModels = sharedUsers.Select(u => (UserSimpleViewModel)u);
+                var sharedUserViewModels = await usersService.GetUserSimpleViewModels(sharedUsers);
                 return Ok(sharedUserViewModels);
             }
             catch (Exception ex)
@@ -465,7 +470,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 await tripSharesService.ShareTripWithUser(id, sharedUser.Id);
-                return Ok((UserSimpleViewModel)sharedUser);
+                var sharedUserViewModel = (
+                    await usersService.GetUserSimpleViewModels([sharedUser])
+                ).First();
+                return Ok(sharedUserViewModel);
             }
             catch (Exception ex)
             {

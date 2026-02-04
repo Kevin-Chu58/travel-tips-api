@@ -22,8 +22,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
 {
     options.UseLazyLoadingProxies();
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
 // Add authentication to the container.

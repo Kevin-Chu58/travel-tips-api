@@ -42,6 +42,7 @@ namespace TravelTipsAPI.Middleware
                         UserId = auth0UserInfo.Sub,
                         Username = auth0UserInfo.Name ?? "",
                         Email = auth0UserInfo.Email ?? "",
+                        ExternalImageUrl = auth0UserInfo.Picture ?? "",
                     };
 
                     db.Users.Add(userPost);

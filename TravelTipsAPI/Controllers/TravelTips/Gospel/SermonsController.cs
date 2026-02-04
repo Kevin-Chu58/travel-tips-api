@@ -83,7 +83,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [Route("{id}")]
         [AllowAnonymous]
         [SetUserId]
-        public ActionResult<SermonViewModel> GetSermonById(
+        public async Task<ActionResult<SermonViewModel>> GetSermonById(
             int id,
             [FromQuery] bool isRestricted = false
         )
@@ -106,7 +106,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
                     return NotFound(Messages.SermonNotFound);
 
                 // include actual sermon content in the result
-                var result = sermonsService.GetSermonViewModel(sermon, true);
+                var result = await sermonsService.GetSermonViewModel(sermon, true);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -145,7 +145,10 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [Route("{labelSlug}/{order}")]
         [AllowAnonymous]
         [SetUserId]
-        public ActionResult<SermonViewModel> GetSermonByLabelOrder(string labelSlug, int order)
+        public async Task<ActionResult<SermonViewModel>> GetSermonByLabelOrder(
+            string labelSlug,
+            int order
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -171,7 +174,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
                     return BadRequest(Messages.SermonUnauthorized);
             }
 
-            var result = sermonsService.GetSermonViewModel(sermon, true);
+            var result = await sermonsService.GetSermonViewModel(sermon, true);
             return Ok(result);
         }
 

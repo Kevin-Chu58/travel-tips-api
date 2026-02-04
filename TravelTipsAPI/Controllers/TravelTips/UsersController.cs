@@ -23,14 +23,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("me")]
         [IsOwner(Resource = Resources.NONE)]
-        public ActionResult<UserViewModel> GetCurrentUser()
+        public async Task<ActionResult<UserViewModel>> GetCurrentUser()
         {
             try
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
                 var user = usersService.GetUserById(userId);
-                var userViewModel = (UserViewModel)user;
+                var userViewModel = (await usersService.GetUserViewModels([user])).First();
 
                 userViewModel.IsAdmin = userRolesService.IsAdmin(userId);
                 userViewModel.IsWriter = userRolesService.IsWriter(userId);

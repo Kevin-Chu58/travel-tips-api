@@ -3,6 +3,8 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -10,10 +12,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// The service of Users
     /// </summary>
     /// <param name="context">context</param>
-    public class UsersService(IDbContextFactory<TravelTipsContext> contextFactory) : IUsersService
+    public class UsersService(
+        TravelTipsContext context,
+        IUserRolesService userRolesService,
+        IImagesService imagesService
+    ) : IUsersService
     {
-        private readonly TravelTipsContext context = contextFactory.CreateDbContext();
-
         /// <summary>
         /// Get the user by its id
         /// </summary>
@@ -50,6 +54,84 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             var user = context.Users.FirstOrDefault(user => user.UserId == userId);
 
             return user;
+        }
+
+        /// <summary>
+        /// Get a list of user simple view models
+        /// </summary>
+        /// <param name="users">users</param>
+        /// <returns>a list of user simple view models</returns>
+        public async Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(
+            IEnumerable<User> users
+        )
+        {
+            var userList = users.ToList();
+
+            // Collect all imageIds we need
+            var imageIds = userList
+                .Where(u => u.ImageId != null)
+                .Select(u => u.ImageId!.Value)
+                .Distinct()
+                .ToList();
+
+            // Fetch images in one call (important for performance)
+            var images =
+                imageIds.Count != 0
+                    ? (await imagesService.GetImagesByIds([.. imageIds])).ToDictionary(i => i.Id)
+                    : [];
+
+            return userList.Select(user =>
+            {
+                images.TryGetValue(user.ImageId ?? -1, out var image);
+
+                return new UserSimpleViewModel
+                {
+                    Id = user.Id,
+                    UserId = user.UserId,
+                    Username = user.Username ?? "",
+                    Picture = image?.Url ?? user.ExternalImageUrl,
+                };
+            });
+        }
+
+        /// <summary>
+        /// Get a list of user view models
+        /// </summary>
+        /// <param name="users">users</param>
+        /// <returns>a list of user view models</returns>
+        public async Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users)
+        {
+            var userList = users.ToList();
+
+            // Collect all imageIds we need
+            var imageIds = userList
+                .Where(u => u.ImageId != null)
+                .Select(u => u.ImageId!.Value)
+                .Distinct()
+                .ToList();
+
+            // Fetch images in one call (important for performance)
+            var images =
+                imageIds.Count != 0
+                    ? (await imagesService.GetImagesByIds([.. imageIds])).ToDictionary(i => i.Id)
+                    : [];
+
+            return userList.Select(user =>
+            {
+                images.TryGetValue(user.ImageId ?? -1, out var image);
+
+                return new UserViewModel
+                {
+                    Id = user.Id,
+                    UserId = user.UserId,
+                    Username = user.Username ?? "",
+                    Picture = image?.Url ?? user.ExternalImageUrl,
+                    Email = user.Email,
+                    UserAgreement = user.UserAgreement,
+                    IsAdmin = userRolesService.IsAdmin(user.Id),
+                    IsWriter = userRolesService.IsWriter(user.Id),
+                };
+            });
         }
 
         /// <summary>

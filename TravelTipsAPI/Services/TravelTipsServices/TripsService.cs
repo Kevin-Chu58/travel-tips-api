@@ -56,9 +56,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="id">trip id</param>
         /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>the trip view model</returns>
-        public TripViewModel? GetTripById(int id, bool isRestricted = false)
+        public async Task<TripViewModel?> GetTripById(int id, bool isRestricted = false)
         {
-            var trip = GetTripsByParams(ids: [id], isRestricted: isRestricted).FirstOrDefault();
+            var trip = (
+                await GetTripsByParams(ids: [id], isRestricted: isRestricted)
+            ).FirstOrDefault();
             return trip;
         }
 
@@ -68,14 +70,24 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="trip">trip</param>
         /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>trip view model of that trip</returns>
-        public TripViewModel GetTripViewModel(Trip trip, bool isRestricted = false)
+        public async Task<TripViewModel> GetTripViewModel(Trip trip, bool isRestricted = false)
         {
+            var user = usersService.GetUserById(trip.CreatedBy);
+            var simpleUser = (await usersService.GetUserSimpleViewModels([user])).First();
+
+            var sharedUsers = tripSharesService.GetSharedUserIdsByTripId(trip.Id).ToList();
+            var sharedSimpleUsers = isRestricted
+                ? await usersService.GetUserSimpleViewModels(
+                    usersService.GetUsersByIds(sharedUsers)
+                )
+                : [];
+
             var tripViewModel = new TripViewModel
             {
                 Id = trip.Id,
                 Title = trip.Title,
                 Description = trip.Description,
-                CreatedBy = (UserSimpleViewModel)usersService.GetUserById(trip.CreatedBy),
+                CreatedBy = simpleUser,
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 IsHidden = trip.IsHidden,
@@ -85,12 +97,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                         ? regionsService.BuildRegionComplete(trip.RegionId.Value)
                         : null,
                 Budget = trip.Budget,
-                SharedUsers = isRestricted
-                    ? tripSharesService
-                        .GetSharedUserIdsByTripId(trip.Id)
-                        .Select(userId => (UserSimpleViewModel)usersService.GetUserById(userId))
-                        .ToList()
-                    : [],
+                SharedUsers = sharedSimpleUsers,
             };
             return tripViewModel;
         }
@@ -125,7 +132,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="isDesc">is descending or ascending</param>
         /// <param name="limit">limit</param>
         /// <returns>a list of trips</returns>
-        public IEnumerable<TripViewModel> GetTripsByParams(
+        public async Task<IEnumerable<TripViewModel>> GetTripsByParams(
             IEnumerable<int>? ids = null,
             string? title = null,
             int? createdBy = null,
@@ -194,7 +201,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
             var trips = query.ToList();
 
-            return trips.Select(trip => GetTripViewModel(trip, isRestricted));
+            var tasks = trips.Select(async trip => await GetTripViewModel(trip, isRestricted));
+            var results = await Task.WhenAll(tasks);
+
+            return results;
         }
 
         /// <summary>
@@ -250,9 +260,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.Trips.AddAsync(newTrip);
             await context.SaveChangesAsync();
 
-            var newTripViewModel = GetTripById(newTrip.Id)!;
+            var newTripViewModel = await GetTripById(newTrip.Id)!;
 
-            return newTripViewModel;
+            return newTripViewModel!;
         }
 
         /// <summary>

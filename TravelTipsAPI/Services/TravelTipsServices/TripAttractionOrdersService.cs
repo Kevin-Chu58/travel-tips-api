@@ -61,7 +61,11 @@ public class TripAttractionOrdersService(
     /// <param name="id">tao id</param>
     /// <param name="isRestricted">is user owner or shared with</param>
     /// <returns>tao with the id</returns>
-    public TripAttractionOrderViewModel GetTaoById(int id, bool isRestricted = false)
+    public async Task<TripAttractionOrderViewModel> GetTaoById(
+        int id,
+        bool isRestricted = false,
+        bool getUserPic = false
+    )
     {
         var tao = context
             .TripAttractionOrders.Include(t => t.Attraction)
@@ -71,7 +75,7 @@ public class TripAttractionOrdersService(
         if (!isRestricted && tao.IsPrivate)
             throw new Exception(Messages.TaoUnauthorized);
 
-        var taoViewModel = GetTripAttractionOrderViewModel(tao);
+        var taoViewModel = await GetTripAttractionOrderViewModel(tao, getUserPic);
 
         return taoViewModel;
     }
@@ -82,16 +86,18 @@ public class TripAttractionOrdersService(
     /// <param name="dayId">day id</param>
     /// <param name="isRestricted">is user owner or shared with</param>
     /// <returns>a list of taos in the day</returns>
-    public IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(
+    public async Task<IEnumerable<TripAttractionOrderViewModel>> GetTaosByDayId(
         int dayId,
-        bool isRestricted = false
+        bool isRestricted = false,
+        bool getUserPic = false
     )
     {
         var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
 
-        var taoViewModels = taos.Select(tao => GetTripAttractionOrderViewModel(tao))
-            .OrderBy(t => t.Start)
-            .ToList();
+        var tasks = taos.Select(async tao =>
+            await GetTripAttractionOrderViewModel(tao, getUserPic)
+        );
+        var taoViewModels = (await Task.WhenAll(tasks)).OrderBy(t => t.Start).ToList();
 
         if (!isRestricted)
             taoViewModels = taoViewModels.Where(t => !t.IsPrivate).ToList();
@@ -434,7 +440,10 @@ public class TripAttractionOrdersService(
         return; // No overlaps
     }
 
-    private TripAttractionOrderViewModel GetTripAttractionOrderViewModel(TripAttractionOrder tao)
+    private async Task<TripAttractionOrderViewModel> GetTripAttractionOrderViewModel(
+        TripAttractionOrder tao,
+        bool getUserPic = false
+    )
     {
         var taoViewModel = new TripAttractionOrderViewModel
         {
@@ -444,7 +453,12 @@ public class TripAttractionOrdersService(
             End = tao.End,
             CreatedBy = tao.CreatedBy,
             Attraction = (AttractionViewModel)tao.Attraction,
-            Highlight = tao.Highlight != null ? (HighlightViewModel)tao.Highlight : null,
+            Highlight =
+                tao.Highlight != null
+                    ? getUserPic
+                        ? await highlightsService.GetHighlightViewModel(tao.Highlight)
+                        : (HighlightViewModel)tao.Highlight
+                    : null,
             TransportMode = tao.TransportMode,
             IsPrivate = tao.IsPrivate,
         };
