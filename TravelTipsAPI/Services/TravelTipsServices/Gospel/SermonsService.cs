@@ -87,8 +87,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 )
                 .ToList();
 
-            var tasks = sermons.Select(s => GetSermonViewModel(s));
-            var results = await Task.WhenAll(tasks);
+            var results = new List<SermonViewModel>();
+
+            foreach (var sermon in sermons)
+            {
+                results.Add(await GetSermonViewModel(sermon));
+            }
 
             return results;
         }
@@ -142,8 +146,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             var sermons = query.ToList();
 
-            var tasks = sermons.Select(s => GetSermonViewModel(s));
-            var results = await Task.WhenAll(tasks);
+            var results = new List<SermonViewModel>();
+
+            foreach (var sermon in sermons)
+            {
+                results.Add(await GetSermonViewModel(sermon));
+            }
 
             return results;
         }

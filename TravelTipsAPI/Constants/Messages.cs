@@ -82,6 +82,9 @@
         public static readonly string ImageTripAttached = "Image is attached on trip.";
         public static readonly string ImageTripDetached = "Image is not attached on trip.";
 
+        // - user image (picture)
+        public static readonly string ImageUserPicture = "Image is profile picture.";
+
         // HereMap
         public static readonly string HereMapPlaceNotFound = "Location not found.";
         public static readonly string HereMapRouteNotFound = "Route not found.";

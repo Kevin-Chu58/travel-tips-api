@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_sermon;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -67,10 +68,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
             var highlights = query.ToList();
 
-            var task = highlights.Select(async h => await GetHighlightViewModel(h));
-            var result = await Task.WhenAll(task);
+            var results = new List<HighlightViewModel>();
 
-            return result;
+            foreach (var highlight in highlights)
+            {
+                results.Add(await GetHighlightViewModel(highlight));
+            }
+
+            return results;
         }
 
         /// <summary>

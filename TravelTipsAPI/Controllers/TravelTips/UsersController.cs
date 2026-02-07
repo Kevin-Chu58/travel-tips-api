@@ -1,9 +1,9 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
@@ -13,8 +13,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// </summary>
     /// <param name="usersService">users service</param>
     [Route("api/[controller]")]
-    public class UsersController(IUsersService usersService, IUserRolesService userRolesService)
-        : TravelTipsControllerBase
+    public class UsersController(
+        IUsersService usersService,
+        IUserRolesService userRolesService,
+        IImagesService imagesService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get your current user basic information
@@ -58,6 +61,35 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 var userAgreementStatus = await usersService.AcceptUserAgreementAsync(userId);
                 return Ok(userAgreementStatus);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // user picture
+
+        [HttpPatch]
+        [Route("me/picture/{imageId}")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<string>> UpdateUserPicture(int imageId)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // validate the user ownership on the image
+            var ownership = imagesService.IsOwner(userId, imageId);
+
+            if (!ownership)
+                return Forbid(Messages.ImageUnauthorized);
+
+            var user = usersService.GetUserById(userId);
+            var image = (await imagesService.GetImagesByIds([imageId])).FirstOrDefault();
+
+            try
+            {
+                var imageUrl = await usersService.UpdateUserPicture(user, image);
+                return Ok(imageUrl);
             }
             catch (Exception ex)
             {

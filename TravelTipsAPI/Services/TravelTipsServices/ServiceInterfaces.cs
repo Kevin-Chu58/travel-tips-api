@@ -37,13 +37,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
             Task<bool> AcceptUserAgreementAsync(int id);
+
+            // user picture
+            Task<string?> UpdateUserPicture(User user, ImageViewModel? image);
         }
 
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
             Task<TripViewModel?> GetTripById(int id, bool isRestricted = false);
-            Task<TripViewModel> GetTripViewModel(Trip trip, bool isRestricted = false);
+            Task<TripViewModel> GetTripViewModel(
+                Trip trip,
+                IEnumerable<UserSimpleViewModel>? users = null,
+                Dictionary<int, int>? dayCounts = null,
+                bool isRestricted = false
+            );
             IEnumerable<int> GetMyTripIds(int id);
             Task<IEnumerable<TripViewModel>> GetTripsByParams(
                 IEnumerable<int>? ids = null,
@@ -183,7 +191,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         public interface IImagesService
         {
-            Image? GetImageById(int id);
+            Image? FindImageById(int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetImageIdsByTripId(int id);

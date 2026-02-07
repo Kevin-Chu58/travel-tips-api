@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
@@ -68,19 +67,43 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get trip view model from trip
         /// </summary>
         /// <param name="trip">trip</param>
+        /// <param name="users">users</param>
         /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>trip view model of that trip</returns>
-        public async Task<TripViewModel> GetTripViewModel(Trip trip, bool isRestricted = false)
+        public async Task<TripViewModel> GetTripViewModel(
+            Trip trip,
+            IEnumerable<UserSimpleViewModel>? users = null,
+            Dictionary<int, int>? dayCounts = null,
+            bool isRestricted = false
+        )
         {
-            var user = usersService.GetUserById(trip.CreatedBy);
-            var simpleUser = (await usersService.GetUserSimpleViewModels([user])).First();
+            // get simple user
+            UserSimpleViewModel? simpleUser = null;
+            if (users?.Any() == true)
+                simpleUser = users.FirstOrDefault(user => user.Id == trip.CreatedBy);
 
-            var sharedUsers = tripSharesService.GetSharedUserIdsByTripId(trip.Id).ToList();
-            var sharedSimpleUsers = isRestricted
-                ? await usersService.GetUserSimpleViewModels(
+            if (simpleUser is null)
+            {
+                var user = usersService.GetUserById(trip.CreatedBy);
+                simpleUser = (await usersService.GetUserSimpleViewModels([user])).First();
+            }
+
+            // get day count
+            int? dayCount = null;
+            if (dayCounts?.Count > 0)
+            {
+                dayCount = dayCounts?.GetValueOrDefault(trip.Id, 0);
+            }
+
+            // only get shared users when get trip by id
+            IEnumerable<UserSimpleViewModel> sharedSimpleUsers = [];
+            if (isRestricted)
+            {
+                var sharedUsers = tripSharesService.GetSharedUserIdsByTripId(trip.Id).ToList();
+                sharedSimpleUsers = await usersService.GetUserSimpleViewModels(
                     usersService.GetUsersByIds(sharedUsers)
-                )
-                : [];
+                );
+            }
 
             var tripViewModel = new TripViewModel
             {
@@ -91,7 +114,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 IsHidden = trip.IsHidden,
-                NumDays = context.Days.Count(day => day.TripId == trip.Id),
+                NumDays = dayCount ?? context.Days.Count(day => day.TripId == trip.Id),
                 Region =
                     trip.RegionId != null
                         ? regionsService.BuildRegionComplete(trip.RegionId.Value)
@@ -201,8 +224,25 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
             var trips = query.ToList();
 
-            var tasks = trips.Select(async trip => await GetTripViewModel(trip, isRestricted));
-            var results = await Task.WhenAll(tasks);
+            // user preload
+            var distinctUserIds = trips.Select(t => t.CreatedBy).Distinct();
+            var users = usersService.GetUsersByIds(distinctUserIds);
+            var simpleUsers = await usersService.GetUserSimpleViewModels(users);
+
+            // days preload
+            var tripIds = trips.Select(t => t.Id).ToList();
+            var dayCounts = context
+                .Days.Where(d => tripIds.Contains(d.TripId))
+                .GroupBy(d => d.TripId)
+                .Select(g => new { TripId = g.Key, Count = g.Count() })
+                .ToDictionary(x => x.TripId, x => x.Count);
+
+            var results = new List<TripViewModel>();
+
+            foreach (var trip in trips)
+            {
+                results.Add(await GetTripViewModel(trip, simpleUsers, dayCounts, isRestricted));
+            }
 
             return results;
         }

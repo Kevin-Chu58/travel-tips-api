@@ -8,12 +8,14 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
     [Route("api/[controller]")]
-    public class ImagesController(IImagesService imagesService) : TravelTipsControllerBase
+    public class ImagesController(IImagesService imagesService, IUsersService usersService)
+        : TravelTipsControllerBase
     {
         /// <summary>
         /// Get image by user id
@@ -43,7 +45,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [AllowAnonymous]
         public async Task<ActionResult<object>> GetImageFile(int id)
         {
-            var image = imagesService.GetImageById(id);
+            var image = imagesService.FindImageById(id);
             if (image == null)
                 return NotFound();
 
@@ -101,7 +103,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                var image = imagesService.GetImageById(id);
+                var image = imagesService.FindImageById(id);
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
 
@@ -123,9 +125,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                var image = imagesService.GetImageById(id);
+                var image = imagesService.FindImageById(id);
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
+
+                var user = usersService.GetUserById(userId);
+                if (user.ImageId == id)
+                    return BadRequest(Messages.ImageUserPicture);
 
                 await imagesService.DeleteImageAsync(image);
                 return Ok(id);

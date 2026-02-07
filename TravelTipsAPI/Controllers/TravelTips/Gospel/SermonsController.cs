@@ -35,7 +35,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [Route("")]
         [AllowAnonymous]
         [SetUserId]
-        public ActionResult<IEnumerable<SermonViewModel>> GetSermonsByParams(
+        public async Task<ActionResult<IEnumerable<SermonViewModel>>> GetSermonsByParams(
             string? createdByAuthId = null,
             string? title = null,
             string? labelSlug = null,
@@ -61,7 +61,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
             if (labelSlug != null)
                 label = sermonsService.GetLabelBySlug(labelSlug);
 
-            var sermons = sermonsService.GetSermonsByParams(
+            var sermons = await sermonsService.GetSermonsByParams(
                 createdBy: user?.Id ?? null,
                 title: title,
                 label: label,
@@ -198,11 +198,15 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("my")]
         [HasRole(Role = UserRoles.WRITER)]
-        public ActionResult<IEnumerable<SermonViewModel>> GetMySermons()
+        [SetUserId]
+        public async Task<ActionResult<IEnumerable<SermonViewModel>>> GetMySermons()
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var sermons = sermonsService.GetSermonsByParams(createdBy: userId, isRestricted: true);
+            var sermons = await sermonsService.GetSermonsByParams(
+                createdBy: userId,
+                isRestricted: true
+            );
             return Ok(sermons);
         }
 

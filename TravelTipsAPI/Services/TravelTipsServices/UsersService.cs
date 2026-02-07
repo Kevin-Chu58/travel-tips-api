@@ -2,6 +2,7 @@
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_image;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
@@ -167,6 +168,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return user.UserAgreement;
+        }
+
+        // user picture
+
+        /// <summary>
+        /// Update user picture with an existing image
+        /// </summary>
+        /// <param name="user">user</param>
+        /// <param name="image">image view model</param>
+        /// <returns>the updated picture url</returns>
+        public async Task<string?> UpdateUserPicture(User user, ImageViewModel? image)
+        {
+            user.ImageId = image?.Id ?? null;
+
+            await context.SaveChangesAsync();
+
+            if (image?.Id is null)
+                return user.ExternalImageUrl;
+
+            return image.Url;
         }
     }
 }
