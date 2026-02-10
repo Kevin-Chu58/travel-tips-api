@@ -20,7 +20,9 @@
         public static readonly string RegionNotFound = "Region not found.";
         public static readonly string RegionInvalid = "Region invalid.";
 
-        //public static readonly string RegionRootInvalid = "Region hierarchy is missing Country";
+        // Bookmarks
+        public static readonly string BookmarkNotFound = "Bookmark not found.";
+        public static readonly string BookmarkAlreadyExists = "Bookmark already exists.";
 
         // Trips
         public static readonly string TripNotFound = "Trip not found.";

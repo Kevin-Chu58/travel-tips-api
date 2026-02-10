@@ -69,6 +69,7 @@ builder.Services.AddWikiCommonsServices();
 
 // Add Background Services
 builder.Services.AddHostedService<HighlightUsageRebuildService>();
+builder.Services.AddHostedService<TripBookmarkRebuildService>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];

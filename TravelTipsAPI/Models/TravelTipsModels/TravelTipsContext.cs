@@ -15,6 +15,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Attraction> Attractions { get; set; }
 
+    public virtual DbSet<Bookmark> Bookmarks { get; set; }
+
     public virtual DbSet<Day> Days { get; set; }
 
     public virtual DbSet<Highlight> Highlights { get; set; }
@@ -96,6 +98,33 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.ResultType).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.State).HasMaxLength(100);
             entity.Property(e => e.Title).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Bookmark>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_bookmarks");
+
+            entity.ToTable("Bookmarks", "db_search");
+
+            entity.HasIndex(e => e.TripId, "idx_bookmarks_trip_id");
+
+            entity.HasIndex(e => e.UserId, "idx_bookmarks_user_id");
+
+            entity.HasIndex(e => new { e.UserId, e.TripId }, "idx_bookmarks_user_id_trip_id");
+
+            entity
+                .HasOne(d => d.Trip)
+                .WithMany(p => p.Bookmarks)
+                .HasForeignKey(d => d.TripId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_trips_bookmarks");
+
+            entity
+                .HasOne(d => d.User)
+                .WithMany(p => p.Bookmarks)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_bookmarks");
         });
 
         modelBuilder.Entity<Day>(entity =>
@@ -263,6 +292,10 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("Trips", "db_basic");
 
             entity
+                .HasIndex(e => new { e.BookmarkCount, e.Id }, "idx_trips_bookmarkCount_id")
+                .IsDescending();
+
+            entity
                 .HasIndex(e => new { e.CreatedAt, e.Id }, "idx_trips_createdAt_id")
                 .IsDescending();
 
@@ -401,7 +434,7 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.ExternalImageUrl).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
-            entity.Property(e => e.Username).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Username).HasMaxLength(50);
 
             entity
                 .HasOne(d => d.Image)

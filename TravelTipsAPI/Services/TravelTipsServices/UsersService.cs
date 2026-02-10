@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Reflection.Metadata.Ecma335;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -168,6 +169,61 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return user.UserAgreement;
+        }
+
+        // user profile
+
+        /// <summary>
+        /// Get the user profile by user id
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>the user profile</returns>
+        public async Task<UserProfileViewModel> GetUserProfileViewModel(int id)
+        {
+            var user = await context
+                .Users.Where(u => u.Id == id)
+                .Select(u => new
+                {
+                    u.Id,
+                    u.UserId,
+                    u.Username,
+                    IsAdmin = u.Admin != null,
+                    IsWriter = u.Writer != null,
+                    NumTrips = u
+                        .Trips.Where(t => t.IsPublic == true && t.IsHidden == false)
+                        .Count(),
+                    NumBookmarks = u
+                        .Trips.Where(t => t.IsPublic == true && t.IsHidden == false)
+                        .Sum(t => t.BookmarkCount),
+                    u.ImageId,
+                    u.ExternalImageUrl,
+                })
+                .SingleAsync();
+
+            if (user is null)
+                throw new Exception(Messages.UserNotFound);
+
+            string? pictureUrl = user.ExternalImageUrl;
+
+            if (user.ImageId != null)
+            {
+                var images = await imagesService.GetImagesByIds([user.ImageId.Value]);
+                pictureUrl = images.FirstOrDefault()?.Url;
+            }
+
+            var userProfile = new UserProfileViewModel
+            {
+                Id = user.Id,
+                UserId = user.UserId,
+                Username = user.Username,
+                IsAdmin = user.IsAdmin,
+                IsWriter = user.IsWriter,
+                NumTrips = user.NumTrips,
+                NumBookmarks = user.NumBookmarks,
+                Picture = pictureUrl,
+            };
+
+            return userProfile;
         }
 
         // user picture

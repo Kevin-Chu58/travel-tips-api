@@ -9,7 +9,7 @@ public partial class User
 
     public string UserId { get; set; } = null!;
 
-    public string? Username { get; set; }
+    public string Username { get; set; } = null!;
 
     public string Email { get; set; } = null!;
 
@@ -20,6 +20,8 @@ public partial class User
     public string? ExternalImageUrl { get; set; }
 
     public virtual Admin? Admin { get; set; }
+
+    public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
 

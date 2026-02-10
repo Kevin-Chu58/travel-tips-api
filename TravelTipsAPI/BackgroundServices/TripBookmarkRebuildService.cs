@@ -3,14 +3,14 @@ using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.BackgroundServices
 {
-    public class HighlightUsageRebuildService : BackgroundService
+    public class TripBookmarkRebuildService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<HighlightUsageRebuildService> _logger;
+        private readonly ILogger<TripBookmarkRebuildService> _logger;
 
-        public HighlightUsageRebuildService(
+        public TripBookmarkRebuildService(
             IServiceProvider serviceProvider,
-            ILogger<HighlightUsageRebuildService> logger
+            ILogger<TripBookmarkRebuildService> logger
         )
         {
             _serviceProvider = serviceProvider;
@@ -26,22 +26,22 @@ namespace TravelTipsAPI.BackgroundServices
             {
                 try
                 {
-                    _logger.LogInformation("Rebuilding highlight usage counts...");
+                    _logger.LogInformation("Rebuilding trip bookmark counts...");
 
-                    await RebuildUsageCounts(stoppingToken);
+                    await RebuildBookmarkCounts(stoppingToken);
 
-                    _logger.LogInformation("Highlight usage counts rebuild complete.");
+                    _logger.LogInformation("Trip bookmark counts rebuild complete.");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to rebuild highlight useage counts.");
+                    _logger.LogError(ex, "Failed to rebuild trip bookmark counts.");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
 
-        private async Task RebuildUsageCounts(CancellationToken token)
+        private async Task RebuildBookmarkCounts(CancellationToken token)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TravelTipsContext>();
@@ -51,7 +51,7 @@ namespace TravelTipsAPI.BackgroundServices
                 @"
                 DECLARE @result int;
                 EXEC @result = sp_getapplock 
-                    @Resource = 'RebuildHighlightUsage',
+                    @Resource = 'RebuildTripBookmark',
                     @LockMode = 'Exclusive',
                     @LockOwner = 'Transaction',
                     @LockTimeout = 0;
@@ -67,15 +67,14 @@ namespace TravelTipsAPI.BackgroundServices
             // main SQL: rebuild highlight usage counts
             await db.Database.ExecuteSqlRawAsync(
                 @"
-                UPDATE h
-                SET UsageCount = COALESCE(sub.Count, 0)
-                FROM db_basic.Highlights h
+                UPDATE t
+                SET BookmarkCount = COALESCE(sub.Count, 0)
+                FROM db_basic.Trips t
                 LEFT JOIN (
-                    SELECT HighlightId, COUNT(*) AS Count
-                    FROM db_basic.TripAttractionOrders
-                    WHERE HighlightId IS NOT NULL
-                    GROUP BY HighlightId
-                ) sub ON sub.HighlightId = h.Id;
+                    SELECT TripId, COUNT(*) AS Count
+                    FROM db_search.Bookmarks
+                    GROUP BY TripId
+                ) sub ON sub.TripId = t.Id;
             ",
                 token
             );

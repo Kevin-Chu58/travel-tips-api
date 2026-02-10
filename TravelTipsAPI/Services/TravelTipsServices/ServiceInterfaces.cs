@@ -6,6 +6,7 @@ using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.db_sermon;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
+using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
@@ -24,6 +25,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             RegionViewModel GetRegionByCountryAndState(string countrySlug, string? stateSlug);
             RegionCompleteViewModel BuildRegionComplete(int regionId);
         }
+
+        public interface IBookmarksService
+        {
+            IEnumerable<int> GetBookmarkTripIdsByUserId(int userId);
+            Task AddBookmarkAsync(int userId, int tripId);
+            Task RemoveBookmarkAsync(int userId, int tripId);
+            bool IsBookmarked(int userId, int tripId);
+        }
     }
 
     public class BasicSchema
@@ -38,6 +47,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
             Task<bool> AcceptUserAgreementAsync(int id);
 
+            // user profile
+            Task<UserProfileViewModel> GetUserProfileViewModel(int id);
+
             // user picture
             Task<string?> UpdateUserPicture(User user, ImageViewModel? image);
         }
@@ -45,15 +57,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
-            Task<TripViewModel?> GetTripById(int id, bool isRestricted = false);
+            Task<TripViewModel?> GetTripById(int id, int? userId = null, bool isRestricted = false);
             Task<TripViewModel> GetTripViewModel(
                 Trip trip,
+                int? userId = null,
                 IEnumerable<UserSimpleViewModel>? users = null,
                 Dictionary<int, int>? dayCounts = null,
                 bool isRestricted = false
             );
             IEnumerable<int> GetMyTripIds(int id);
             Task<IEnumerable<TripViewModel>> GetTripsByParams(
+                int? userId = null,
                 IEnumerable<int>? ids = null,
                 string? title = null,
                 int? createdBy = null,
@@ -63,7 +77,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? budget = null,
                 bool isRestricted = false,
                 TripCursor? cursor = null,
-                bool? isDesc = true,
+                TripOrderByEnum? tripOrderByEnum = null,
                 int? limit = null
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
@@ -73,6 +87,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int? regionId);
             Task<int> UpdateBudgetAsync(Trip trip, int? budget);
             bool IsOwnerList(int id, int[] tripIds);
+
+            // bookmarks
+            Task UpdateBookmarkCountAsync(int tripId, bool increment);
         }
 
         public interface ITripSharesService
@@ -127,6 +144,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             Task<HighlightViewModel> GetHighlightViewModel(
                 Highlight highlight,
+                IEnumerable<UserSimpleViewModel>? users = null,
                 bool getUserPic = false
             );
             IEnumerable<int> GetMyHighlights(int id);

@@ -15,6 +15,7 @@ using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 /// <param name="context">travel tips context</param>
 public class TripAttractionOrdersService(
     TravelTipsContext context,
+    IUsersService usersService,
     IHighlightsService highlightsService
 ) : ITripAttractionOrdersService
 {
@@ -75,7 +76,7 @@ public class TripAttractionOrdersService(
         if (!isRestricted && tao.IsPrivate)
             throw new Exception(Messages.TaoUnauthorized);
 
-        var taoViewModel = await GetTripAttractionOrderViewModel(tao, getUserPic);
+        var taoViewModel = await GetTripAttractionOrderViewModel(tao, getUserPic: getUserPic);
 
         return taoViewModel;
     }
@@ -93,11 +94,25 @@ public class TripAttractionOrdersService(
     )
     {
         var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
+        var highlightIds = taos.Select(tao => tao.HighlightId).Distinct();
 
-        var tasks = taos.Select(async tao =>
-            await GetTripAttractionOrderViewModel(tao, getUserPic)
-        );
-        var taoViewModels = (await Task.WhenAll(tasks)).OrderBy(t => t.Start).ToList();
+        // user preload
+        var distinctUserIds = context
+            .Highlights.Where(h => highlightIds.Contains(h.Id))
+            .Select(t => t.CreatedBy)
+            .Distinct()
+            .ToList();
+        var users = usersService.GetUsersByIds(distinctUserIds);
+        var simpleUsers = await usersService.GetUserSimpleViewModels(users);
+
+        var taoViewModels = new List<TripAttractionOrderViewModel>();
+
+        foreach (var tao in taos)
+        {
+            taoViewModels.Add(await GetTripAttractionOrderViewModel(tao, simpleUsers, getUserPic));
+        }
+
+        taoViewModels = taoViewModels.OrderBy(t => t.Start).ToList();
 
         if (!isRestricted)
             taoViewModels = taoViewModels.Where(t => !t.IsPrivate).ToList();
@@ -442,6 +457,7 @@ public class TripAttractionOrdersService(
 
     private async Task<TripAttractionOrderViewModel> GetTripAttractionOrderViewModel(
         TripAttractionOrder tao,
+        IEnumerable<UserSimpleViewModel>? users = null,
         bool getUserPic = false
     )
     {
@@ -456,7 +472,7 @@ public class TripAttractionOrdersService(
             Highlight =
                 tao.Highlight != null
                     ? getUserPic
-                        ? await highlightsService.GetHighlightViewModel(tao.Highlight)
+                        ? await highlightsService.GetHighlightViewModel(tao.Highlight, users, true)
                         : (HighlightViewModel)tao.Highlight
                     : null,
             TransportMode = tao.TransportMode,

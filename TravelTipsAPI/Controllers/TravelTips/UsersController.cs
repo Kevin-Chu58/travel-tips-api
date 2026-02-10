@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -61,6 +62,24 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 var userAgreementStatus = await usersService.AcceptUserAgreementAsync(userId);
                 return Ok(userAgreementStatus);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // user profile
+
+        [HttpGet]
+        [Route("{id}/profile")]
+        [AllowAnonymous]
+        public async Task<ActionResult<UserProfileViewModel>> GetUserProfile(int id)
+        {
+            try
+            {
+                var userProfileViewModel = await usersService.GetUserProfileViewModel(id);
+                return Ok(userProfileViewModel);
             }
             catch (Exception ex)
             {

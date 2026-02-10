@@ -5,6 +5,8 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
+using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
+using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
@@ -24,6 +26,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     [Route("api/[controller]")]
     public class TripsController(
         IRegionsService regionsService,
+        IBookmarksService bookmarksService,
         IUsersService usersService,
         ITripsService tripsService,
         ITripSharesService tripSharesService,
@@ -40,7 +43,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <param name="stateSlug">the state slug</param>
         /// <param name="budget">the budget</param>
         /// <param name="cursor">the pagination cursor</param>
-        /// <param name="isDesc">the sort order</param>
+        /// <param name="tripOrderByEnum">order by enum</param>
         /// <returns>research result of trips that fit the params with cursor optionally</returns>
         [HttpGet]
         [Route("")]
@@ -53,9 +56,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
             string? stateSlug = null,
             int? budget = null,
             string? cursor = null,
-            bool? isDesc = true
+            TripOrderByEnum? tripOrderByEnum = null
         )
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
             // get createdBy user id (not user's userId)
             int? createdBy = null;
             if (!string.IsNullOrEmpty(createdByAuthId))
@@ -82,6 +87,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 return NotFound(ex.Message);
             }
 
+            // set default order by id desc if no order provided
+            if (tripOrderByEnum is null)
+                tripOrderByEnum = TripOrderByEnum.Newest;
+
             // decode cursor if provided
             TripCursor? tripCursor = null;
             if (!string.IsNullOrEmpty(cursor))
@@ -92,6 +101,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
 
             var tripViewModels = await tripsService.GetTripsByParams(
+                userId: userId,
                 title: title,
                 isPublic: true,
                 isHidden: false,
@@ -99,7 +109,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 region: region,
                 budget: budget,
                 cursor: tripCursor,
-                isDesc: isDesc,
+                tripOrderByEnum: tripOrderByEnum,
                 limit: Global.TRIP_DEFAULT_LIMIT
             );
 
@@ -112,7 +122,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var lastTrip = tripList.Last();
                 newCursor = EncodeCursor(
-                    new TripCursor { CreatedAt = lastTrip.CreatedAt, Id = lastTrip.Id }
+                    new TripCursor
+                    {
+                        Id = lastTrip.Id,
+                        CreatedAt = lastTrip.CreatedAt,
+                        BookmarkCount = lastTrip.BookmarkCount,
+                    }
                 );
             }
 
@@ -152,6 +167,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             var tripViewModel = await tripsService.GetTripViewModel(
                 trip,
+                userId,
                 isRestricted: isRestricted
             );
 
@@ -178,6 +194,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var myTripViewModels = await tripsService.GetTripsByParams(
+                userId,
                 createdBy: userId,
                 isHidden: false,
                 isRestricted: true
@@ -198,6 +215,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var myTripViewModels = await tripsService.GetTripsByParams(
+                userId,
                 createdBy: userId,
                 isPublic: false,
                 isHidden: true,
@@ -210,7 +228,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <summary>
         /// Get trips shared with me
         /// </summary>
-        /// <returns>a list of trips shared with mes</returns>
+        /// <returns>a list of trips shared with me</returns>
         [HttpGet]
         [Route("my/shared")]
         [IsOwner(Resource = Resources.NONE)]
@@ -221,9 +239,33 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var sharedTripIds = tripSharesService.GetSharedTripIdsByUserId(userId);
 
             var myTripViewModels = await tripsService.GetTripsByParams(
+                userId,
                 ids: sharedTripIds,
                 isHidden: false,
                 isRestricted: true
+            );
+            myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
+            return Ok(myTripViewModels);
+        }
+
+        /// <summary>
+        /// Get my bookmarked trips
+        /// </summary>
+        /// <returns>a list of trips I bookmarked</returns>
+        [HttpGet]
+        [Route("my/bookmarked")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetBookMarkedTrips()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            var bookmarkedTripIds = bookmarksService.GetBookmarkTripIdsByUserId(userId);
+
+            var myTripViewModels = await tripsService.GetTripsByParams(
+                userId,
+                ids: bookmarkedTripIds,
+                isPublic: true,
+                isHidden: false
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);
@@ -666,6 +708,45 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var imageViewModels = await imagesService.GetImagesByIds(imageIds);
 
             return imageViewModels;
+        }
+
+        // bookmarks
+
+        [HttpPost]
+        [Route("{id}/bookmark")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult> AddBookmark(int id)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            try
+            {
+                await bookmarksService.AddBookmarkAsync(userId, id);
+                await tripsService.UpdateBookmarkCountAsync(id, true);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        [Route("{id}/bookmark")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult> RemoveBookmark(int id)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            try
+            {
+                await bookmarksService.RemoveBookmarkAsync(userId, id);
+                await tripsService.UpdateBookmarkCountAsync(id, false);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

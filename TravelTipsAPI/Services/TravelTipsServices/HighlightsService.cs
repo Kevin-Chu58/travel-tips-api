@@ -68,11 +68,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
             var highlights = query.ToList();
 
+            // user preload
+            var distinctUserIds = highlights.Select(t => t.CreatedBy).Distinct();
+            var users = usersService.GetUsersByIds(distinctUserIds);
+            var simpleUsers = await usersService.GetUserSimpleViewModels(users);
+
             var results = new List<HighlightViewModel>();
 
             foreach (var highlight in highlights)
             {
-                results.Add(await GetHighlightViewModel(highlight));
+                results.Add(await GetHighlightViewModel(highlight, simpleUsers));
             }
 
             return results;
@@ -82,18 +87,29 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get Highlight view model with user information if exists
         /// </summary>
         /// <param name="highlight">highlight</param>
+        /// <param name="users">users</param>
+        /// <param name="getUserPic">whether get user pic or not</param>
         /// <returns>highlight view model</returns>
         public async Task<HighlightViewModel> GetHighlightViewModel(
             Highlight highlight,
+            IEnumerable<UserSimpleViewModel>? users = null,
             bool getUserPic = true
         )
         {
             var highlightViewModel = (HighlightViewModel)highlight;
 
-            var user = usersService.GetUserById(highlight.CreatedBy);
-            var simpleUser = getUserPic
-                ? (await usersService.GetUserSimpleViewModels([user])).First()
-                : (UserSimpleViewModel)user;
+            // get simple user
+            UserSimpleViewModel? simpleUser = null;
+            if (users?.Any() == true)
+                simpleUser = users.FirstOrDefault(user => user.Id == highlight.CreatedBy);
+
+            if (simpleUser is null)
+            {
+                var user = usersService.GetUserById(highlight.CreatedBy);
+                simpleUser = getUserPic
+                    ? (await usersService.GetUserSimpleViewModels([user])).First()
+                    : (UserSimpleViewModel)user;
+            }
 
             highlightViewModel.CreatedBy = simpleUser;
 
@@ -107,7 +123,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="cursor">highlight cursor</param>
         /// <param name="highlightOrderByEnum">order by</param>
         /// <returns>the query with applied cursor</returns>
-        public static IQueryable<Highlight> ApplyCursor(
+        private static IQueryable<Highlight> ApplyCursor(
             IQueryable<Highlight> query,
             HighlightCursor? cursor,
             HighlightOrderByEnum? highlightOrderByEnum
@@ -198,7 +214,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             highlight.Description = description;
             await context.SaveChangesAsync();
 
-            return await GetHighlightViewModel(highlight, false);
+            return await GetHighlightViewModel(highlight, getUserPic: false);
         }
 
         /// <summary>
