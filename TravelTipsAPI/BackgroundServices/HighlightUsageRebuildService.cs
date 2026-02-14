@@ -37,7 +37,7 @@ namespace TravelTipsAPI.BackgroundServices
                     _logger.LogError(ex, "Failed to rebuild highlight useage counts.");
                 }
 
-                await Task.Delay(TimeSpan.FromHours(12), stoppingToken);
+                await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
 
@@ -53,7 +53,7 @@ namespace TravelTipsAPI.BackgroundServices
                 EXEC @result = sp_getapplock 
                     @Resource = 'RebuildHighlightUsage',
                     @LockMode = 'Exclusive',
-                    @LockOwner = 'Transaction',
+                    @LockOwner = 'Session',
                     @LockTimeout = 0;
 
                 IF @result < 0
@@ -67,15 +67,33 @@ namespace TravelTipsAPI.BackgroundServices
             // main SQL: rebuild highlight usage counts
             await db.Database.ExecuteSqlRawAsync(
                 @"
-                UPDATE h
-                SET UsageCount = COALESCE(sub.Count, 0)
-                FROM db_basic.Highlights h
-                LEFT JOIN (
-                    SELECT HighlightId, COUNT(*) AS Count
-                    FROM db_basic.TripAttractionOrders
-                    WHERE HighlightId IS NOT NULL
-                    GROUP BY HighlightId
-                ) sub ON sub.HighlightId = h.Id;
+                SELECT HighlightId, COUNT(*) AS Cnt 
+                INTO #HighlightCounts 
+                FROM db_basic.TripAttractionOrders 
+                WHERE HighlightId IS NOT NULL 
+                GROUP BY HighlightId; 
+
+                CREATE INDEX IDX_HighlightCounts_HighlightId
+                ON #HighlightCounts(HighlightId); 
+                
+                WHILE 1 = 1 
+                BEGIN 
+                    ;WITH cte AS ( 
+                        SELECT TOP (200) h.Id
+                        FROM db_basic.Highlights h 
+                        LEFT JOIN #HighlightCounts c 
+                        ON c.HighlightId = h.Id 
+                        WHERE ISNULL(h.UsageCount, 0) <> ISNULL(c.Cnt, 0) 
+                        ORDER BY h.Id 
+                    ) 
+                    UPDATE h 
+                    SET UsageCount = ISNULL(c.Cnt, 0) 
+                    FROM db_basic.Highlights h 
+                    JOIN cte ON cte.Id = h.Id 
+                    LEFT JOIN #HighlightCounts c ON c.HighlightId = h.Id; 
+
+                IF @@ROWCOUNT = 0 BREAK; 
+            END
             ",
                 token
             );

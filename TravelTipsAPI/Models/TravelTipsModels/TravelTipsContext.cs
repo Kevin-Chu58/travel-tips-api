@@ -19,6 +19,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Day> Days { get; set; }
 
+    public virtual DbSet<Follower> Followers { get; set; }
+
     public virtual DbSet<Highlight> Highlights { get; set; }
 
     public virtual DbSet<Image> Images { get; set; }
@@ -112,6 +114,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => new { e.UserId, e.TripId }, "idx_bookmarks_user_id_trip_id");
 
+            entity.HasIndex(e => new { e.UserId, e.TripId }, "ux_user_id_trip_id").IsUnique();
+
             entity
                 .HasOne(d => d.Trip)
                 .WithMany(p => p.Bookmarks)
@@ -150,6 +154,40 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.TripId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trips_days");
+        });
+
+        modelBuilder.Entity<Follower>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_followers");
+
+            entity.ToTable("Followers", "db_search");
+
+            entity.HasIndex(e => e.Followed, "idx_followers_followed");
+
+            entity.HasIndex(
+                e => new { e.Followed, e.Following },
+                "idx_followers_followed_following"
+            );
+
+            entity.HasIndex(e => e.Following, "idx_followers_following");
+
+            entity
+                .HasIndex(e => new { e.Followed, e.Following }, "ux_followers_followed_following")
+                .IsUnique();
+
+            entity
+                .HasOne(d => d.FollowedNavigation)
+                .WithMany(p => p.FollowerFollowedNavigations)
+                .HasForeignKey(d => d.Followed)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_followers_followed");
+
+            entity
+                .HasOne(d => d.FollowingNavigation)
+                .WithMany(p => p.FollowerFollowingNavigations)
+                .HasForeignKey(d => d.Following)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_followers_following");
         });
 
         modelBuilder.Entity<Highlight>(entity =>
@@ -430,6 +468,14 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("Users", "db_basic");
 
             entity.HasIndex(e => e.UserId, "UQ__Users__1788CC4D8D5A6A53").IsUnique();
+
+            entity
+                .HasIndex(e => new { e.FollowerCount, e.Id }, "idx_users_followerCount_id")
+                .IsDescending();
+
+            entity
+                .HasIndex(e => new { e.FollowingCount, e.Id }, "idx_users_followingCount_id")
+                .IsDescending();
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.ExternalImageUrl).IsUnicode(false);

@@ -1,4 +1,5 @@
-﻿using TravelTipsAPI.Constants;
+﻿using Microsoft.EntityFrameworkCore;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
@@ -22,20 +23,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         }
 
         /// <summary>
-        /// Check if a user has already bookmarked a trip
-        /// </summary>
-        /// <param name="userId">user id</param>
-        /// <param name="tripId">trip id</param>
-        /// <returns>whether a user has already bookmarked a trip</returns>
-        public bool IsBookmarked(int userId, int tripId)
-        {
-            var isBookmarked = context.Bookmarks.Any(bookmark =>
-                bookmark.UserId == userId && bookmark.TripId == tripId
-            );
-            return isBookmarked;
-        }
-
-        /// <summary>
         /// Add bookmark on a trip for a user
         /// </summary>
         /// <param name="userId">user id</param>
@@ -43,11 +30,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <returns></returns>
         public async Task AddBookmarkAsync(int userId, int tripId)
         {
-            var isBookmarked = IsBookmarked(userId, tripId);
-            if (isBookmarked)
+            var bookmark = await context.Bookmarks.FirstOrDefaultAsync(b =>
+                b.UserId == userId && b.TripId == tripId
+            );
+            if (bookmark != null)
                 throw new Exception(Messages.BookmarkAlreadyExists);
 
-            var bookmark = new Bookmark { UserId = userId, TripId = tripId };
+            bookmark = new Bookmark { UserId = userId, TripId = tripId };
             await context.Bookmarks.AddAsync(bookmark);
             await context.SaveChangesAsync();
         }
@@ -60,13 +49,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <returns></returns>
         public async Task RemoveBookmarkAsync(int userId, int tripId)
         {
-            var isBookmarked = IsBookmarked(userId, tripId);
-            if (!isBookmarked)
-                throw new Exception(Messages.BookmarkNotFound);
-
-            var bookmark = context.Bookmarks.FirstOrDefault(b =>
+            var bookmark = await context.Bookmarks.FirstOrDefaultAsync(b =>
                 b.UserId == userId && b.TripId == tripId
             );
+
+            if (bookmark is null)
+                throw new Exception(Messages.BookmarkNotFound);
+
             context.Bookmarks.Remove(bookmark!);
             await context.SaveChangesAsync();
         }

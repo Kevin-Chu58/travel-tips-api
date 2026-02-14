@@ -12,7 +12,12 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public bool? IsWriter { get; set; }
 
         // stats
+        public int FollowerCount { get; set; }
+        public int FollowingCount { get; set; }
         public int NumTrips { get; set; }
         public int NumBookmarks { get; set; }
+
+        // relation
+        public bool? IsFollowing { get; set; }
     }
 }

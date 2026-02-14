@@ -53,7 +53,7 @@ namespace TravelTipsAPI.BackgroundServices
                 EXEC @result = sp_getapplock 
                     @Resource = 'RebuildTripBookmark',
                     @LockMode = 'Exclusive',
-                    @LockOwner = 'Transaction',
+                    @LockOwner = 'Session',
                     @LockTimeout = 0;
 
                 IF @result < 0
@@ -64,17 +64,35 @@ namespace TravelTipsAPI.BackgroundServices
             "
             );
 
-            // main SQL: rebuild highlight usage counts
+            // main SQL: rebuild trip bookmark counts
             await db.Database.ExecuteSqlRawAsync(
                 @"
-                UPDATE t
-                SET BookmarkCount = COALESCE(sub.Count, 0)
-                FROM db_basic.Trips t
-                LEFT JOIN (
-                    SELECT TripId, COUNT(*) AS Count
-                    FROM db_search.Bookmarks
-                    GROUP BY TripId
-                ) sub ON sub.TripId = t.Id;
+                SELECT TripId, COUNT(*) AS Cnt 
+                INTO #TripCounts 
+                FROM db_search.Bookmarks 
+                GROUP BY TripId; 
+
+                CREATE INDEX IDX_TripCounts_TripId 
+                ON #TripCounts(TripId); 
+                
+                WHILE 1 = 1 
+                BEGIN 
+                    ;WITH cte AS ( 
+                        SELECT TOP (200) t.Id 
+                        FROM db_basic.Trips t 
+                        LEFT JOIN #TripCounts c 
+                        ON c.TripId = t.Id 
+                        WHERE ISNULL(t.BookmarkCount, 0) <> ISNULL(c.Cnt, 0) 
+                        ORDER BY t.Id 
+                    ) 
+                    UPDATE t 
+                    SET BookmarkCount = ISNULL(c.Cnt, 0) 
+                    FROM db_basic.Trips t 
+                    JOIN cte ON cte.Id = t.Id 
+                    LEFT JOIN #TripCounts c ON c.TripId = t.Id; 
+
+                IF @@ROWCOUNT = 0 BREAK; 
+            END
             ",
                 token
             );

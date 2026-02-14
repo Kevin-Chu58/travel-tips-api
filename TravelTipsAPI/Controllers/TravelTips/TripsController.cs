@@ -44,6 +44,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <param name="budget">the budget</param>
         /// <param name="cursor">the pagination cursor</param>
         /// <param name="tripOrderByEnum">order by enum</param>
+        /// <param name="limit">number limit</param>
         /// <returns>research result of trips that fit the params with cursor optionally</returns>
         [HttpGet]
         [Route("")]
@@ -56,7 +57,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
             string? stateSlug = null,
             int? budget = null,
             string? cursor = null,
-            TripOrderByEnum? tripOrderByEnum = null
+            TripOrderByEnum? tripOrderByEnum = null,
+            int? limit = null
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -110,7 +112,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 budget: budget,
                 cursor: tripCursor,
                 tripOrderByEnum: tripOrderByEnum,
-                limit: Global.TRIP_DEFAULT_LIMIT
+                limit: limit ?? Global.TRIP_DEFAULT_LIMIT
             );
 
             tripViewModels = await AppendImagesToTripsAsync(tripViewModels);
@@ -721,8 +723,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             try
             {
-                await bookmarksService.AddBookmarkAsync(userId, id);
-                await tripsService.UpdateBookmarkCountAsync(id, true);
+                await tripsService.BookmarkAsync(userId, id);
                 return Ok();
             }
             catch (Exception ex)
@@ -739,8 +740,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             try
             {
-                await bookmarksService.RemoveBookmarkAsync(userId, id);
-                await tripsService.UpdateBookmarkCountAsync(id, false);
+                await tripsService.UnbookmarkAsync(userId, id);
                 return Ok();
             }
             catch (Exception ex)

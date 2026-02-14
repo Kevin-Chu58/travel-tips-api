@@ -24,6 +24,11 @@
         public static readonly string BookmarkNotFound = "Bookmark not found.";
         public static readonly string BookmarkAlreadyExists = "Bookmark already exists.";
 
+        // Followers
+        public static readonly string FollowNotFound = "Follow relationship not found.";
+        public static readonly string FollowAlreadyExists = "Follow relationship already exists.";
+        public static readonly string FollowSelf = "Cannot follow yourself.";
+
         // Trips
         public static readonly string TripNotFound = "Trip not found.";
         public static readonly string TripUnauthorized = "Trip access unauthorized.";

@@ -18,6 +18,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             // search schema
             services.AddScoped<IRegionsService, RegionsService>();
             services.AddScoped<IBookmarksService, BookmarksService>();
+            services.AddScoped<IFollowersService, FollowersService>();
             // basic schema
             services.AddScoped<IUsersService, UsersService>();
             services.AddScoped<ITripsService, TripsService>();

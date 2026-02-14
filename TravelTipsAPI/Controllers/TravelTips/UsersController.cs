@@ -6,6 +6,7 @@ using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -15,6 +16,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <param name="usersService">users service</param>
     [Route("api/[controller]")]
     public class UsersController(
+        IFollowersService followersService,
         IUsersService usersService,
         IUserRolesService userRolesService,
         IImagesService imagesService
@@ -74,11 +76,16 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/profile")]
         [AllowAnonymous]
+        [SetUserId]
         public async Task<ActionResult<UserProfileViewModel>> GetUserProfile(int id)
         {
             try
             {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
                 var userProfileViewModel = await usersService.GetUserProfileViewModel(id);
+
+                userProfileViewModel.IsFollowing = followersService.IsFollowing(id, userId);
                 return Ok(userProfileViewModel);
             }
             catch (Exception ex)
@@ -109,6 +116,42 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var imageUrl = await usersService.UpdateUserPicture(user, image);
                 return Ok(imageUrl);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // user follower
+
+        [HttpPost]
+        [Route("{id}/follow")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult> FollowUser(int id)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            try
+            {
+                await usersService.FollowAsync(id, userId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        [Route("{id}/unfollow")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult> UnFollowUser(int id)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            try
+            {
+                await usersService.UnfollowAsync(id, userId);
+                return Ok();
             }
             catch (Exception ex)
             {

@@ -1,4 +1,5 @@
 ﻿using System.Reflection.Metadata.Ecma335;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
@@ -7,6 +8,7 @@ using TravelTipsAPI.ViewModels.db_image;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -16,6 +18,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// <param name="context">context</param>
     public class UsersService(
         TravelTipsContext context,
+        IFollowersService followersService,
         IUserRolesService userRolesService,
         IImagesService imagesService
     ) : IUsersService
@@ -197,6 +200,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                         .Sum(t => t.BookmarkCount),
                     u.ImageId,
                     u.ExternalImageUrl,
+                    FollowerCount = u.FollowerCount >= 0 ? u.FollowerCount : 0,
+                    FollowingCount = u.FollowingCount >= 0 ? u.FollowingCount : 0,
                 })
                 .SingleAsync();
 
@@ -218,9 +223,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Username = user.Username,
                 IsAdmin = user.IsAdmin,
                 IsWriter = user.IsWriter,
+                Picture = pictureUrl,
+                FollowerCount = user.FollowerCount,
+                FollowingCount = user.FollowingCount,
                 NumTrips = user.NumTrips,
                 NumBookmarks = user.NumBookmarks,
-                Picture = pictureUrl,
             };
 
             return userProfile;
@@ -244,6 +251,52 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 return user.ExternalImageUrl;
 
             return image.Url;
+        }
+
+        // user follower
+
+        public async Task FollowAsync(int followedId, int followingId)
+        {
+            using var tx = await context.Database.BeginTransactionAsync();
+
+            await followersService.FollowUserAsync(followedId, followingId);
+            await UpdateFollowerCountAsync(followedId, followingId, true);
+
+            await tx.CommitAsync();
+        }
+
+        public async Task UnfollowAsync(int followedId, int followingId)
+        {
+            using var tx = await context.Database.BeginTransactionAsync();
+
+            await followersService.UnfollowUserAsync(followedId, followingId);
+            await UpdateFollowerCountAsync(followedId, followingId, false);
+
+            await tx.CommitAsync();
+        }
+
+        /// <summary>
+        /// Update the follower count on user
+        /// </summary>
+        /// <param name="followedId">follower use id</param>
+        /// <param name="followingId">following user id</param>
+        /// <param name="increment">whether is increase or decrease</param>
+        /// <returns></returns>
+        private async Task UpdateFollowerCountAsync(int followedId, int followingId, bool increment)
+        {
+            var delta = increment ? 1 : -1;
+
+            await context.Database.ExecuteSqlRawAsync(
+                "UPDATE db_basic.Users SET FollowingCount = FollowingCount + @delta WHERE Id = @followingId",
+                new SqlParameter("@delta", delta),
+                new SqlParameter("@followingId", followingId)
+            );
+
+            await context.Database.ExecuteSqlRawAsync(
+                "UPDATE db_basic.Users SET FollowerCount = FollowerCount + @delta WHERE Id = @followedId",
+                new SqlParameter("@delta", delta),
+                new SqlParameter("@followedId", followedId)
+            );
         }
     }
 }

@@ -31,7 +31,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<int> GetBookmarkTripIdsByUserId(int userId);
             Task AddBookmarkAsync(int userId, int tripId);
             Task RemoveBookmarkAsync(int userId, int tripId);
-            bool IsBookmarked(int userId, int tripId);
+        }
+
+        public interface IFollowersService
+        {
+            IEnumerable<int> GetFollowingUserIdsByUserId(int userId);
+            IEnumerable<int> GetFollowedUserIdsByUserId(int userId);
+            bool IsFollowing(int followedId, int followingId);
+            Task FollowUserAsync(int followedId, int followingId);
+            Task UnfollowUserAsync(int followedId, int followingId);
         }
     }
 
@@ -52,6 +60,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             // user picture
             Task<string?> UpdateUserPicture(User user, ImageViewModel? image);
+
+            // user follower
+            Task FollowAsync(int followedId, int followingId);
+            Task UnfollowAsync(int followedId, int followingId);
         }
 
         public interface ITripsService
@@ -89,7 +101,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             bool IsOwnerList(int id, int[] tripIds);
 
             // bookmarks
-            Task UpdateBookmarkCountAsync(int tripId, bool increment);
+            Task BookmarkAsync(int userId, int tripId);
+            Task UnbookmarkAsync(int userId, int tripId);
         }
 
         public interface ITripSharesService

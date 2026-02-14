@@ -4,7 +4,6 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
-using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
@@ -18,6 +17,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// <param name="context">context</param>
     public class TripsService(
         TravelTipsContext context,
+        IBookmarksService bookmarksService,
         IUsersService usersService,
         IRegionsService regionsService,
         ITripSharesService tripSharesService
@@ -467,13 +467,33 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         // bookmarks
 
+        public async Task BookmarkAsync(int userId, int tripId)
+        {
+            var tx = await context.Database.BeginTransactionAsync();
+
+            await bookmarksService.AddBookmarkAsync(userId, tripId);
+            await UpdateBookmarkCountAsync(tripId, true);
+
+            await tx.CommitAsync();
+        }
+
+        public async Task UnbookmarkAsync(int userId, int tripId)
+        {
+            var tx = await context.Database.BeginTransactionAsync();
+
+            await bookmarksService.RemoveBookmarkAsync(userId, tripId);
+            await UpdateBookmarkCountAsync(tripId, false);
+
+            await tx.CommitAsync();
+        }
+
         /// <summary>
         /// Update the bookmark count on trip
         /// </summary>
         /// <param name="tripId">trip id</param>
         /// <param name="increment">whether is increase or decrease</param>
         /// <returns></returns>
-        public async Task UpdateBookmarkCountAsync(int tripId, bool increment)
+        private async Task UpdateBookmarkCountAsync(int tripId, bool increment)
         {
             if (increment)
             {
