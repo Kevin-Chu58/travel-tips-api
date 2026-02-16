@@ -179,12 +179,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Get the user profile by user id
         /// </summary>
-        /// <param name="id">user id</param>
+        /// <param name="auth0Id">user auth0 id</param>
         /// <returns>the user profile</returns>
-        public async Task<UserProfileViewModel> GetUserProfileViewModel(int id)
+        public async Task<UserProfileViewModel> GetUserProfileViewModel(string auth0Id)
         {
             var user = await context
-                .Users.Where(u => u.Id == id)
+                .Users.Where(u => u.UserId == auth0Id)
                 .Select(u => new
                 {
                     u.Id,

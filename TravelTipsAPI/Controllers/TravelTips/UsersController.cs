@@ -74,18 +74,21 @@ namespace TravelTipsAPI.Controllers.TravelTips
         // user profile
 
         [HttpGet]
-        [Route("{id}/profile")]
+        [Route("{auth0Id}/profile")]
         [AllowAnonymous]
         [SetUserId]
-        public async Task<ActionResult<UserProfileViewModel>> GetUserProfile(int id)
+        public async Task<ActionResult<UserProfileViewModel>> GetUserProfile(string auth0Id)
         {
             try
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                var userProfileViewModel = await usersService.GetUserProfileViewModel(id);
+                var userProfileViewModel = await usersService.GetUserProfileViewModel(auth0Id);
 
-                userProfileViewModel.IsFollowing = followersService.IsFollowing(id, userId);
+                userProfileViewModel.IsFollowing = followersService.IsFollowing(
+                    userProfileViewModel.Id,
+                    userId
+                );
                 return Ok(userProfileViewModel);
             }
             catch (Exception ex)

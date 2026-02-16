@@ -56,7 +56,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<bool> AcceptUserAgreementAsync(int id);
 
             // user profile
-            Task<UserProfileViewModel> GetUserProfileViewModel(int id);
+            Task<UserProfileViewModel> GetUserProfileViewModel(string auth0Id);
 
             // user picture
             Task<string?> UpdateUserPicture(User user, ImageViewModel? image);
