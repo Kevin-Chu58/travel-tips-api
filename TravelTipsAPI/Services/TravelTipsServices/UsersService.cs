@@ -9,6 +9,7 @@ using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -46,6 +47,39 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public IEnumerable<User> GetUsersByIds(IEnumerable<int> ids)
         {
             var users = context.Users.Where(user => ids.Contains(user.Id)).ToList();
+            return users;
+        }
+
+        /// <summary>
+        /// Get a lsit of users by username with cursor
+        /// </summary>
+        /// <param name="username">user name</param>
+        /// <param name="cursor">cursor</param>
+        /// <param name="limit">limit</param>
+        /// <returns>a list of users</returns>
+        public IEnumerable<User> GetUsersByUsernameWithCursor(
+            string username,
+            GeneralCursor? cursor = null,
+            int? limit = null
+        )
+        {
+            var query = context.Users.AsQueryable();
+
+            query = query.Where(user => user.Username == username);
+
+            if (cursor != null)
+            {
+                query = query.Where(user => user.Id > cursor.Id);
+            }
+
+            query = query.OrderBy(user => user.Id);
+
+            if (limit != null)
+            {
+                query = query.Take(limit.Value);
+            }
+            var users = query.ToList();
+
             return users;
         }
 

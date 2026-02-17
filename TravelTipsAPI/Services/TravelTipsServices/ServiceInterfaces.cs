@@ -35,8 +35,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public interface IFollowersService
         {
-            IEnumerable<int> GetFollowingUserIdsByUserId(int userId);
-            IEnumerable<int> GetFollowedUserIdsByUserId(int userId);
+            IEnumerable<User> GetFollowingUsersByUserIdWithCursor(
+                int userId,
+                out int? followerId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            IEnumerable<User> GetFollowedUsersByUserIdWithCursor(
+                int userId,
+                out int? followerId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
             bool IsFollowing(int followedId, int followingId);
             Task FollowUserAsync(int followedId, int followingId);
             Task UnfollowUserAsync(int followedId, int followingId);
@@ -49,6 +59,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             User GetUserById(int id);
             IEnumerable<User> GetUsersByIds(IEnumerable<int> ids);
+            IEnumerable<User> GetUsersByUsernameWithCursor(
+                string username,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
             User? GetUserByUserId(string userId);
             Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
             Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users);

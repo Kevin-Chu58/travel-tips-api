@@ -2,37 +2,92 @@
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Search
 {
     public class FollowersService(TravelTipsContext context) : IFollowersService
     {
         /// <summary>
-        /// Get a list of user ids that the user followed
+        /// Get a list of users that the user followed
         /// </summary>
         /// <param name="userId">user id</param>
-        /// <returns>a list of user ids</returns>
-        public IEnumerable<int> GetFollowedUserIdsByUserId(int userId)
+        /// <param name="cursor">cursor</param>
+        /// <param name="limit">limit</param>
+        /// <returns>a list of users</returns>
+        public IEnumerable<User> GetFollowedUsersByUserIdWithCursor(
+            int userId,
+            out int? followerId,
+            GeneralCursor? cursor = null,
+            int? limit = null
+        )
         {
-            var followedIds = context
-                .Followers.Where(following => following.Following == userId)
-                .Select(following => following.Followed)
+            var query = context.Followers.AsQueryable();
+
+            query = query.Where(f => f.Following == userId);
+
+            if (cursor != null)
+            {
+                query = query.Where(f => f.Id > cursor.Id);
+            }
+
+            query = query.OrderBy(f => f.Id);
+
+            if (limit != null)
+            {
+                query = query.Take(limit.Value);
+            }
+
+            var result = query
+                .Include(f => f.FollowedNavigation)
+                .Select(f => new { Followed = f.FollowedNavigation, FollowedId = f.Id })
                 .ToList();
-            return followedIds;
+
+            followerId = result.LastOrDefault()?.FollowedId;
+
+            var followedUsers = result.Select(f => f.Followed).ToList();
+            return followedUsers;
         }
 
         /// <summary>
-        /// Get a list of user ids that the user is following
+        /// Get a list of users that the user is following
         /// </summary>
         /// <param name="userId">user id</param>
-        /// <returns>a list of user ids</returns>
-        public IEnumerable<int> GetFollowingUserIdsByUserId(int userId)
+        /// <param name="cursor">cursor</param>
+        /// <param name="limit">limit</param>
+        /// <returns>a list of users</returns>
+        public IEnumerable<User> GetFollowingUsersByUserIdWithCursor(
+            int userId,
+            out int? followerId,
+            GeneralCursor? cursor = null,
+            int? limit = null
+        )
         {
-            var followingIds = context
-                .Followers.Where(following => following.Followed == userId)
-                .Select(following => following.Following)
+            var query = context.Followers.AsQueryable();
+
+            query = query.Where(f => f.Followed == userId);
+
+            if (cursor != null)
+            {
+                query = query.Where(f => f.Id > cursor.Id);
+            }
+
+            query = query.OrderBy(f => f.Id);
+
+            if (limit != null)
+            {
+                query = query.Take(limit.Value);
+            }
+
+            var result = query
+                .Include(f => f.FollowingNavigation)
+                .Select(f => new { Following = f.FollowingNavigation, FollowedId = f.Id })
                 .ToList();
-            return followingIds;
+
+            followerId = result.LastOrDefault()?.FollowedId;
+
+            var followingUsers = result.Select(f => f.Following).ToList();
+            return followingUsers;
         }
 
         /// <summary>

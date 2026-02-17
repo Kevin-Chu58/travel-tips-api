@@ -477,6 +477,8 @@ public partial class TravelTipsContext : DbContext
                 .HasIndex(e => new { e.FollowingCount, e.Id }, "idx_users_followingCount_id")
                 .IsDescending();
 
+            entity.HasIndex(e => new { e.Username, e.Id }, "idx_users_username_id");
+
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.ExternalImageUrl).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
