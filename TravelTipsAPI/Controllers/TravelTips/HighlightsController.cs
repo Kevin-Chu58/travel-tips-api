@@ -38,9 +38,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromQuery] int? attractionId,
             string? createdByAuthId,
             string? cursor,
-            HighlightOrderByEnum? highlightOrderByEnum = null
+            HighlightOrderByEnum? highlightOrderByEnum = null,
+            int? limit = null
         )
         {
+            limit ??= Global.HIGHLIGHT_DEFAULT_LIMIT;
+
             // get createdBy user id (not user's userId)
             int? createdBy = null;
             if (!string.IsNullOrEmpty(createdByAuthId))
@@ -69,13 +72,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 createdBy: createdBy,
                 cursor: highlightCursor,
                 highlightOrderByEnum: highlightOrderByEnum,
-                limit: Global.HIGHLIGHT_DEFAULT_LIMIT
+                limit: limit
             );
 
             // encode cursor
             var highlightList = highlightViewModels.ToList();
             string? newCursor = null;
-            if (highlightList.Count > 0)
+            if (highlightList.Count == limit)
             {
                 var lastHighlight = highlightList.Last();
                 newCursor = EncodeCursor(

@@ -67,6 +67,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
             int? limit = null
         )
         {
+            limit ??= Global.USER_DEFAULT_LIMIT;
+
             // decode cursor if provided
             GeneralCursor? generalCursor = null;
             if (!string.IsNullOrEmpty(cursor))
@@ -82,14 +84,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     out int? lastUserId,
                     username,
                     generalCursor,
-                    limit ?? Global.USER_DEFAULT_LIMIT
+                    limit
                 );
 
                 var userViewModels = await usersService.GetUserSimpleViewModels(users);
 
                 // encode cursor
                 string? newCursor = null;
-                if (lastUserId != null)
+                if (userViewModels.Count() == limit && lastUserId != null)
                 {
                     newCursor = EncodeCursor(new GeneralCursor { Id = (int)lastUserId });
                 }
@@ -223,6 +225,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
             int? limit = null
         )
         {
+            limit ??= Global.USER_DEFAULT_LIMIT;
+
             // decode cursor if provided
             GeneralCursor? generalCursor = null;
             if (!string.IsNullOrEmpty(cursor))
@@ -238,13 +242,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     out int? lastFollowerId,
                     userId,
                     generalCursor,
-                    limit ?? Global.USER_DEFAULT_LIMIT
+                    limit
                 );
                 var followerViewModels = await usersService.GetUserSimpleViewModels(followers);
 
                 // encode cursor
                 string? newCursor = null;
-                if (lastFollowerId != null)
+                if (followerViewModels.Count() == limit && lastFollowerId != null)
                 {
                     newCursor = EncodeCursor(new GeneralCursor { Id = (int)lastFollowerId });
                 }
@@ -272,6 +276,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
             int? limit = null
         )
         {
+            limit ??= Global.USER_DEFAULT_LIMIT;
+
             // decode cursor if provided
             GeneralCursor? generalCursor = null;
             if (!string.IsNullOrEmpty(cursor))
@@ -287,13 +293,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     out int? lastFollowerId,
                     userId,
                     generalCursor,
-                    limit ?? Global.USER_DEFAULT_LIMIT
+                    limit
                 );
                 var followingViewModels = await usersService.GetUserSimpleViewModels(followers);
 
                 // encode cursor
                 string? newCursor = null;
-                if (lastFollowerId != null)
+                if (followingViewModels.Count() == limit && lastFollowerId != null)
                 {
                     newCursor = EncodeCursor(new GeneralCursor { Id = (int)lastFollowerId });
                 }

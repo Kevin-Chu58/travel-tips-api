@@ -60,6 +60,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             int? limit = null
         )
         {
+            limit ??= Global.TRIP_DEFAULT_LIMIT;
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             // get createdBy user id (not user's userId)
@@ -111,7 +112,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 budget: budget,
                 cursor: tripCursor,
                 tripOrderByEnum: tripOrderByEnum,
-                limit: limit ?? Global.TRIP_DEFAULT_LIMIT
+                limit: limit
             );
 
             tripViewModels = await AppendImagesToTripsAsync(tripViewModels);
@@ -119,7 +120,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             // encode cursor
             var tripList = tripViewModels.ToList();
             string? newCursor = null;
-            if (tripList.Count > 0)
+            if (tripList.Count == limit)
             {
                 var lastTrip = tripList.Last();
                 newCursor = EncodeCursor(
