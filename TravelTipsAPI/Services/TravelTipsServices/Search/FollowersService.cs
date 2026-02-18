@@ -16,8 +16,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <param name="limit">limit</param>
         /// <returns>a list of users</returns>
         public IEnumerable<User> GetFollowedUsersByUserIdWithCursor(
-            int userId,
             out int? followerId,
+            int userId,
             GeneralCursor? cursor = null,
             int? limit = null
         )
@@ -57,8 +57,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// <param name="limit">limit</param>
         /// <returns>a list of users</returns>
         public IEnumerable<User> GetFollowingUsersByUserIdWithCursor(
-            int userId,
             out int? followerId,
+            int userId,
             GeneralCursor? cursor = null,
             int? limit = null
         )

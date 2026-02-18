@@ -36,14 +36,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IFollowersService
         {
             IEnumerable<User> GetFollowingUsersByUserIdWithCursor(
-                int userId,
                 out int? followerId,
+                int userId,
                 GeneralCursor? cursor = null,
                 int? limit = null
             );
             IEnumerable<User> GetFollowedUsersByUserIdWithCursor(
-                int userId,
                 out int? followerId,
+                int userId,
                 GeneralCursor? cursor = null,
                 int? limit = null
             );
@@ -60,6 +60,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             User GetUserById(int id);
             IEnumerable<User> GetUsersByIds(IEnumerable<int> ids);
             IEnumerable<User> GetUsersByUsernameWithCursor(
+                out int? lastUserId,
                 string username,
                 GeneralCursor? cursor = null,
                 int? limit = null

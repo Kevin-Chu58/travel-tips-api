@@ -58,6 +58,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="limit">limit</param>
         /// <returns>a list of users</returns>
         public IEnumerable<User> GetUsersByUsernameWithCursor(
+            out int? lastUserId,
             string username,
             GeneralCursor? cursor = null,
             int? limit = null
@@ -79,6 +80,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 query = query.Take(limit.Value);
             }
             var users = query.ToList();
+
+            lastUserId = users.LastOrDefault()?.Id;
 
             return users;
         }

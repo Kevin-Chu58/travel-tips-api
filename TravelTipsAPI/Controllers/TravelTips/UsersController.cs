@@ -26,6 +26,32 @@ namespace TravelTipsAPI.Controllers.TravelTips
     ) : TravelTipsControllerBase
     {
         /// <summary>
+        /// Get user by userId
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <returns>user with the user id</returns>
+        [HttpGet]
+        [Route("{userId}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<UserSimpleViewModel>> GetUserByUserId(string userId)
+        {
+            var user = usersService.GetUserByUserId(userId);
+
+            if (user is null)
+                return NotFound(Messages.UserNotFound);
+
+            try
+            {
+                var userSimples = await usersService.GetUserSimpleViewModels([user]);
+                return Ok(userSimples.First());
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
+        /// <summary>
         /// Get a list of users by username with cursor
         /// </summary>
         /// <param name="username">username</param>
@@ -35,22 +61,46 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("username")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<UserViewModel>>> SearchUsersByUsername(
+        public async Task<ActionResult<SearchResults<UserViewModel>>> SearchUsersByUsername(
             [FromQuery] string username,
-            GeneralCursor? cursor = null,
+            string? cursor = null,
             int? limit = null
         )
         {
+            // decode cursor if provided
+            GeneralCursor? generalCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                generalCursor = DecodeCursor<GeneralCursor>(cursor);
+                if (generalCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
             try
             {
                 var users = usersService.GetUsersByUsernameWithCursor(
+                    out int? lastUserId,
                     username,
-                    cursor,
+                    generalCursor,
                     limit ?? Global.USER_DEFAULT_LIMIT
                 );
 
-                var userViewModels = await usersService.GetUserViewModels(users);
-                return Ok(userViewModels);
+                var userViewModels = await usersService.GetUserSimpleViewModels(users);
+
+                // encode cursor
+                string? newCursor = null;
+                if (lastUserId != null)
+                {
+                    newCursor = EncodeCursor(new GeneralCursor { Id = (int)lastUserId });
+                }
+
+                var result = new SearchResults<UserSimpleViewModel>
+                {
+                    Results = userViewModels,
+                    Cursor = newCursor,
+                };
+
+                return Ok(result);
             }
             catch (Exception ex)
             {
@@ -185,15 +235,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var followers = followersService.GetFollowingUsersByUserIdWithCursor(
-                    userId,
                     out int? lastFollowerId,
+                    userId,
                     generalCursor,
                     limit ?? Global.USER_DEFAULT_LIMIT
                 );
                 var followerViewModels = await usersService.GetUserSimpleViewModels(followers);
 
                 // encode cursor
-                var followerList = followerViewModels.ToList();
                 string? newCursor = null;
                 if (lastFollowerId != null)
                 {
@@ -202,7 +251,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 var result = new SearchResults<UserSimpleViewModel>
                 {
-                    Results = followerList,
+                    Results = followerViewModels,
                     Cursor = newCursor,
                 };
 
@@ -235,15 +284,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var followers = followersService.GetFollowedUsersByUserIdWithCursor(
-                    userId,
                     out int? lastFollowerId,
+                    userId,
                     generalCursor,
                     limit ?? Global.USER_DEFAULT_LIMIT
                 );
                 var followingViewModels = await usersService.GetUserSimpleViewModels(followers);
 
                 // encode cursor
-                var followingList = followingViewModels.ToList();
                 string? newCursor = null;
                 if (lastFollowerId != null)
                 {
@@ -252,7 +300,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 var result = new SearchResults<UserSimpleViewModel>
                 {
-                    Results = followingList,
+                    Results = followingViewModels,
                     Cursor = newCursor,
                 };
 
