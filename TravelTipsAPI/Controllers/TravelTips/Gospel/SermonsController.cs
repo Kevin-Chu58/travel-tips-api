@@ -34,8 +34,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        [SetUserId]
-        public ActionResult<IEnumerable<SermonViewModel>> GetSermonsByParams(
+        public async Task<ActionResult<IEnumerable<SermonViewModel>>> GetSermonsByParams(
             string? createdByAuthId = null,
             string? title = null,
             string? labelSlug = null,
@@ -61,7 +60,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
             if (labelSlug != null)
                 label = sermonsService.GetLabelBySlug(labelSlug);
 
-            var sermons = sermonsService.GetSermonsByParams(
+            var sermons = await sermonsService.GetSermonsByParams(
                 createdBy: user?.Id ?? null,
                 title: title,
                 label: label,
@@ -82,8 +81,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("{id}")]
         [AllowAnonymous]
-        [SetUserId]
-        public ActionResult<SermonViewModel> GetSermonById(
+        public async Task<ActionResult<SermonViewModel>> GetSermonById(
             int id,
             [FromQuery] bool isRestricted = false
         )
@@ -106,7 +104,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
                     return NotFound(Messages.SermonNotFound);
 
                 // include actual sermon content in the result
-                var result = sermonsService.GetSermonViewModel(sermon, true);
+                var result = await sermonsService.GetSermonViewModel(sermon, true);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -118,7 +116,6 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("order/{id}")]
         [AllowAnonymous]
-        [SetUserId]
         public ActionResult<int> GetSermonOrderById(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
@@ -144,8 +141,10 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("{labelSlug}/{order}")]
         [AllowAnonymous]
-        [SetUserId]
-        public ActionResult<SermonViewModel> GetSermonByLabelOrder(string labelSlug, int order)
+        public async Task<ActionResult<SermonViewModel>> GetSermonByLabelOrder(
+            string labelSlug,
+            int order
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -171,7 +170,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
                     return BadRequest(Messages.SermonUnauthorized);
             }
 
-            var result = sermonsService.GetSermonViewModel(sermon, true);
+            var result = await sermonsService.GetSermonViewModel(sermon, true);
             return Ok(result);
         }
 
@@ -195,11 +194,14 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("my")]
         [HasRole(Role = UserRoles.WRITER)]
-        public ActionResult<IEnumerable<SermonViewModel>> GetMySermons()
+        public async Task<ActionResult<IEnumerable<SermonViewModel>>> GetMySermons()
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var sermons = sermonsService.GetSermonsByParams(createdBy: userId, isRestricted: true);
+            var sermons = await sermonsService.GetSermonsByParams(
+                createdBy: userId,
+                isRestricted: true
+            );
             return Ok(sermons);
         }
 

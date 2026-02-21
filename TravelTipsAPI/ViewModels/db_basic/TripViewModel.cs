@@ -13,8 +13,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public DateTime CreatedAt { get; set; }
         public bool IsPublic { get; set; }
         public bool IsHidden { get; set; }
+        public bool IsBookmarked { get; set; }
         public int? Budget { get; set; }
         public int? NumDays { get; set; }
+        public int BookmarkCount { get; set; }
         public RegionCompleteViewModel? Region { get; set; }
         public IEnumerable<ImageViewModel>? Images { get; set; }
         public IEnumerable<UserSimpleViewModel>? SharedUsers { get; set; }
@@ -29,7 +31,9 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 IsHidden = trip.IsHidden,
+                IsBookmarked = false,
                 Budget = trip.Budget,
+                BookmarkCount = trip.BookmarkCount,
             };
         }
     }

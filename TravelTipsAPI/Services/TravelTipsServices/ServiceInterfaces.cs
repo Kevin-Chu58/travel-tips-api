@@ -6,6 +6,7 @@ using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.db_sermon;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
+using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
@@ -24,6 +25,32 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             RegionViewModel GetRegionByCountryAndState(string countrySlug, string? stateSlug);
             RegionCompleteViewModel BuildRegionComplete(int regionId);
         }
+
+        public interface IBookmarksService
+        {
+            IEnumerable<int> GetBookmarkTripIdsByUserId(int userId);
+            Task AddBookmarkAsync(int userId, int tripId);
+            Task RemoveBookmarkAsync(int userId, int tripId);
+        }
+
+        public interface IFollowersService
+        {
+            IEnumerable<User> GetFollowingUsersByUserIdWithCursor(
+                out int? followerId,
+                int userId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            IEnumerable<User> GetFollowedUsersByUserIdWithCursor(
+                out int? followerId,
+                int userId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            bool IsFollowing(int followedId, int followingId);
+            Task FollowUserAsync(int followedId, int followingId);
+            Task UnfollowUserAsync(int followedId, int followingId);
+        }
     }
 
     public class BasicSchema
@@ -32,18 +59,43 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             User GetUserById(int id);
             IEnumerable<User> GetUsersByIds(IEnumerable<int> ids);
+            IEnumerable<User> GetUsersByUsernameWithCursor(
+                out int? lastUserId,
+                string username,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
             User? GetUserByUserId(string userId);
+            Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
+            Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
             Task<bool> AcceptUserAgreementAsync(int id);
+
+            // user profile
+            Task<UserProfileViewModel> GetUserProfileViewModel(string auth0Id);
+
+            // user picture
+            Task<string?> UpdateUserPicture(User user, ImageViewModel? image);
+
+            // user follower
+            Task FollowAsync(int followedId, int followingId);
+            Task UnfollowAsync(int followedId, int followingId);
         }
 
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
-            TripViewModel? GetTripById(int id, bool isRestricted = false);
-            TripViewModel GetTripViewModel(Trip trip, bool isRestricted = false);
+            Task<TripViewModel?> GetTripById(int id, int? userId = null, bool isRestricted = false);
+            Task<TripViewModel> GetTripViewModel(
+                Trip trip,
+                int? userId = null,
+                IEnumerable<UserSimpleViewModel>? users = null,
+                Dictionary<int, int>? dayCounts = null,
+                bool isRestricted = false
+            );
             IEnumerable<int> GetMyTripIds(int id);
-            IEnumerable<TripViewModel> GetTripsByParams(
+            Task<IEnumerable<TripViewModel>> GetTripsByParams(
+                int? userId = null,
                 IEnumerable<int>? ids = null,
                 string? title = null,
                 int? createdBy = null,
@@ -53,7 +105,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? budget = null,
                 bool isRestricted = false,
                 TripCursor? cursor = null,
-                bool? isDesc = true,
+                TripOrderByEnum? tripOrderByEnum = null,
                 int? limit = null
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
@@ -63,6 +115,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int? regionId);
             Task<int> UpdateBudgetAsync(Trip trip, int? budget);
             bool IsOwnerList(int id, int[] tripIds);
+
+            // bookmarks
+            Task BookmarkAsync(int userId, int tripId);
+            Task UnbookmarkAsync(int userId, int tripId);
         }
 
         public interface ITripSharesService
@@ -108,14 +164,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IHighlightsService
         {
             Highlight? FindHighlightById(int id);
-            IEnumerable<HighlightViewModel> GetHighlightsByParams(
+            Task<IEnumerable<HighlightViewModel>> GetHighlightsByParams(
                 int? attractionId = null,
                 int? createdBy = null,
                 HighlightCursor? cursor = null,
                 HighlightOrderByEnum? highlightOrderByEnum = null,
                 int? limit = null
             );
-            HighlightViewModel GetHighlightViewModel(Highlight highlight);
+            Task<HighlightViewModel> GetHighlightViewModel(
+                Highlight highlight,
+                IEnumerable<UserSimpleViewModel>? users = null,
+                bool getUserPic = false
+            );
             IEnumerable<int> GetMyHighlights(int id);
             Task<HighlightViewModel> PostNewHighlightAsync(
                 HighlightPostViewModel newHighlight,
@@ -123,7 +183,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             Task<HighlightViewModel> UpdateHighlightAsync(Highlight highlight, string description);
             Task UpdateHighlightUsageCountAsync(int? oldId, int? newId);
-            Task<HighlightViewModel> DeleteHighlightAsync(Highlight highlight);
+            Task<int> DeleteHighlightAsync(Highlight highlight);
         }
 
         public interface ITripAttractionOrdersService
@@ -131,10 +191,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<int> GetMyTaos(int id);
             int BackTrackTripIdByTaoId(int taoId);
             TripAttractionOrder? FindTaoById(int id);
-            TripAttractionOrderViewModel GetTaoById(int id, bool isRestricted = false);
-            IEnumerable<TripAttractionOrderViewModel> GetTaosByDayId(
+            Task<TripAttractionOrderViewModel> GetTaoById(
+                int id,
+                bool isRestricted = false,
+                bool getUserPic = false
+            );
+            Task<IEnumerable<TripAttractionOrderViewModel>> GetTaosByDayId(
                 int dayId,
-                bool isRestricted = false
+                bool isRestricted = false,
+                bool getUserPic = false
             );
             IEnumerable<TripAttractionOrderGeoViewModel> GetTaoGeosByDayId(
                 int dayId,
@@ -173,7 +238,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         public interface IImagesService
         {
-            Image? GetImageById(int id);
+            Image? FindImageById(int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetImageIdsByTripId(int id);
@@ -200,9 +265,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = false);
             Sermon? GetSermonByLabelOrder(SermonLabel label, int order);
             int GetSermonOrder(Sermon sermon);
-            IEnumerable<SermonViewModel> GetLatestSermons();
-            SermonViewModel GetSermonViewModel(Sermon sermon, bool hasContent = false);
-            IEnumerable<SermonViewModel> GetSermonsByParams(
+            Task<IEnumerable<SermonViewModel>> GetLatestSermons();
+            Task<IEnumerable<SermonViewModel>> GetSermonsByParams(
                 int? createdBy = null,
                 string? title = null,
                 SermonLabel? label = null,
@@ -210,6 +274,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 bool isRestricted = false,
                 bool isDesc = true
             );
+            Task<SermonViewModel> GetSermonViewModel(Sermon sermon, bool hasContent = false);
             IEnumerable<int> GetMySermons(int userId);
             Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost, int createdBy);
             Task<SermonViewModel> PatchSermon(Sermon sermon, SermonPatchViewModel sermonPatch);

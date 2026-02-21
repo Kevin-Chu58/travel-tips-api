@@ -1,9 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
+using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -16,6 +17,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     /// <param name="context">context</param>
     public class TripsService(
         TravelTipsContext context,
+        IBookmarksService bookmarksService,
         IUsersService usersService,
         IRegionsService regionsService,
         ITripSharesService tripSharesService
@@ -54,11 +56,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get a trip by trip id
         /// </summary>
         /// <param name="id">trip id</param>
+        /// <param name="userId">my user id if any</param>
         /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>the trip view model</returns>
-        public TripViewModel? GetTripById(int id, bool isRestricted = false)
+        public async Task<TripViewModel?> GetTripById(
+            int id,
+            int? userId = null,
+            bool isRestricted = false
+        )
         {
-            var trip = GetTripsByParams(ids: [id], isRestricted: isRestricted).FirstOrDefault();
+            var trip = (
+                await GetTripsByParams(ids: [id], userId: userId, isRestricted: isRestricted)
+            ).FirstOrDefault();
             return trip;
         }
 
@@ -66,31 +75,67 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get trip view model from trip
         /// </summary>
         /// <param name="trip">trip</param>
+        /// <param name="userId">my user id if any</param>
+        /// <param name="users">users</param>
+        /// <param name="dayCounts">day counts</param>
         /// <param name="isRestricted">is user owner or shared with</param>
         /// <returns>trip view model of that trip</returns>
-        public TripViewModel GetTripViewModel(Trip trip, bool isRestricted = false)
+        public async Task<TripViewModel> GetTripViewModel(
+            Trip trip,
+            int? userId = null,
+            IEnumerable<UserSimpleViewModel>? users = null,
+            Dictionary<int, int>? dayCounts = null,
+            bool isRestricted = false
+        )
         {
+            // get simple user
+            UserSimpleViewModel? simpleUser = null;
+            if (users?.Any() == true)
+                simpleUser = users.FirstOrDefault(user => user.Id == trip.CreatedBy);
+
+            if (simpleUser is null)
+            {
+                var user = usersService.GetUserById(trip.CreatedBy);
+                simpleUser = (await usersService.GetUserSimpleViewModels([user])).First();
+            }
+
+            // get day count
+            int? dayCount = null;
+            if (dayCounts?.Count > 0)
+            {
+                dayCount = dayCounts?.GetValueOrDefault(trip.Id, 0);
+            }
+
+            // only get shared users when get trip by id
+            IEnumerable<UserSimpleViewModel> sharedSimpleUsers = [];
+            if (isRestricted)
+            {
+                var sharedUsers = tripSharesService.GetSharedUserIdsByTripId(trip.Id).ToList();
+                sharedSimpleUsers = await usersService.GetUserSimpleViewModels(
+                    usersService.GetUsersByIds(sharedUsers)
+                );
+            }
+
             var tripViewModel = new TripViewModel
             {
                 Id = trip.Id,
                 Title = trip.Title,
                 Description = trip.Description,
-                CreatedBy = (UserSimpleViewModel)usersService.GetUserById(trip.CreatedBy),
+                CreatedBy = simpleUser,
                 CreatedAt = trip.CreatedAt,
                 IsPublic = trip.IsPublic,
                 IsHidden = trip.IsHidden,
-                NumDays = context.Days.Count(day => day.TripId == trip.Id),
+                IsBookmarked = context.Bookmarks.Any(b =>
+                    b.UserId == userId && b.TripId == trip.Id
+                ),
+                NumDays = dayCount ?? context.Days.Count(day => day.TripId == trip.Id),
+                BookmarkCount = trip.BookmarkCount,
                 Region =
                     trip.RegionId != null
                         ? regionsService.BuildRegionComplete(trip.RegionId.Value)
                         : null,
                 Budget = trip.Budget,
-                SharedUsers = isRestricted
-                    ? tripSharesService
-                        .GetSharedUserIdsByTripId(trip.Id)
-                        .Select(userId => (UserSimpleViewModel)usersService.GetUserById(userId))
-                        .ToList()
-                    : [],
+                SharedUsers = sharedSimpleUsers,
             };
             return tripViewModel;
         }
@@ -113,6 +158,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Get trips by params
         /// </summary>
+        /// <param name="userId">my user id if any</param>
         /// <param name="ids">trip ids</param>
         /// <param name="title">title</param>
         /// <param name="createdBy">createdBy</param>
@@ -122,10 +168,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="budget">budget</param>
         /// <param name="isRestricted">is user owner or shared with</param>
         /// <param name="cursor">trip cursor</param>
-        /// <param name="isDesc">is descending or ascending</param>
+        /// <param name="tripOrderByEnum">order by enum</param>
         /// <param name="limit">limit</param>
         /// <returns>a list of trips</returns>
-        public IEnumerable<TripViewModel> GetTripsByParams(
+        public async Task<IEnumerable<TripViewModel>> GetTripsByParams(
+            int? userId = null,
             IEnumerable<int>? ids = null,
             string? title = null,
             int? createdBy = null,
@@ -135,7 +182,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             int? budget = null,
             bool isRestricted = false,
             TripCursor? cursor = null,
-            bool? isDesc = null,
+            TripOrderByEnum? tripOrderByEnum = null,
             int? limit = null
         )
         {
@@ -183,9 +230,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 query = query.Where(t => t.Budget == budget);
             }
 
-            if (isDesc != null)
+            if (tripOrderByEnum != null)
             {
-                query = ApplyCursor(query, cursor, isDesc.Value);
+                query = ApplyCursor(query, cursor, tripOrderByEnum);
             }
 
             if (limit != null)
@@ -194,7 +241,29 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             }
             var trips = query.ToList();
 
-            return trips.Select(trip => GetTripViewModel(trip, isRestricted));
+            // user preload
+            var distinctUserIds = trips.Select(t => t.CreatedBy).Distinct();
+            var users = usersService.GetUsersByIds(distinctUserIds);
+            var simpleUsers = await usersService.GetUserSimpleViewModels(users);
+
+            // days preload
+            var tripIds = trips.Select(t => t.Id).ToList();
+            var dayCounts = context
+                .Days.Where(d => tripIds.Contains(d.TripId))
+                .GroupBy(d => d.TripId)
+                .Select(g => new { TripId = g.Key, Count = g.Count() })
+                .ToDictionary(x => x.TripId, x => x.Count);
+
+            var results = new List<TripViewModel>();
+
+            foreach (var trip in trips)
+            {
+                results.Add(
+                    await GetTripViewModel(trip, userId, simpleUsers, dayCounts, isRestricted)
+                );
+            }
+
+            return results;
         }
 
         /// <summary>
@@ -202,31 +271,53 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="query">query</param>
         /// <param name="cursor">trip cursor</param>
-        /// <param name="isDesc">is descending or ascending</param>
+        /// <param name="tripOrderByEnum">order by</param>
         /// <returns>the query with applied cursor</returns>
-        public static IQueryable<Trip> ApplyCursor(
+        private static IQueryable<Trip> ApplyCursor(
             IQueryable<Trip> query,
             TripCursor? cursor,
-            bool isDesc
+            TripOrderByEnum? tripOrderByEnum
         )
         {
-            // Sort query based on isDesc
-            query = isDesc
-                ? query.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id)
-                : query.OrderBy(t => t.CreatedAt).ThenBy(t => t.Id);
-
-            // Apply cursor-based pagination
-            if (cursor != null)
+            switch (tripOrderByEnum)
             {
-                query = isDesc
-                    ? query.Where(t =>
-                        t.CreatedAt < cursor.CreatedAt
-                        || (t.CreatedAt == cursor.CreatedAt && t.Id < cursor.Id)
-                    )
-                    : query.Where(t =>
-                        t.CreatedAt > cursor.CreatedAt
-                        || (t.CreatedAt == cursor.CreatedAt && t.Id > cursor.Id)
-                    );
+                case TripOrderByEnum.Newest:
+                    query = query.OrderByDescending(t => t.CreatedAt).ThenByDescending(t => t.Id);
+                    if (cursor != null)
+                        query = query.Where(t =>
+                            t.CreatedAt < cursor.CreatedAt
+                            || (t.CreatedAt == cursor.CreatedAt && t.Id < cursor.Id)
+                        );
+                    break;
+
+                case TripOrderByEnum.Oldest:
+                    query = query.OrderBy(t => t.CreatedAt).ThenBy(t => t.Id);
+                    if (cursor != null)
+                        query = query.Where(t =>
+                            t.CreatedAt > cursor.CreatedAt
+                            || (t.CreatedAt == cursor.CreatedAt && t.Id > cursor.Id)
+                        );
+                    break;
+
+                case TripOrderByEnum.MostBookmarked:
+                    query = query
+                        .OrderByDescending(t => t.BookmarkCount)
+                        .ThenByDescending(t => t.Id);
+                    if (cursor != null)
+                        query = query.Where(t =>
+                            t.BookmarkCount < cursor.BookmarkCount
+                            || (t.BookmarkCount == cursor.BookmarkCount && t.Id < cursor.Id)
+                        );
+                    break;
+
+                case TripOrderByEnum.LeastBookmarked:
+                    query = query.OrderBy(t => t.BookmarkCount).ThenBy(t => t.Id);
+                    if (cursor != null)
+                        query = query.Where(t =>
+                            t.BookmarkCount > cursor.BookmarkCount
+                            || (t.BookmarkCount == cursor.BookmarkCount && t.Id > cursor.Id)
+                        );
+                    break;
             }
 
             return query;
@@ -250,9 +341,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.Trips.AddAsync(newTrip);
             await context.SaveChangesAsync();
 
-            var newTripViewModel = GetTripById(newTrip.Id)!;
+            var newTripViewModel = await GetTripById(newTrip.Id)!;
 
-            return newTripViewModel;
+            return newTripViewModel!;
         }
 
         /// <summary>
@@ -372,6 +463,52 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var myTripIds = GetMyTripIds(id);
             return tripIds.All(tripId => myTripIds.Contains(tripId));
+        }
+
+        // bookmarks
+
+        public async Task BookmarkAsync(int userId, int tripId)
+        {
+            var tx = await context.Database.BeginTransactionAsync();
+
+            await bookmarksService.AddBookmarkAsync(userId, tripId);
+            await UpdateBookmarkCountAsync(tripId, true);
+
+            await tx.CommitAsync();
+        }
+
+        public async Task UnbookmarkAsync(int userId, int tripId)
+        {
+            var tx = await context.Database.BeginTransactionAsync();
+
+            await bookmarksService.RemoveBookmarkAsync(userId, tripId);
+            await UpdateBookmarkCountAsync(tripId, false);
+
+            await tx.CommitAsync();
+        }
+
+        /// <summary>
+        /// Update the bookmark count on trip
+        /// </summary>
+        /// <param name="tripId">trip id</param>
+        /// <param name="increment">whether is increase or decrease</param>
+        /// <returns></returns>
+        private async Task UpdateBookmarkCountAsync(int tripId, bool increment)
+        {
+            if (increment)
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE db_basic.Trips SET BookmarkCount = BookmarkCount + 1 WHERE Id = @id",
+                    new SqlParameter("@id", tripId)
+                );
+            }
+            else
+            {
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE db_basic.Trips SET BookmarkCount = BookmarkCount - 1 WHERE Id = @id",
+                    new SqlParameter("@id", tripId)
+                );
+            }
         }
     }
 }

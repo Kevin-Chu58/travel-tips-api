@@ -16,6 +16,7 @@ namespace TravelTipsAPI.Authorization
     public class IsOwner : ActionFilterAttribute
     {
         public required string Resource { get; set; }
+        public bool VerifyEmail { get; set; } = true;
 
         private ActionExecutingContext context;
         private IUsersService _usersService;
@@ -48,9 +49,7 @@ namespace TravelTipsAPI.Authorization
             _sermonsService =
                 context.HttpContext.RequestServices.GetRequiredService<ISermonsService>();
 
-            var auth0Id =
-                context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
-            UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
+            UserId = (int)(context.HttpContext.Items["user_id"] ?? 0);
 
             if (UserId == 0)
             {
@@ -61,8 +60,17 @@ namespace TravelTipsAPI.Authorization
                 return;
             }
 
-            // caching for easy reuse, nothing happen if already exist
-            context.HttpContext.Items.TryAdd("user_id", UserId);
+            if (VerifyEmail)
+            {
+                var emailVerified = (bool)(context.HttpContext.Items["email_verified"] ?? false);
+
+                if (!emailVerified)
+                    context.Result = new ObjectResult(Messages.EmailUnverified)
+                    {
+                        StatusCode = 401,
+                    };
+                return;
+            }
 
             if (Resource != Resources.NONE)
             {

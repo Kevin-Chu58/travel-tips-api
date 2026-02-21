@@ -69,6 +69,8 @@ builder.Services.AddWikiCommonsServices();
 
 // Add Background Services
 builder.Services.AddHostedService<HighlightUsageRebuildService>();
+builder.Services.AddHostedService<TripBookmarkRebuildService>();
+builder.Services.AddHostedService<UserFollowRebuildService>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];
@@ -129,25 +131,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowAllKnownOrigins");
 
-// Use Middleware
-app.Use(
-    async (context, next) =>
-    {
-        if (HttpMethods.IsOptions(context.Request.Method))
-        {
-            // immediately return 200 OK so CORS preflight succeeds
-            context.Response.StatusCode = StatusCodes.Status200OK;
-            return;
-        }
-
-        var ensureUser = context.RequestServices.GetRequiredService<EnsureUserMiddleware>();
-        await ensureUser.InvokeAsync(context, next);
-    }
-);
-
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+// use middlewares
+app.UseMiddleware<EnsureUserMiddleware>(); // EnsureUserMiddleware should run after authentication to have access to user claims
 
 app.UseAuthorization();
 

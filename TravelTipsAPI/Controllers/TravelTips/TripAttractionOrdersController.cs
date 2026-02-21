@@ -27,8 +27,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/day/{dayId}")]
         [AllowAnonymous]
-        [SetUserId]
-        public ActionResult<TripAttractionOrderViewModel> GetTaoById(int id, int dayId)
+        public async Task<ActionResult<TripAttractionOrderViewModel>> GetTaoById(int id, int dayId)
         {
             // check if the trip is public or the user is the owner or shared user
             var trip = tripsService.FindTripByParams(dayId: dayId);
@@ -48,7 +47,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             try
             {
-                var taoViewModel = taosService.GetTaoById(id, isRestricted);
+                var taoViewModel = await taosService.GetTaoById(id, isRestricted, true);
                 return Ok(taoViewModel);
             }
             catch (Exception ex)
@@ -60,13 +59,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <summary>
         /// Get a list of tao by day id
         /// </summary>
-        /// <param name="id">day id</param>
+        /// <param name="dayId">day id</param>
         /// <returns>a list of tao on that day</returns>
         [HttpGet]
         [Route("day/{dayId}")]
         [AllowAnonymous]
-        [SetUserId]
-        public ActionResult<IEnumerable<TripAttractionOrderViewModel>> GetTaosByDayId(int dayId)
+        public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> GetTaosByDayId(
+            int dayId
+        )
         {
             // check if the trip is public or the user is the owner or shared user
             var trip = tripsService.FindTripByParams(dayId: dayId);
@@ -84,7 +84,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             if ((!trip.IsPublic && !isRestricted) || trip.IsHidden)
                 return BadRequest(Messages.TripUnauthorized);
 
-            var taoViewModels = taosService.GetTaosByDayId(dayId, isRestricted);
+            var taoViewModels = await taosService.GetTaosByDayId(dayId, isRestricted, true);
             return Ok(taoViewModels);
         }
 
@@ -105,7 +105,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             // check day max restriction
-            var taoViewModels = taosService.GetTaosByDayId(id, true);
+            var taoViewModels = await taosService.GetTaosByDayId(id, true);
 
             if (taoViewModels.Count() >= NumberConstraints.MAX_TAO_PER_DAY)
                 return BadRequest(Messages.TaoMaxReached);
@@ -120,7 +120,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 taosService.IsTaoConflicted(newTao.Start, newTao.End, newTao.DayId);
 
                 var taoId = await taosService.PostTao(newTao, userId);
-                var tao = taosService.GetTaoById(taoId, true);
+                var tao = await taosService.GetTaoById(taoId, true, true);
 
                 return Ok(tao);
             }
@@ -169,7 +169,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 }
 
                 var taoId = await taosService.PatchTao(taoPatch, tao);
-                var updatedTao = taosService.GetTaoById(taoId, true);
+                var updatedTao = await taosService.GetTaoById(taoId, true, true);
 
                 return Ok(updatedTao);
             }
@@ -197,7 +197,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 var taoId = await taosService.PatchTaoDetachHighlight(tao);
-                var updatedTao = taosService.GetTaoById(taoId, true);
+                var updatedTao = await taosService.GetTaoById(taoId, true);
 
                 return Ok(updatedTao);
             }

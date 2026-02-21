@@ -5,6 +5,7 @@
         // Authorization
         public static readonly string AuthenticationFailed = "Authentication failed.";
         public static readonly string AccessDenied = "Access has been denied.";
+        public static readonly string EmailUnverified = "Email is not verified.";
 
         // parameters
         public static readonly string InputInvalid = "Following inputs are invalid: {0}.";
@@ -20,7 +21,14 @@
         public static readonly string RegionNotFound = "Region not found.";
         public static readonly string RegionInvalid = "Region invalid.";
 
-        //public static readonly string RegionRootInvalid = "Region hierarchy is missing Country";
+        // Bookmarks
+        public static readonly string BookmarkNotFound = "Bookmark not found.";
+        public static readonly string BookmarkAlreadyExists = "Bookmark already exists.";
+
+        // Followers
+        public static readonly string FollowNotFound = "Follow relationship not found.";
+        public static readonly string FollowAlreadyExists = "Follow relationship already exists.";
+        public static readonly string FollowSelf = "Cannot follow yourself.";
 
         // Trips
         public static readonly string TripNotFound = "Trip not found.";
@@ -81,6 +89,9 @@
         // - trip image
         public static readonly string ImageTripAttached = "Image is attached on trip.";
         public static readonly string ImageTripDetached = "Image is not attached on trip.";
+
+        // - user image (picture)
+        public static readonly string ImageUserPicture = "Image is profile picture.";
 
         // HereMap
         public static readonly string HereMapPlaceNotFound = "Location not found.";

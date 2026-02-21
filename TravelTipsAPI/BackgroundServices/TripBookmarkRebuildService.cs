@@ -3,14 +3,14 @@ using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.BackgroundServices
 {
-    public class HighlightUsageRebuildService : BackgroundService
+    public class TripBookmarkRebuildService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<HighlightUsageRebuildService> _logger;
+        private readonly ILogger<TripBookmarkRebuildService> _logger;
 
-        public HighlightUsageRebuildService(
+        public TripBookmarkRebuildService(
             IServiceProvider serviceProvider,
-            ILogger<HighlightUsageRebuildService> logger
+            ILogger<TripBookmarkRebuildService> logger
         )
         {
             _serviceProvider = serviceProvider;
@@ -26,22 +26,22 @@ namespace TravelTipsAPI.BackgroundServices
             {
                 try
                 {
-                    _logger.LogInformation("Rebuilding highlight usage counts...");
+                    _logger.LogInformation("Rebuilding trip bookmark counts...");
 
-                    await RebuildUsageCounts(stoppingToken);
+                    await RebuildBookmarkCounts(stoppingToken);
 
-                    _logger.LogInformation("Highlight usage counts rebuild complete.");
+                    _logger.LogInformation("Trip bookmark counts rebuild complete.");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to rebuild highlight useage counts.");
+                    _logger.LogError(ex, "Failed to rebuild trip bookmark counts.");
                 }
 
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
 
-        private async Task RebuildUsageCounts(CancellationToken token)
+        private async Task RebuildBookmarkCounts(CancellationToken token)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TravelTipsContext>();
@@ -51,7 +51,7 @@ namespace TravelTipsAPI.BackgroundServices
                 @"
                 DECLARE @result int;
                 EXEC @result = sp_getapplock 
-                    @Resource = 'RebuildHighlightUsage',
+                    @Resource = 'RebuildTripBookmark',
                     @LockMode = 'Exclusive',
                     @LockOwner = 'Session',
                     @LockTimeout = 0;
@@ -64,33 +64,32 @@ namespace TravelTipsAPI.BackgroundServices
             "
             );
 
-            // main SQL: rebuild highlight usage counts
+            // main SQL: rebuild trip bookmark counts
             await db.Database.ExecuteSqlRawAsync(
                 @"
-                SELECT HighlightId, COUNT(*) AS Cnt 
-                INTO #HighlightCounts 
-                FROM db_basic.TripAttractionOrders 
-                WHERE HighlightId IS NOT NULL 
-                GROUP BY HighlightId; 
+                SELECT TripId, COUNT(*) AS Cnt 
+                INTO #TripCounts 
+                FROM db_search.Bookmarks 
+                GROUP BY TripId; 
 
-                CREATE INDEX IDX_HighlightCounts_HighlightId
-                ON #HighlightCounts(HighlightId); 
+                CREATE INDEX IDX_TripCounts_TripId 
+                ON #TripCounts(TripId); 
                 
                 WHILE 1 = 1 
                 BEGIN 
                     ;WITH cte AS ( 
-                        SELECT TOP (200) h.Id
-                        FROM db_basic.Highlights h 
-                        LEFT JOIN #HighlightCounts c 
-                        ON c.HighlightId = h.Id 
-                        WHERE ISNULL(h.UsageCount, 0) <> ISNULL(c.Cnt, 0) 
-                        ORDER BY h.Id 
+                        SELECT TOP (200) t.Id 
+                        FROM db_basic.Trips t 
+                        LEFT JOIN #TripCounts c 
+                        ON c.TripId = t.Id 
+                        WHERE ISNULL(t.BookmarkCount, 0) <> ISNULL(c.Cnt, 0) 
+                        ORDER BY t.Id 
                     ) 
-                    UPDATE h 
-                    SET UsageCount = ISNULL(c.Cnt, 0) 
-                    FROM db_basic.Highlights h 
-                    JOIN cte ON cte.Id = h.Id 
-                    LEFT JOIN #HighlightCounts c ON c.HighlightId = h.Id; 
+                    UPDATE t 
+                    SET BookmarkCount = ISNULL(c.Cnt, 0) 
+                    FROM db_basic.Trips t 
+                    JOIN cte ON cte.Id = t.Id 
+                    LEFT JOIN #TripCounts c ON c.TripId = t.Id; 
 
                 IF @@ROWCOUNT = 0 BREAK; 
             END

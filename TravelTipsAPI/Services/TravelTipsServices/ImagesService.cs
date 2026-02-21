@@ -1,8 +1,6 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
@@ -23,7 +21,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     {
         private UrlSigner? _urlSigner;
 
-        public Image? GetImageById(int id)
+        public Image? FindImageById(int id)
         {
             var image = context.Images.Find(id);
             return image;

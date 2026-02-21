@@ -15,11 +15,29 @@ public partial class User
 
     public bool UserAgreement { get; set; }
 
+    public int? ImageId { get; set; }
+
+    public string? ExternalImageUrl { get; set; }
+
+    public int FollowerCount { get; set; }
+
+    public int FollowingCount { get; set; }
+
+    public bool EmailVerified { get; set; }
+
     public virtual Admin? Admin { get; set; }
+
+    public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
 
+    public virtual ICollection<Follower> FollowerFollowedNavigations { get; set; } = new List<Follower>();
+
+    public virtual ICollection<Follower> FollowerFollowingNavigations { get; set; } = new List<Follower>();
+
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
+
+    public virtual Image? Image { get; set; }
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models;
 using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.Auth0Services.Auth0Schema;
@@ -7,16 +8,16 @@ namespace TravelTipsAPI.Middleware
 {
     public class EnsureUserMiddleware : IMiddleware
     {
-        private readonly IAuth0Service _auth0Service;
         private readonly IDbContextFactory<TravelTipsContext> _dbFactory;
+        private readonly ILogger<EnsureUserMiddleware> _logger;
 
         public EnsureUserMiddleware(
-            IAuth0Service auth0Service,
-            IDbContextFactory<TravelTipsContext> dbFactory
+            IDbContextFactory<TravelTipsContext> dbFactory,
+            ILogger<EnsureUserMiddleware> logger
         )
         {
-            _auth0Service = auth0Service;
             _dbFactory = dbFactory;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -28,24 +29,73 @@ namespace TravelTipsAPI.Middleware
                 return;
             }
 
-            var auth0UserInfo = await _auth0Service.GetUserInfoAsync();
-
-            if (auth0UserInfo != null && !string.IsNullOrEmpty(auth0UserInfo.Sub))
+            if (context.User?.Identity?.IsAuthenticated == true)
             {
-                using var db = _dbFactory.CreateDbContext();
+                var auth0Id = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                var user = await db.Users.FirstOrDefaultAsync(u => u.UserId == auth0UserInfo.Sub);
-                if (user == null)
+                var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
+
+                var name = context.User.FindFirst("name")?.Value;
+
+                var picture = context.User.FindFirst("picture")?.Value;
+
+                var emailVerified = context.User.FindFirst("email_verified")?.Value == "true";
+
+                if (!string.IsNullOrEmpty(auth0Id))
                 {
-                    var userPost = new User
-                    {
-                        UserId = auth0UserInfo.Sub,
-                        Username = auth0UserInfo.Name ?? "",
-                        Email = auth0UserInfo.Email ?? "",
-                    };
+                    using var db = _dbFactory.CreateDbContext();
 
-                    db.Users.Add(userPost);
-                    await db.SaveChangesAsync();
+                    var user = await db.Users.FirstOrDefaultAsync(u => u.UserId == auth0Id);
+
+                    if (user == null)
+                    {
+                        db.Users.Add(
+                            new User
+                            {
+                                UserId = auth0Id,
+                                Username = name ?? "",
+                                Email = email ?? "",
+                                ExternalImageUrl = picture ?? "",
+                                EmailVerified = emailVerified,
+                            }
+                        );
+
+                        await db.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        // caching for easy reuse, nothing happen if already exist
+                        context.Items.TryAdd("user_id", user.Id);
+                        context.Items.TryAdd("email_verified", emailVerified);
+
+                        var hasChange = false;
+
+                        // Optional: keep user profile in sync
+                        if (email != null && user.Email != email)
+                        {
+                            user.Email = email;
+                            hasChange = true;
+                        }
+
+                        // Optional: keep user profile in sync
+                        if (user.EmailVerified != emailVerified)
+                        {
+                            user.EmailVerified = emailVerified;
+                            hasChange = true;
+                        }
+
+                        // Optional: append default imageUrl in sync
+                        if (user.ExternalImageUrl is null)
+                        {
+                            user.ExternalImageUrl = picture;
+                            hasChange = true;
+                        }
+
+                        if (hasChange)
+                        {
+                            await db.SaveChangesAsync();
+                        }
+                    }
                 }
             }
 

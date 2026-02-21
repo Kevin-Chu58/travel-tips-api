@@ -1,4 +1,5 @@
 ﻿using System.Drawing;
+using System.Threading.Tasks;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -72,7 +73,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get a list of latest sermons in banner
         /// </summary>
         /// <returns>a list of latest sermons</returns>
-        public IEnumerable<SermonViewModel> GetLatestSermons()
+        public async Task<IEnumerable<SermonViewModel>> GetLatestSermons()
         {
             var today = DateOnly.FromDateTime(DateTime.Now);
 
@@ -86,7 +87,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 )
                 .ToList();
 
-            return sermons.Select(s => GetSermonViewModel(s));
+            var results = new List<SermonViewModel>();
+
+            foreach (var sermon in sermons)
+            {
+                results.Add(await GetSermonViewModel(sermon));
+            }
+
+            return results;
         }
 
         /// <summary>
@@ -99,7 +107,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="isRestricted">whether user can see future sermons</param>
         /// <param name="isDesc">whether is in descending or ascending order</param>
         /// <returns></returns>
-        public IEnumerable<SermonViewModel> GetSermonsByParams(
+        public async Task<IEnumerable<SermonViewModel>> GetSermonsByParams(
             int? createdBy = null,
             string? title = null,
             SermonLabel? label = null,
@@ -138,7 +146,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             var sermons = query.ToList();
 
-            var results = sermons.Select(s => GetSermonViewModel(s)).ToList();
+            var results = new List<SermonViewModel>();
+
+            foreach (var sermon in sermons)
+            {
+                results.Add(await GetSermonViewModel(sermon));
+            }
+
             return results;
         }
 
@@ -148,12 +162,20 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="sermon">sermon</param>
         /// <param name="hasContent">includes content in the view model</param>
         /// <returns>the sermon view model</returns>
-        public SermonViewModel GetSermonViewModel(Sermon sermon, bool hasContent = false)
+        public async Task<SermonViewModel> GetSermonViewModel(
+            Sermon sermon,
+            bool hasContent = false
+        )
         {
+            var user = usersService.GetUserById(sermon.CreatedBy);
+            var simpleUser = hasContent
+                ? (await usersService.GetUserSimpleViewModels([user])).First()
+                : (UserSimpleViewModel)user;
+
             var sermonViewModel = new SermonViewModel
             {
                 Id = sermon.Id,
-                CreatedBy = (UserSimpleViewModel)usersService.GetUserById(sermon.CreatedBy),
+                CreatedBy = simpleUser,
                 Title = sermon.Title,
                 Content = hasContent ? sermon.Content : null,
                 Label = BuildSermonLabelComplete(sermon.LabelId),
@@ -194,7 +216,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.Sermons.AddAsync(newSermon);
             await context.SaveChangesAsync();
 
-            return GetSermonViewModel(newSermon);
+            return await GetSermonViewModel(newSermon);
         }
 
         /// <summary>
@@ -216,7 +238,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             await context.SaveChangesAsync();
 
-            return GetSermonViewModel(sermon);
+            return await GetSermonViewModel(sermon);
         }
 
         /// <summary>

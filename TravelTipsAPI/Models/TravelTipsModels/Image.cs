@@ -16,4 +16,6 @@ public partial class Image
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<TripImage> TripImages { get; set; } = new List<TripImage>();
+
+    public virtual ICollection<User> Users { get; set; } = new List<User>();
 }

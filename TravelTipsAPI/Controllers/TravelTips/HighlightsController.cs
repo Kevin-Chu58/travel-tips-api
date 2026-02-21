@@ -32,13 +32,18 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<SearchResults<HighlightViewModel>> GetHighlightsByAttractionId(
+        public async Task<
+            ActionResult<SearchResults<HighlightViewModel>>
+        > GetHighlightsByAttractionId(
             [FromQuery] int? attractionId,
             string? createdByAuthId,
             string? cursor,
-            HighlightOrderByEnum? highlightOrderByEnum = null
+            HighlightOrderByEnum? highlightOrderByEnum = null,
+            int? limit = null
         )
         {
+            limit ??= Global.HIGHLIGHT_DEFAULT_LIMIT;
+
             // get createdBy user id (not user's userId)
             int? createdBy = null;
             if (!string.IsNullOrEmpty(createdByAuthId))
@@ -62,18 +67,18 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     return BadRequest(Messages.CursorInvalid);
             }
 
-            var highlightViewModels = highlightsService.GetHighlightsByParams(
+            var highlightViewModels = await highlightsService.GetHighlightsByParams(
                 attractionId: attractionId,
                 createdBy: createdBy,
                 cursor: highlightCursor,
                 highlightOrderByEnum: highlightOrderByEnum,
-                limit: Global.HIGHLIGHT_DEFAULT_LIMIT
+                limit: limit
             );
 
             // encode cursor
             var highlightList = highlightViewModels.ToList();
             string? newCursor = null;
-            if (highlightList.Count > 0)
+            if (highlightList.Count == limit)
             {
                 var lastHighlight = highlightList.Last();
                 newCursor = EncodeCursor(
@@ -150,15 +155,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.HIGHLIGHTS)]
-        public async Task<ActionResult<HighlightViewModel>> DeleteHighlightAsync(int id)
+        public async Task<ActionResult<int>> DeleteHighlightAsync(int id)
         {
             var highlight = highlightsService.FindHighlightById(id);
             if (highlight is null)
                 return NotFound(Messages.HighlightNotFound);
 
-            var highlightViewModel = await highlightsService.DeleteHighlightAsync(highlight);
+            var highlightId = await highlightsService.DeleteHighlightAsync(highlight);
 
-            return Ok(highlightViewModel);
+            return Ok(highlightId);
         }
     }
 }

@@ -7,8 +7,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public int Id { get; set; }
         public required string UserId { get; set; }
         public required string Username { get; set; }
+        public string? Picture { get; set; }
         public required string Email { get; set; }
         public bool UserAgreement { get; set; }
+        public bool EmailVerified { get; set; }
         public bool? IsAdmin { get; set; }
         public bool? IsWriter { get; set; }
 
@@ -21,6 +23,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 Username = user.Username ?? "",
                 Email = user.Email,
                 UserAgreement = user.UserAgreement,
+                Picture = user.ExternalImageUrl,
             };
 
             return userViewModel;
