@@ -330,7 +330,7 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("Trips", "db_basic");
 
             entity
-                .HasIndex(e => new { e.BookMarkCount, e.Id }, "idx_trips_bookmarkCount_id")
+                .HasIndex(e => new { e.BookmarkCount, e.Id }, "idx_trips_bookmarkCount_id")
                 .IsDescending();
 
             entity
