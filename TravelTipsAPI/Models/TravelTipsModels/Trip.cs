@@ -23,7 +23,7 @@ public partial class Trip
 
     public int? Budget { get; set; }
 
-    public int BookMarkCount { get; set; }
+    public int BookmarkCount { get; set; }
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 
