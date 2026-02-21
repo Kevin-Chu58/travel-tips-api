@@ -5,6 +5,7 @@
         // Authorization
         public static readonly string AuthenticationFailed = "Authentication failed.";
         public static readonly string AccessDenied = "Access has been denied.";
+        public static readonly string EmailUnverified = "Email is not verified.";
 
         // parameters
         public static readonly string InputInvalid = "Following inputs are invalid: {0}.";

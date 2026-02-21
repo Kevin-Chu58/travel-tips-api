@@ -23,6 +23,8 @@ public partial class User
 
     public int FollowingCount { get; set; }
 
+    public bool EmailVerified { get; set; }
+
     public virtual Admin? Admin { get; set; }
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();

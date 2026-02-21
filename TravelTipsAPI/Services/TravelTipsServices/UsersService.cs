@@ -170,6 +170,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     Picture = image?.Url ?? user.ExternalImageUrl,
                     Email = user.Email,
                     UserAgreement = user.UserAgreement,
+                    EmailVerified = user.EmailVerified,
                     IsAdmin = userRolesService.IsAdmin(user.Id),
                     IsWriter = userRolesService.IsWriter(user.Id),
                 };

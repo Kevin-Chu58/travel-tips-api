@@ -16,6 +16,7 @@ namespace TravelTipsAPI.Authorization
     public class IsOwner : ActionFilterAttribute
     {
         public required string Resource { get; set; }
+        public bool VerifyEmail { get; set; } = true;
 
         private ActionExecutingContext context;
         private IUsersService _usersService;
@@ -50,6 +51,29 @@ namespace TravelTipsAPI.Authorization
 
             var auth0Id =
                 context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+
+            if (auth0Id is null)
+            {
+                context.Result = new ObjectResult(Messages.AuthenticationFailed)
+                {
+                    StatusCode = 401,
+                };
+                return;
+            }
+
+            if (VerifyEmail)
+            {
+                var emailVerified =
+                    context.HttpContext.User.FindFirst("email_verified")?.Value == "true";
+
+                if (!emailVerified)
+                    context.Result = new ObjectResult(Messages.EmailUnverified)
+                    {
+                        StatusCode = 401,
+                    };
+                return;
+            }
+
             UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             if (UserId == 0)

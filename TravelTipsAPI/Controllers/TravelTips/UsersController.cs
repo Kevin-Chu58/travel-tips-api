@@ -116,7 +116,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>user basic information of the current user</returns>
         [HttpGet]
         [Route("me")]
-        [IsOwner(Resource = Resources.NONE)]
+        [IsOwner(Resource = Resources.NONE, VerifyEmail = false)]
         public async Task<ActionResult<UserViewModel>> GetCurrentUser()
         {
             try

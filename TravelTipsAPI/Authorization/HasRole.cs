@@ -25,8 +25,26 @@ namespace TravelTipsAPI.Authorization
             _userRolesService =
                 context.HttpContext.RequestServices.GetRequiredService<IUserRolesService>();
 
-            var auth0Id =
-                context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "";
+            var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (auth0Id is null)
+            {
+                context.Result = new ObjectResult(Messages.AuthenticationFailed)
+                {
+                    StatusCode = 401,
+                };
+                return;
+            }
+
+            var emailVerified =
+                context.HttpContext.User.FindFirst("email_verified")?.Value == "true";
+
+            if (!emailVerified)
+            {
+                context.Result = new ObjectResult(Messages.EmailUnverified) { StatusCode = 401 };
+                return;
+            }
+
             UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             var isAuthorized = UserHasRole(Role);
