@@ -115,7 +115,6 @@ namespace TravelTipsAPI.Controllers.HereMap
         [HttpGet]
         [Route("routing/{taoId}")]
         [AllowAnonymous]
-        [SetUserId]
         public async Task<ActionResult<HereRoutingResponse?>> GetRoutingOnTaoAsync(int taoId)
         {
             // check if the trip is public or the user is the owner or shared user
@@ -164,7 +163,6 @@ namespace TravelTipsAPI.Controllers.HereMap
         [HttpGet]
         [Route("routing/day/{dayId}")]
         [AllowAnonymous]
-        [SetUserId]
         public async Task<ActionResult<IEnumerable<HereRoutingResponse?>>> GetRoutingsOnDayAsync(
             int dayId
         )

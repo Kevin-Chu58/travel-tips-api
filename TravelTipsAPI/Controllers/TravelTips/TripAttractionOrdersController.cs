@@ -27,7 +27,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/day/{dayId}")]
         [AllowAnonymous]
-        [SetUserId]
         public async Task<ActionResult<TripAttractionOrderViewModel>> GetTaoById(int id, int dayId)
         {
             // check if the trip is public or the user is the owner or shared user
@@ -65,7 +64,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("day/{dayId}")]
         [AllowAnonymous]
-        [SetUserId]
         public async Task<ActionResult<IEnumerable<TripAttractionOrderViewModel>>> GetTaosByDayId(
             int dayId
         )

@@ -29,7 +29,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{tripId}")]
         [AllowAnonymous]
-        [SetUserId]
         public ActionResult<IEnumerable<DayViewModel>> GetDaysById(int tripId)
         {
             var trip = tripsService.FindTripByParams(tripId);

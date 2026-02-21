@@ -150,7 +150,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}")]
         //[AllowAnonymous]
-        //[SetUserId]
+        //
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
@@ -281,7 +281,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/day-overview")]
         //[AllowAnonymous]
-        //[SetUserId]
+        //
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
         {
@@ -594,7 +594,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/images")]
         [AllowAnonymous]
-        [SetUserId]
         public async Task<ActionResult<IEnumerable<ImageViewModel>>> GetImagesByTripId(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);

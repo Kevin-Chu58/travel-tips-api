@@ -9,10 +9,15 @@ namespace TravelTipsAPI.Middleware
     public class EnsureUserMiddleware : IMiddleware
     {
         private readonly IDbContextFactory<TravelTipsContext> _dbFactory;
+        private readonly ILogger<EnsureUserMiddleware> _logger;
 
-        public EnsureUserMiddleware(IDbContextFactory<TravelTipsContext> dbFactory)
+        public EnsureUserMiddleware(
+            IDbContextFactory<TravelTipsContext> dbFactory,
+            ILogger<EnsureUserMiddleware> logger
+        )
         {
             _dbFactory = dbFactory;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
@@ -59,17 +64,35 @@ namespace TravelTipsAPI.Middleware
                     }
                     else
                     {
+                        // caching for easy reuse, nothing happen if already exist
+                        context.Items.TryAdd("user_id", user.Id);
+                        context.Items.TryAdd("email_verified", emailVerified);
+
+                        var hasChange = false;
+
+                        // Optional: keep user profile in sync
+                        if (email != null && user.Email != email)
+                        {
+                            user.Email = email;
+                            hasChange = true;
+                        }
+
                         // Optional: keep user profile in sync
                         if (user.EmailVerified != emailVerified)
                         {
                             user.EmailVerified = emailVerified;
-                            await db.SaveChangesAsync();
+                            hasChange = true;
                         }
 
                         // Optional: append default imageUrl in sync
                         if (user.ExternalImageUrl is null)
                         {
                             user.ExternalImageUrl = picture;
+                            hasChange = true;
+                        }
+
+                        if (hasChange)
+                        {
                             await db.SaveChangesAsync();
                         }
                     }

@@ -22,8 +22,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
 {
     options.UseLazyLoadingProxies();
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
 // Add authentication to the container.
@@ -134,7 +134,10 @@ app.UseCors("AllowAllKnownOrigins");
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+
+// use middlewares
 app.UseMiddleware<EnsureUserMiddleware>(); // EnsureUserMiddleware should run after authentication to have access to user claims
+
 app.UseAuthorization();
 
 app.MapControllers();

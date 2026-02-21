@@ -164,7 +164,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{auth0Id}/profile")]
         [AllowAnonymous]
-        [SetUserId]
         public async Task<ActionResult<UserProfileViewModel>> GetUserProfile(string auth0Id)
         {
             try

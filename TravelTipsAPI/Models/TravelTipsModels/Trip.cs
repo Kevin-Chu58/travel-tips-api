@@ -7,6 +7,8 @@ public partial class Trip
 {
     public int Id { get; set; }
 
+    public string Title { get; set; } = null!;
+
     public string? Description { get; set; }
 
     public int CreatedBy { get; set; }
@@ -17,13 +19,11 @@ public partial class Trip
 
     public bool IsHidden { get; set; }
 
-    public string Title { get; set; } = null!;
-
     public int? RegionId { get; set; }
 
     public int? Budget { get; set; }
 
-    public int BookmarkCount { get; set; }
+    public int BookMarkCount { get; set; }
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
 

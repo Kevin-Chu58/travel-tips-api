@@ -10,6 +10,7 @@ namespace TravelTipsAPI.Authorization
     public class HasRole : ActionFilterAttribute
     {
         public required string Role { get; set; }
+        public bool VerifyEmail { get; set; } = true;
 
         private ActionExecutingContext context;
         private IUsersService _usersService;
@@ -25,9 +26,7 @@ namespace TravelTipsAPI.Authorization
             _userRolesService =
                 context.HttpContext.RequestServices.GetRequiredService<IUserRolesService>();
 
-            var auth0Id = context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (auth0Id is null)
+            if (UserId == 0)
             {
                 context.Result = new ObjectResult(Messages.AuthenticationFailed)
                 {
@@ -36,16 +35,17 @@ namespace TravelTipsAPI.Authorization
                 return;
             }
 
-            var emailVerified =
-                context.HttpContext.User.FindFirst("email_verified")?.Value == "true";
-
-            if (!emailVerified)
+            if (VerifyEmail)
             {
-                context.Result = new ObjectResult(Messages.EmailUnverified) { StatusCode = 401 };
+                var emailVerified = (bool)(context.HttpContext.Items["email_verified"] ?? false);
+
+                if (!emailVerified)
+                    context.Result = new ObjectResult(Messages.EmailUnverified)
+                    {
+                        StatusCode = 401,
+                    };
                 return;
             }
-
-            UserId = (_usersService.GetUserByUserId(auth0Id))?.Id ?? 0;
 
             var isAuthorized = UserHasRole(Role);
             if (!isAuthorized)
