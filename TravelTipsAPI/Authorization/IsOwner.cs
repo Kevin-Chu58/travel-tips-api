@@ -26,7 +26,7 @@ namespace TravelTipsAPI.Authorization
         private IHighlightsService _highlightsService;
         private ITripAttractionOrdersService _tripAttractionOrdersService;
         private IImagesService _imagesService;
-        private ISermonsService _sermonsService;
+        private IWritingsService _writingsService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -46,8 +46,8 @@ namespace TravelTipsAPI.Authorization
                 context.HttpContext.RequestServices.GetRequiredService<ITripAttractionOrdersService>();
             _imagesService =
                 context.HttpContext.RequestServices.GetRequiredService<IImagesService>();
-            _sermonsService =
-                context.HttpContext.RequestServices.GetRequiredService<ISermonsService>();
+            _writingsService =
+                context.HttpContext.RequestServices.GetRequiredService<IWritingsService>();
 
             UserId = (int)(context.HttpContext.Items["user_id"] ?? 0);
 
@@ -92,7 +92,7 @@ namespace TravelTipsAPI.Authorization
                 myAttractions,
                 myHighlights,
                 myTripAttractionOrders,
-                mySermons;
+                myWritings;
 
             switch (resource)
             {
@@ -120,8 +120,8 @@ namespace TravelTipsAPI.Authorization
                     return _imagesService.IsOwner(UserId, ResourceId);
 
                 case Resources.SERMONS:
-                    mySermons = _sermonsService.GetMySermons(UserId);
-                    return mySermons.Any(sermonId => sermonId == ResourceId);
+                    myWritings = _writingsService.GetMyWritings(UserId);
+                    return myWritings.Any(writingId => writingId == ResourceId);
             }
             return false;
         }

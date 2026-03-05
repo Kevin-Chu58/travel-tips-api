@@ -90,6 +90,9 @@
         public static readonly string ImageTripAttached = "Image is attached on trip.";
         public static readonly string ImageTripDetached = "Image is not attached on trip.";
 
+        // - banner image
+        public static readonly string ImageBannerAttached = "Image is attached on banner.";
+
         // - user image (picture)
         public static readonly string ImageUserPicture = "Image is profile picture.";
 
@@ -102,13 +105,20 @@
         public static readonly string WikiCommonsQueryNotFound = "WikiImage:Query not found.";
         public static readonly string WikiCommonsPagesNotFound = "WikiImage:Pages not found.";
 
-        // Sermons
-        public static readonly string SermonNotFound = "Sermon not found.";
-        public static readonly string SermonUnauthorized = "Sermon unauthorized.";
+        // Writings
+        public static readonly string WritingNotFound = "Writing not found.";
+        public static readonly string WritingUnauthorized = "Writing unauthorized.";
 
-        // - sermon labels
-        public static readonly string SermonLabelNotFound = "Sermon label not found";
-        public static readonly string SermonLabelTypeInvalid = "Sermon label type is invalid.";
-        public static readonly string SermonLabelExists = "Sermon label already exists.";
+        // - writing labels
+        public static readonly string WritingLabelNotFound = "Writing label not found";
+        public static readonly string WritingLabelTypeInvalid = "Writing label type is invalid.";
+        public static readonly string WritingLabelExists = "Writing label already exists.";
+
+        // banners
+        public static readonly string BannerNotFound = "Banner not found.";
+
+        // - banner stylings
+        public static readonly string BannerStylingNotFound = "Banner styling not found.";
+        public static readonly string BannerStylingInvalid = "Banner styling is invalid.";
     }
 }

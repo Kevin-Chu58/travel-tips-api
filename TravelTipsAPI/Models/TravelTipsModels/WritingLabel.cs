@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace TravelTipsAPI.Models.TravelTipsModels;
 
-public partial class SermonLabel
+public partial class WritingLabel
 {
     public int Id { get; set; }
 
@@ -15,9 +15,9 @@ public partial class SermonLabel
 
     public string Type { get; set; } = null!;
 
-    public virtual ICollection<SermonLabel> InverseParentLabel { get; set; } = new List<SermonLabel>();
+    public virtual ICollection<WritingLabel> InverseParentLabel { get; set; } = new List<WritingLabel>();
 
-    public virtual SermonLabel? ParentLabel { get; set; }
+    public virtual WritingLabel? ParentLabel { get; set; }
 
-    public virtual ICollection<Sermon> Sermons { get; set; } = new List<Sermon>();
+    public virtual ICollection<Writing> Writings { get; set; } = new List<Writing>();
 }

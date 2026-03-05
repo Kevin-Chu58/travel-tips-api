@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
+using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
@@ -25,6 +26,20 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var image = context.Images.Find(id);
             return image;
+        }
+
+        public Image? FindImageAndBannerCountById(out int bannerCount, int id)
+        {
+            var result = context
+                .Images.AsNoTracking()
+                .Include(i => i.Banners)
+                .Where(i => i.Id == id)
+                .Select(i => new { Image = i, i.Banners.Count })
+                .FirstOrDefault();
+
+            bannerCount = result?.Count ?? 0;
+
+            return result?.Image;
         }
 
         /// <summary>
@@ -107,8 +122,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>a list of image ids</returns>
         public IEnumerable<int> GetImageIdsByUserId(int id)
         {
-            var imageIds = context.Images.Where(i => i.CreatedBy == id).Select(i => i.Id).ToList();
+            var imageIds = context
+                .Images.Where(i => i.CreatedBy == id && !i.IsBanner)
+                .Select(i => i.Id)
+                .ToList();
 
+            return imageIds;
+        }
+
+        public IEnumerable<int> GetBannerImageIds()
+        {
+            var imageIds = context.Images.Where(i => i.IsBanner).Select(i => i.Id).ToList();
             return imageIds;
         }
 
@@ -134,12 +158,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="contentType">image content type</param>
         /// <param name="userId">user id</param>
         /// <param name="name">image file name</param>
+        /// <param name="isBanner">whether the image is in banners</param>
         /// <returns>the posted image</returns>
         public async Task<ImageViewModel> PostNewImageAsync(
             Stream stream,
             string contentType,
             int userId,
-            string? name
+            string? name,
+            bool isBanner = false
         )
         {
             try
@@ -163,6 +189,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     Guid = guid,
                     Name = name,
                     CreatedBy = userId,
+                    IsBanner = isBanner,
                 };
 
                 context.Images.Add(newImage);

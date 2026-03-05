@@ -7,11 +7,15 @@ public partial class Image
 {
     public int Id { get; set; }
 
-    public Guid Guid { get; set; }
-
     public string? Name { get; set; }
 
     public int CreatedBy { get; set; }
+
+    public Guid Guid { get; set; }
+
+    public bool IsBanner { get; set; }
+
+    public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;
 

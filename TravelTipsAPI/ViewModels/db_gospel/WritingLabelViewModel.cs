@@ -1,8 +1,8 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
 
-namespace TravelTipsAPI.ViewModels.db_sermon
+namespace TravelTipsAPI.ViewModels.db_gospel
 {
-    public class SermonLabelViewModel
+    public class WritingLabelViewModel
     {
         public int Id { get; set; }
         public required string Name { get; set; }
@@ -10,9 +10,9 @@ namespace TravelTipsAPI.ViewModels.db_sermon
         public int? ParentLabelId { get; set; }
         public required string Type { get; set; }
 
-        public static explicit operator SermonLabelViewModel(SermonLabel l)
+        public static explicit operator WritingLabelViewModel(WritingLabel l)
         {
-            return new SermonLabelViewModel
+            return new WritingLabelViewModel
             {
                 Id = l.Id,
                 Name = l.Name,

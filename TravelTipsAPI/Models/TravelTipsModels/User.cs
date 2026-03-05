@@ -41,8 +41,6 @@ public partial class User
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
-    public virtual ICollection<Sermon> Sermons { get; set; } = new List<Sermon>();
-
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 
     public virtual ICollection<TripShare> TripShares { get; set; } = new List<TripShare>();
@@ -50,4 +48,6 @@ public partial class User
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 
     public virtual Writer? Writer { get; set; }
+
+    public virtual ICollection<Writing> Writings { get; set; } = new List<Writing>();
 }

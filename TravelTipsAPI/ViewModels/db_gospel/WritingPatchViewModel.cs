@@ -2,7 +2,7 @@
 
 namespace TravelTipsAPI.ViewModels.db_gospel
 {
-    public class SermonPatchViewModel
+    public class WritingPatchViewModel
     {
         [MinLength(1)]
         [MaxLength(50)]

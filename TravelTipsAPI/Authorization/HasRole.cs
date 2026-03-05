@@ -26,6 +26,8 @@ namespace TravelTipsAPI.Authorization
             _userRolesService =
                 context.HttpContext.RequestServices.GetRequiredService<IUserRolesService>();
 
+            UserId = (int)(context.HttpContext.Items["user_id"] ?? 0);
+
             if (UserId == 0)
             {
                 context.Result = new ObjectResult(Messages.AuthenticationFailed)
