@@ -139,7 +139,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             {
                 query = query.Where(b => b.Id < cursor.Id);
             }
-            query = query.OrderByDescending(b => b.Id);
+            query = query.OrderByDescending(b => b.From);
             if (limit != null)
             {
                 query = query.Take(limit.Value);

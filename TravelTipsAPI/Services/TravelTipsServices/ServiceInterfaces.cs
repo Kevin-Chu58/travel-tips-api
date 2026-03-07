@@ -232,6 +232,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             bool IsAdmin(int userId);
             bool IsWriter(int userId);
+            bool IsBannerMan(int userId);
         }
     }
 

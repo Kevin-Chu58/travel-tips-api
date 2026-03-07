@@ -17,6 +17,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Banner> Banners { get; set; }
 
+    public virtual DbSet<BannerMan> BannerMans { get; set; }
+
     public virtual DbSet<BannerStyling> BannerStylings { get; set; }
 
     public virtual DbSet<Bookmark> Bookmarks { get; set; }
@@ -132,6 +134,24 @@ public partial class TravelTipsContext : DbContext
                 .WithMany(p => p.Banners)
                 .HasForeignKey(d => d.StylingId)
                 .HasConstraintName("fk_banners_banner_stylings");
+        });
+
+        modelBuilder.Entity<BannerMan>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_banner_mans");
+
+            entity.ToTable("BannerMans", "db_role");
+
+            entity.HasIndex(e => e.UserId, "idx_banner_man_user_id");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+
+            entity
+                .HasOne(d => d.User)
+                .WithOne(p => p.BannerMan)
+                .HasForeignKey<BannerMan>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_banner_mans");
         });
 
         modelBuilder.Entity<BannerStyling>(entity =>

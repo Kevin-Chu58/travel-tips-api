@@ -87,11 +87,11 @@
         public static readonly string ImageNameTooLong = "Image name too long.";
 
         // - trip image
-        public static readonly string ImageTripAttached = "Image is attached on trip.";
-        public static readonly string ImageTripDetached = "Image is not attached on trip.";
+        public static readonly string ImageTripAttached = "Image is attached to trip.";
+        public static readonly string ImageTripDetached = "Image is not attached to trip.";
 
         // - banner image
-        public static readonly string ImageBannerAttached = "Image is attached on banner.";
+        public static readonly string ImageBannerAttached = "Image is attached to banner.";
 
         // - user image (picture)
         public static readonly string ImageUserPicture = "Image is profile picture.";

@@ -3,7 +3,7 @@
     public class Global
     {
         // User Agent
-        public static readonly string USER_AGENT = "TravelTips/0.5";
+        public static readonly string USER_AGENT = "TravelTips/0.7";
 
         // Default Search Result Limit
         public static readonly int USER_DEFAULT_LIMIT = 20;

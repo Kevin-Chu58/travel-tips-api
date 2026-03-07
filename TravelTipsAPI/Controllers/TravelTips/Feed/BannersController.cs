@@ -34,7 +34,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// <returns>the banner with the id</returns>
         [HttpGet]
         [Route("{id}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult<BannerViewModel>> GetBannerById(int id)
         {
             var banner = await bannersService.GetBannerViewModelById(id);
@@ -51,7 +51,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// <returns>the search results of the banners</returns>
         [HttpGet]
         [Route("all")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public ActionResult<SearchResults<BannerSimpleViewModel>> GetBanners(
             string? cursor = null,
             int? limit = null
@@ -95,7 +95,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// <returns>the new banner created</returns>
         [HttpPost]
         [Route("")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult<BannerViewModel>> CreateBanner(
             [FromBody] BannerPostViewModel newBanner
         )
@@ -112,7 +112,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// <returns></returns>
         [HttpPatch]
         [Route("{id}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult> UpdateBanner(
             int id,
             [FromBody] BannerPatchViewModel updatedBanner
@@ -134,7 +134,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// <returns></returns>
         [HttpDelete]
         [Route("{id}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult> DeleteBanner(int id)
         {
             var banner = bannersService.FindBannerById(id);
@@ -149,7 +149,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
         [HttpGet]
         [Route("stylings")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public ActionResult<IEnumerable<BannerStylingSimpleViewModel>> GetBannerStylings()
         {
             var stylings = bannersService.GetAllBannerStylings();
@@ -158,7 +158,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
         [HttpGet]
         [Route("stylings/{id}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public ActionResult<BannerStylingViewModel> GetBannerStylingById(int id)
         {
             var styling = bannersService.FindBannerStylingById(id);
@@ -170,7 +170,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
         [HttpPost]
         [Route("stylings/{name}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult<BannerStylingViewModel>> CreateBannerStyling(
             string name,
             [FromBody] string styling
@@ -186,7 +186,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
         [HttpPatch]
         [Route("stylings/{id}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult<BannerStylingViewModel>> UpdateBannerStyling(
             int id,
             [FromBody] BannerStylingPatchViewModel bannerStylingPatch
