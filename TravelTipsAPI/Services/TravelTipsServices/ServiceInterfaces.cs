@@ -1,9 +1,10 @@
-﻿using TravelTipsAPI.Models.TravelTipsModels;
+﻿using OpenAI.Batch;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_feed;
 using TravelTipsAPI.ViewModels.db_gospel;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
-using TravelTipsAPI.ViewModels.db_sermon;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
@@ -231,6 +232,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             bool IsAdmin(int userId);
             bool IsWriter(int userId);
+            bool IsBannerMan(int userId);
         }
     }
 
@@ -239,14 +241,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IImagesService
         {
             Image? FindImageById(int id);
+            Image? FindImageAndBannerCountById(out int bannerCount, int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
-            IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetImageIdsByTripId(int id);
+            IEnumerable<int> GetImageIdsByUserId(int id);
+            IEnumerable<int> GetBannerImageIds();
             Task<ImageViewModel> PostNewImageAsync(
                 Stream stream,
                 string contentType,
                 int userId,
-                string? name
+                string? name,
+                bool isBanner = false
             );
             Task<byte[]> DownloadImageAsync(int userId, Guid guid);
             Task UpdateImageName(Image image, string newName);
@@ -259,48 +264,77 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
     public class GospelSchema
     {
-        public interface ISermonsService
+        public interface IWritingsService
         {
-            // sermons
-            Sermon? GetSermonById(int id, bool allowNull = false, bool isRestricted = false);
-            Sermon? GetSermonByLabelOrder(SermonLabel label, int order);
-            int GetSermonOrder(Sermon sermon);
-            Task<IEnumerable<SermonViewModel>> GetLatestSermons();
-            Task<IEnumerable<SermonViewModel>> GetSermonsByParams(
+            // writings
+            Writing? GetWritingById(int id, bool allowNull = false, bool isRestricted = false);
+            Writing? GetWritingByLabelOrder(WritingLabel label, int order);
+            int GetWritingOrder(Writing writing);
+            Task<IEnumerable<WritingViewModel>> GetWritingsByParams(
                 int? createdBy = null,
                 string? title = null,
-                SermonLabel? label = null,
-                bool? isBanner = null,
+                WritingLabel? label = null,
                 bool isRestricted = false,
                 bool isDesc = true
             );
-            Task<SermonViewModel> GetSermonViewModel(Sermon sermon, bool hasContent = false);
-            IEnumerable<int> GetMySermons(int userId);
-            Task<SermonViewModel> PostSermon(SermonPostViewModel sermonPost, int createdBy);
-            Task<SermonViewModel> PatchSermon(Sermon sermon, SermonPatchViewModel sermonPatch);
-            Task<int> DeleteSermon(Sermon sermon);
+            Task<WritingViewModel> GetWritingViewModel(Writing writing, bool hasContent = false);
+            IEnumerable<int> GetMyWritings(int userId);
+            Task<WritingViewModel> PostWriting(WritingPostViewModel writingPost, int createdBy);
+            Task<WritingViewModel> PatchWriting(
+                Writing writing,
+                WritingPatchViewModel writingPatch
+            );
+            Task<int> DeleteWriting(Writing writing);
 
-            // sermon labels
-            SermonLabel? GetLabelById(int id, bool allowNull = false);
-            SermonLabel? GetLabelBySlug(string slug);
-            IEnumerable<SermonLabelViewModel> GetLabelsByParams(
+            // writing labels
+            WritingLabel? GetLabelById(int id, bool allowNull = false);
+            WritingLabel? GetLabelBySlug(string slug);
+            IEnumerable<WritingLabelViewModel> GetLabelsByParams(
                 string? name = null,
                 int? parentLabelId = null,
                 string? type = null
             );
-            SermonLabelCompleteViewModel? BuildSermonLabelComplete(int? id);
-            Task<SermonLabelViewModel> PostNewLabel(
+            WritingLabelCompleteViewModel? BuildWritingLabelComplete(int? id);
+            Task<WritingLabelViewModel> PostNewLabel(
                 string name,
                 string type,
                 int? parentLabelId = null
             );
-            Task<SermonLabelViewModel> UpdateLabel(
-                SermonLabel label,
+            Task<WritingLabelViewModel> UpdateLabel(
+                WritingLabel label,
                 string newName,
                 int? parentLabelId = null
             );
-            Task<int> DeleteLabel(SermonLabel label);
+            Task<int> DeleteLabel(WritingLabel label);
             bool DoesNameExist(string name);
+        }
+    }
+
+    public class FeedSchema
+    {
+        public interface IBannersService
+        {
+            Banner? FindBannerById(int id);
+            Task<BannerViewModel?> GetBannerViewModelById(int id);
+            Task<IEnumerable<BannerViewModel>> GetPublicBannerViewModels();
+            IEnumerable<BannerSimpleViewModel> GetBanners(
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            Task<BannerSimpleViewModel> PostNewBanner(BannerPostViewModel postViewModel);
+            Task UpdateBanner(Banner banner, BannerPatchViewModel bannerPatch);
+            Task DeleteBanner(Banner banner);
+
+            // styling
+
+            BannerStyling? FindBannerStylingById(int id);
+            IEnumerable<BannerStylingSimpleViewModel> GetAllBannerStylings();
+            Task<BannerStylingViewModel> PostNewStyling(string name, string styling);
+            Task<BannerStylingViewModel> UpdateStyling(
+                BannerStyling bannerStyling,
+                BannerStylingPatchViewModel bannerStylingPatch
+            );
+            bool ValidateStyling(string? styling);
         }
     }
 }

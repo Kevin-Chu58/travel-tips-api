@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TravelTipsAPI.ViewModels.db_sermon
+namespace TravelTipsAPI.ViewModels.db_gospel
 {
-    public class SermonPostViewModel
+    public class WritingPostViewModel
     {
         [MinLength(1)]
         [MaxLength(50)]

@@ -13,6 +13,10 @@ public partial class Image
 
     public int CreatedBy { get; set; }
 
+    public bool IsBanner { get; set; }
+
+    public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<TripImage> TripImages { get; set; } = new List<TripImage>();

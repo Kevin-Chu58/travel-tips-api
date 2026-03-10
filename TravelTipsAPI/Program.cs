@@ -55,7 +55,7 @@ builder.Services.AddSwaggerGen(c =>
         new OpenApiInfo
         {
             Title = "TravelTips API",
-            Version = "v0.4",
+            Version = "v0.8",
             Description = "Updated version of TravelTips API",
         }
     );

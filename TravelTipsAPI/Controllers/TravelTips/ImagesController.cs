@@ -1,11 +1,7 @@
-﻿using System.Net.Mail;
-using System.Text.Json;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
-using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
@@ -17,6 +13,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
     public class ImagesController(IImagesService imagesService, IUsersService usersService)
         : TravelTipsControllerBase
     {
+        // images
+
         /// <summary>
         /// Get image by user id
         /// </summary>
@@ -101,11 +99,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             try
             {
-                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
                 var image = imagesService.FindImageById(id);
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
+
+                if (image.IsBanner)
+                    return BadRequest(Messages.ImageUnauthorized);
 
                 await imagesService.UpdateImageName(image, name);
                 return Ok();
@@ -129,9 +128,109 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
 
+                if (image.IsBanner)
+                    return BadRequest(Messages.ImageUnauthorized);
+
                 var user = usersService.GetUserById(userId);
                 if (user.ImageId == id)
                     return BadRequest(Messages.ImageUserPicture);
+
+                await imagesService.DeleteImageAsync(image);
+                return Ok(id);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // banner images
+
+        [HttpGet]
+        [Route("banner")]
+        [HasRole(Role = UserRoles.ADMIN)]
+        public async Task<ActionResult<ImageViewModel>> GetBannerImages()
+        {
+            var imageIds = imagesService.GetBannerImageIds().ToArray();
+
+            var images = await imagesService.GetImagesByIds(imageIds);
+
+            return Ok(images);
+        }
+
+        [HttpPost]
+        [Route("banner")]
+        [HasRole(Role = UserRoles.ADMIN)]
+        public async Task<ActionResult<ImageViewModel>> UploadBannerImage(
+            [FromForm] string? name,
+            IFormFile file
+        )
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                using var stream = file.OpenReadStream();
+                var contentType = file.ContentType;
+
+                var imageViewModel = await imagesService.PostNewImageAsync(
+                    stream,
+                    contentType,
+                    userId,
+                    name,
+                    isBanner: true
+                );
+
+                return Ok(imageViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPatch]
+        [Route("banner/{id}/name/{name}")]
+        [HasRole(Role = UserRoles.ADMIN)]
+        public async Task<ActionResult> UpdateBannerImageName(int id, string name)
+        {
+            try
+            {
+                var image = imagesService.FindImageById(id);
+                if (image == null)
+                    return NotFound(Messages.ImageNotFound);
+
+                if (!image.IsBanner)
+                    return BadRequest(Messages.ImageUnauthorized);
+
+                await imagesService.UpdateImageName(image, name);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        [Route("banner/{id}")]
+        [HasRole(Role = UserRoles.ADMIN)]
+        public async Task<ActionResult<int>> DeleteBannerImage(int id)
+        {
+            try
+            {
+                var image = imagesService.FindImageAndBannerCountById(out int bannerCount, id);
+                if (image == null)
+                    return NotFound(Messages.ImageNotFound);
+
+                if (!image.IsBanner)
+                    return BadRequest(Messages.ImageUnauthorized);
+
+                if (bannerCount > 0)
+                    return BadRequest(Messages.ImageBannerAttached);
 
                 await imagesService.DeleteImageAsync(image);
                 return Ok(id);

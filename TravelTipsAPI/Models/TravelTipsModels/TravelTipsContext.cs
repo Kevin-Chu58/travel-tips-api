@@ -15,6 +15,12 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Attraction> Attractions { get; set; }
 
+    public virtual DbSet<Banner> Banners { get; set; }
+
+    public virtual DbSet<BannerMan> BannerMans { get; set; }
+
+    public virtual DbSet<BannerStyling> BannerStylings { get; set; }
+
     public virtual DbSet<Bookmark> Bookmarks { get; set; }
 
     public virtual DbSet<Day> Days { get; set; }
@@ -27,10 +33,6 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Region> Regions { get; set; }
 
-    public virtual DbSet<Sermon> Sermons { get; set; }
-
-    public virtual DbSet<SermonLabel> SermonLabels { get; set; }
-
     public virtual DbSet<Trip> Trips { get; set; }
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
@@ -42,6 +44,10 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<Writer> Writers { get; set; }
+
+    public virtual DbSet<Writing> Writings { get; set; }
+
+    public virtual DbSet<WritingLabel> WritingLabels { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) =>
         optionsBuilder.UseSqlServer("Name=ConnectionStrings:TravelTips");
@@ -100,6 +106,61 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.ResultType).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.State).HasMaxLength(100);
             entity.Property(e => e.Title).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<Banner>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_banners");
+
+            entity.ToTable("Banners", "db_feed");
+
+            entity.HasIndex(e => new { e.To, e.From }, "idx_banner_publish_period").IsDescending();
+
+            entity.Property(e => e.Label).HasMaxLength(100);
+            entity.Property(e => e.Link).HasMaxLength(100);
+            entity.Property(e => e.Overview).HasMaxLength(300);
+            entity.Property(e => e.SubLabel).HasMaxLength(100);
+            entity.Property(e => e.Title).HasMaxLength(100);
+
+            entity
+                .HasOne(d => d.Image)
+                .WithMany(p => p.Banners)
+                .HasForeignKey(d => d.ImageId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_banners_images");
+
+            entity
+                .HasOne(d => d.Styling)
+                .WithMany(p => p.Banners)
+                .HasForeignKey(d => d.StylingId)
+                .HasConstraintName("fk_banners_banner_stylings");
+        });
+
+        modelBuilder.Entity<BannerMan>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_banner_mans");
+
+            entity.ToTable("BannerMans", "db_role");
+
+            entity.HasIndex(e => e.UserId, "idx_banner_man_user_id");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+
+            entity
+                .HasOne(d => d.User)
+                .WithOne(p => p.BannerMan)
+                .HasForeignKey<BannerMan>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_banner_mans");
+        });
+
+        modelBuilder.Entity<BannerStyling>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_banner_stylings");
+
+            entity.ToTable("BannerStylings", "db_feed");
+
+            entity.Property(e => e.Name).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Bookmark>(entity =>
@@ -225,6 +286,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Images", "db_image");
 
+            entity.HasIndex(e => new { e.CreatedBy, e.IsBanner }, "idx_image_filter");
+
             entity.HasIndex(e => e.CreatedBy, "idx_image_user_id");
 
             entity.Property(e => e.Name).HasMaxLength(50).IsUnicode(false);
@@ -258,69 +321,6 @@ public partial class TravelTipsContext : DbContext
                 .WithMany(p => p.InverseParentRegion)
                 .HasForeignKey(d => d.ParentRegionId)
                 .HasConstraintName("fk_regions_parent");
-        });
-
-        modelBuilder.Entity<Sermon>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_sermons");
-
-            entity.ToTable("Sermons", "db_gospel");
-
-            entity
-                .HasIndex(e => new { e.PublishAt, e.IsBanner }, "idx_sermons_banner_filter")
-                .IsDescending();
-
-            entity.HasIndex(
-                e => new
-                {
-                    e.LabelId,
-                    e.Title,
-                    e.CreatedBy,
-                },
-                "idx_sermons_filter"
-            );
-
-            entity.Property(e => e.Title).HasMaxLength(50);
-
-            entity
-                .HasOne(d => d.CreatedByNavigation)
-                .WithMany(p => p.Sermons)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_users_sermons");
-
-            entity
-                .HasOne(d => d.Label)
-                .WithMany(p => p.Sermons)
-                .HasForeignKey(d => d.LabelId)
-                .HasConstraintName("fk_sermons_sermon_labels");
-        });
-
-        modelBuilder.Entity<SermonLabel>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("pk_sermon_labels");
-
-            entity.ToTable("SermonLabels", "db_gospel");
-
-            entity.HasIndex(
-                e => new
-                {
-                    e.Type,
-                    e.Slug,
-                    e.Name,
-                },
-                "idx_sermon_labels_filter"
-            );
-
-            entity.Property(e => e.Name).HasMaxLength(100);
-            entity.Property(e => e.Slug).HasMaxLength(100);
-            entity.Property(e => e.Type).HasMaxLength(10).IsUnicode(false);
-
-            entity
-                .HasOne(d => d.ParentLabel)
-                .WithMany(p => p.InverseParentLabel)
-                .HasForeignKey(d => d.ParentLabelId)
-                .HasConstraintName("fk_sermon_labels_parent");
         });
 
         modelBuilder.Entity<Trip>(entity =>
@@ -507,6 +507,67 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey<Writer>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_writers");
+        });
+
+        modelBuilder.Entity<Writing>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_writings");
+
+            entity.ToTable("Writings", "db_gospel");
+
+            entity.HasIndex(
+                e => new
+                {
+                    e.LabelId,
+                    e.Title,
+                    e.CreatedBy,
+                },
+                "idx_writings_filter"
+            );
+
+            entity.HasIndex(e => e.PublishAt, "idx_writings_publishAt_filter").IsDescending();
+
+            entity.Property(e => e.Title).HasMaxLength(50);
+
+            entity
+                .HasOne(d => d.CreatedByNavigation)
+                .WithMany(p => p.Writings)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_writings");
+
+            entity
+                .HasOne(d => d.Label)
+                .WithMany(p => p.Writings)
+                .HasForeignKey(d => d.LabelId)
+                .HasConstraintName("fk_writings_writing_labels");
+        });
+
+        modelBuilder.Entity<WritingLabel>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_writing_labels");
+
+            entity.ToTable("WritingLabels", "db_gospel");
+
+            entity.HasIndex(
+                e => new
+                {
+                    e.Type,
+                    e.Slug,
+                    e.Name,
+                },
+                "idx_writing_labels_filter"
+            );
+
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Slug).HasMaxLength(100);
+            entity.Property(e => e.Type).HasMaxLength(10).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.ParentLabel)
+                .WithMany(p => p.InverseParentLabel)
+                .HasForeignKey(d => d.ParentLabelId)
+                .HasConstraintName("fk_writing_labels_parent");
         });
 
         OnModelCreatingPartial(modelBuilder);

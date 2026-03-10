@@ -12,9 +12,9 @@ namespace TravelTipsAPI.Authorization
         public required string Role { get; set; }
         public bool VerifyEmail { get; set; } = true;
 
-        private ActionExecutingContext context;
-        private IUsersService _usersService;
-        private IUserRolesService _userRolesService;
+        private ActionExecutingContext? context;
+        private IUsersService? _usersService;
+        private IUserRolesService? _userRolesService;
 
         private int UserId { get; set; }
 
@@ -25,6 +25,8 @@ namespace TravelTipsAPI.Authorization
             _usersService = context.HttpContext.RequestServices.GetRequiredService<IUsersService>();
             _userRolesService =
                 context.HttpContext.RequestServices.GetRequiredService<IUserRolesService>();
+
+            UserId = (int)(context.HttpContext.Items["user_id"] ?? 0);
 
             if (UserId == 0)
             {
@@ -59,7 +61,8 @@ namespace TravelTipsAPI.Authorization
         {
             // arrange the roles from the highest to the lowest
             bool isAdmin,
-                isWriter;
+                isWriter,
+                isBannerMan;
             switch (role)
             {
                 case UserRoles.ADMIN:
@@ -69,6 +72,10 @@ namespace TravelTipsAPI.Authorization
                 case UserRoles.WRITER:
                     isWriter = _userRolesService.IsWriter(UserId);
                     return isWriter;
+
+                case UserRoles.BANNER_MAN:
+                    isBannerMan = _userRolesService.IsBannerMan(UserId);
+                    return isBannerMan;
             }
 
             return false;

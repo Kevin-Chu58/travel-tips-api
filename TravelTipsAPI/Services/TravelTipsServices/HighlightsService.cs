@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
-using TravelTipsAPI.ViewModels.db_sermon;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;

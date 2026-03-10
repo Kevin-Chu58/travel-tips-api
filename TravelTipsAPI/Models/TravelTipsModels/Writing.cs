@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace TravelTipsAPI.Models.TravelTipsModels;
 
-public partial class Sermon
+public partial class Writing
 {
     public int Id { get; set; }
 
@@ -17,9 +17,7 @@ public partial class Sermon
 
     public DateOnly PublishAt { get; set; }
 
-    public bool IsBanner { get; set; }
-
     public virtual User CreatedByNavigation { get; set; } = null!;
 
-    public virtual SermonLabel? Label { get; set; }
+    public virtual WritingLabel? Label { get; set; }
 }

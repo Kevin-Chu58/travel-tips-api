@@ -64,7 +64,7 @@ namespace TravelTipsAPI.Middleware
                     }
                     else
                     {
-                        // caching for easy reuse, nothing happen if already exist
+                        // caching for easy reuse, nothing happen if already exists
                         context.Items.TryAdd("user_id", user.Id);
                         context.Items.TryAdd("email_verified", emailVerified);
 

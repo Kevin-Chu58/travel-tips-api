@@ -5,7 +5,6 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_gospel;
 using TravelTipsAPI.ViewModels.db_search;
-using TravelTipsAPI.ViewModels.db_sermon;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.GospelSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
@@ -13,32 +12,30 @@ using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 namespace TravelTipsAPI.Controllers.TravelTips.Gospel
 {
     [Route("api/[controller]")]
-    public class SermonsController(
+    public class WritingsController(
         IUsersService usersService,
         IUserRolesService userRolesService,
-        ISermonsService sermonsService
+        IWritingsService writingsService
     ) : TravelTipsControllerBase
     {
-        // sermons
+        // writings
 
         /// <summary>
-        /// Get a list of sermons by params
+        /// Get a list of writings by params
         /// </summary>
-        /// <param name="createdByAuthId">sermon writer auth id</param>
-        /// <param name="title">sermon title</param>
-        /// <param name="labelSlug">sermon label slug</param>
-        /// <param name="isBanner">whether the sermon is bannered</param>
-        /// <param name="isRestricted">whether the future sermons are included</param>
+        /// <param name="createdByAuthId">writing writer auth id</param>
+        /// <param name="title">writing title</param>
+        /// <param name="labelSlug">writing label slug</param>
+        /// <param name="isRestricted">whether the future writings are included</param>
         /// <param name="isDesc">whether in descending or ascending order</param>
-        /// <returns>a list of sermons that fit the params</returns>
+        /// <returns>a list of writings that fit the params</returns>
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public async Task<ActionResult<IEnumerable<SermonViewModel>>> GetSermonsByParams(
-            string? createdByAuthId = null,
+        public async Task<ActionResult<IEnumerable<WritingViewModel>>> GetWritingsByParams(
+            [FromQuery] string? createdByAuthId = null,
             string? title = null,
             string? labelSlug = null,
-            bool? isBanner = null,
             bool isRestricted = false,
             bool isDesc = true
         )
@@ -56,32 +53,31 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
                 user = usersService.GetUserByUserId(createdByAuthId);
 
             // get label from label slug
-            SermonLabel? label = null;
+            WritingLabel? label = null;
             if (labelSlug != null)
-                label = sermonsService.GetLabelBySlug(labelSlug);
+                label = writingsService.GetLabelBySlug(labelSlug);
 
-            var sermons = await sermonsService.GetSermonsByParams(
+            var writings = await writingsService.GetWritingsByParams(
                 createdBy: user?.Id ?? null,
                 title: title,
                 label: label,
-                isBanner: isBanner,
                 isRestricted: isRestricted,
                 isDesc: isDesc
             );
 
-            return Ok(sermons);
+            return Ok(writings);
         }
 
         /// <summary>
-        /// Get a sermon by id
+        /// Get a writing by id
         /// </summary>
-        /// <param name="id">sermon id</param>
-        /// <param name="isRestricted">whether user can see future sermons</param>
-        /// <returns>the sermon with content</returns>
+        /// <param name="id">writing id</param>
+        /// <param name="isRestricted">whether user can see future writings</param>
+        /// <returns>the writing with content</returns>
         [HttpGet]
         [Route("{id}")]
         [AllowAnonymous]
-        public async Task<ActionResult<SermonViewModel>> GetSermonById(
+        public async Task<ActionResult<WritingViewModel>> GetWritingById(
             int id,
             [FromQuery] bool isRestricted = false
         )
@@ -95,16 +91,16 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
 
             try
             {
-                var sermon = sermonsService.GetSermonById(
+                var writing = writingsService.GetWritingById(
                     id: id,
                     allowNull: true,
                     isRestricted: isRestricted
                 );
-                if (sermon is null)
-                    return NotFound(Messages.SermonNotFound);
+                if (writing is null)
+                    return NotFound(Messages.WritingNotFound);
 
-                // include actual sermon content in the result
-                var result = await sermonsService.GetSermonViewModel(sermon, true);
+                // include actual writing content in the result
+                var result = await writingsService.GetWritingViewModel(writing, true);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -116,32 +112,32 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpGet]
         [Route("order/{id}")]
         [AllowAnonymous]
-        public ActionResult<int> GetSermonOrderById(int id)
+        public ActionResult<int> GetWritingOrderById(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var sermon = sermonsService.GetSermonById(id);
-            if (sermon is null || sermon.LabelId is null)
-                return NotFound(Messages.SermonNotFound);
+            var writing = writingsService.GetWritingById(id);
+            if (writing is null || writing.LabelId is null)
+                return NotFound(Messages.WritingNotFound);
 
-            // verify user is writer when it is a future sermon
+            // verify user is writer when it is a future writing
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            if (sermon.PublishAt > today)
+            if (writing.PublishAt > today)
             {
                 var isWriter = userRolesService.IsWriter(userId);
                 if (!isWriter)
-                    return BadRequest(Messages.SermonUnauthorized);
+                    return BadRequest(Messages.WritingUnauthorized);
             }
 
-            var order = sermonsService.GetSermonOrder(sermon);
+            var order = writingsService.GetWritingOrder(writing);
             return Ok(order);
         }
 
         [HttpGet]
         [Route("{labelSlug}/{order}")]
         [AllowAnonymous]
-        public async Task<ActionResult<SermonViewModel>> GetSermonByLabelOrder(
+        public async Task<ActionResult<WritingViewModel>> GetWritingByLabelOrder(
             string labelSlug,
             int order
         )
@@ -149,89 +145,89 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             // get label from label slug
-            var label = sermonsService.GetLabelBySlug(labelSlug);
+            var label = writingsService.GetLabelBySlug(labelSlug);
             if (label is null)
-                return NotFound(Messages.SermonLabelNotFound);
+                return NotFound(Messages.WritingLabelNotFound);
 
             if (order <= 0)
-                return NotFound(Messages.SermonNotFound);
+                return NotFound(Messages.WritingNotFound);
 
-            var sermon = sermonsService.GetSermonByLabelOrder(label, order);
-            if (sermon is null)
-                return NotFound(Messages.SermonNotFound);
+            var writing = writingsService.GetWritingByLabelOrder(label, order);
+            if (writing is null)
+                return NotFound(Messages.WritingNotFound);
 
-            // verify user is writer when it is a future sermon
+            // verify user is writer when it is a future writing
             var today = DateOnly.FromDateTime(DateTime.Now);
 
-            if (sermon.PublishAt > today)
+            if (writing.PublishAt > today)
             {
                 var isWriter = userRolesService.IsWriter(userId);
                 if (!isWriter)
-                    return BadRequest(Messages.SermonUnauthorized);
+                    return BadRequest(Messages.WritingUnauthorized);
             }
 
-            var result = await sermonsService.GetSermonViewModel(sermon, true);
+            var result = await writingsService.GetWritingViewModel(writing, true);
             return Ok(result);
         }
 
         /// <summary>
-        /// Get the latest sermons
+        /// Get the latest writings
         /// </summary>
-        /// <returns>a list of latest sermons</returns>
-        [HttpGet]
-        [Route("latest")]
-        [AllowAnonymous]
-        public ActionResult<IEnumerable<SermonViewModel>> GetLatestSermons()
-        {
-            var sermons = sermonsService.GetLatestSermons();
-            return Ok(sermons);
-        }
+        /// <returns>a list of latest writings</returns>
+        //[HttpGet]
+        //[Route("latest")]
+        //[AllowAnonymous]
+        //public ActionResult<IEnumerable<WritingViewModel>> GetLatestWritings()
+        //{
+        //    var writings = writingsService.GetLatestWritings();
+        //    return Ok(writings);
+        //}
 
         /// <summary>
-        /// Get a list of my sermons
+        /// Get a list of my writings
         /// </summary>
-        /// <returns>a list of my sermons</returns>
+        /// <returns>a list of my writings</returns>
         [HttpGet]
         [Route("my")]
         [HasRole(Role = UserRoles.WRITER)]
-        public async Task<ActionResult<IEnumerable<SermonViewModel>>> GetMySermons()
+        public async Task<ActionResult<IEnumerable<WritingViewModel>>> GetMyWritings()
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var sermons = await sermonsService.GetSermonsByParams(
+            var writings = await writingsService.GetWritingsByParams(
                 createdBy: userId,
                 isRestricted: true
             );
-            return Ok(sermons);
+            return Ok(writings);
         }
 
         /// <summary>
-        /// Create a new sermon
+        /// Create a new writing
         /// </summary>
-        /// <param name="newSermon">new sermon</param>
-        /// <returns>the new sermon</returns>
+        /// <param name="newWriting">new writing</param>
+        /// <returns>the new writing</returns>
         [HttpPost]
         [Route("")]
         [IsOwner(Resource = Resources.NONE)]
         [HasRole(Role = UserRoles.WRITER)]
-        public async Task<ActionResult<SermonViewModel>> PostNewSermon(
-            [FromBody] SermonPostViewModel newSermon
+        public async Task<ActionResult<WritingViewModel>> PostNewWriting(
+            [FromBody] WritingPostViewModel newWriting
         )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            if (newSermon.LabelId != null)
+            if (newWriting.LabelId != null)
             {
-                var sermonLabel = sermonsService.GetLabelById((int)newSermon.LabelId, true);
+                var writingLabel = writingsService.GetLabelById((int)newWriting.LabelId, true);
 
-                if (sermonLabel?.Type != "Topic")
-                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                if (writingLabel?.Type != "Topic")
+                    return BadRequest(Messages.WritingLabelTypeInvalid);
             }
 
             try
             {
-                var sermon = await sermonsService.PostSermon(newSermon, userId);
-                return Ok(sermon);
+                var writing = await writingsService.PostWriting(newWriting, userId);
+                return Ok(writing);
             }
             catch (Exception ex)
             {
@@ -240,86 +236,86 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         }
 
         /// <summary>
-        /// Update an existing sermon
+        /// Update an existing writing
         /// </summary>
-        /// <param name="id">sermon id</param>
-        /// <param name="sermonPatch">sermon details to be updataed</param>
-        /// <returns>the updated sermon</returns>
+        /// <param name="id">writing id</param>
+        /// <param name="writingPatch">writing details to be updataed</param>
+        /// <returns>the updated writing</returns>
         [HttpPatch]
         [Route("{id}")]
         [IsOwner(Resource = Resources.SERMONS)]
         [HasRole(Role = UserRoles.WRITER)]
-        public async Task<ActionResult<SermonViewModel>> PatchSermon(
+        public async Task<ActionResult<WritingViewModel>> PatchWriting(
             int id,
-            [FromBody] SermonPatchViewModel sermonPatch
+            [FromBody] WritingPatchViewModel writingPatch
         )
         {
-            if (sermonPatch.LabelId != null)
+            if (writingPatch.LabelId != null)
             {
-                var sermonLabel = sermonsService.GetLabelById((int)sermonPatch.LabelId, true);
+                var writingLabel = writingsService.GetLabelById((int)writingPatch.LabelId, true);
 
-                if (sermonLabel?.Type != "Topic")
-                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                if (writingLabel?.Type != "Topic")
+                    return BadRequest(Messages.WritingLabelTypeInvalid);
             }
 
-            var oldSermon = sermonsService.GetSermonById(id, true, true);
+            var oldWriting = writingsService.GetWritingById(id, true, true);
 
-            var sermon = await sermonsService.PatchSermon(oldSermon!, sermonPatch);
-            return Ok(sermon);
+            var writing = await writingsService.PatchWriting(oldWriting!, writingPatch);
+            return Ok(writing);
         }
 
         /// <summary>
-        /// Delete a sermon by its id
+        /// Delete a writing by its id
         /// </summary>
-        /// <param name="id">sermon id</param>
-        /// <returns>the deleted sermon id</returns>
+        /// <param name="id">writing id</param>
+        /// <returns>the deleted writing id</returns>
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.SERMONS)]
         [HasRole(Role = UserRoles.WRITER)]
-        public async Task<ActionResult<int>> DeleteSermon(int id)
+        public async Task<ActionResult<int>> DeleteWriting(int id)
         {
-            var oldSermon = sermonsService.GetSermonById(id, true, true);
+            var oldWriting = writingsService.GetWritingById(id, true, true);
 
-            var deletedSermonId = await sermonsService.DeleteSermon(oldSermon!);
-            return Ok(deletedSermonId);
+            var deletedWritingId = await writingsService.DeleteWriting(oldWriting!);
+            return Ok(deletedWritingId);
         }
 
-        // sermon labels
+        // writing labels
 
         /// <summary>
-        /// Get search result of sermon labels by params, separated by the topics
+        /// Get search result of writing labels by params, separated by the topics
         /// </summary>
-        /// <param name="name">sermon name</param>
-        /// <param name="parentLabelId">sermon parent label id</param>
-        /// <param name="type">sermon label type</param>
+        /// <param name="name">writing name</param>
+        /// <param name="parentLabelId">writing parent label id</param>
+        /// <param name="type">writing label type</param>
         /// <param name="timestamp">when was this request sent</param>
-        /// <returns>the search result of sermon labels that fit the params</returns>
+        /// <returns>the search result of writing labels that fit the params</returns>
         [HttpGet]
         [Route("labels")]
         [AllowAnonymous]
-        public ActionResult<SearchResult<SermonLabelSearchResult>> GetLabelsByParams(
+        public ActionResult<SearchResult<WritingLabelSearchResult>> GetLabelsByParams(
             [FromQuery] string? name = null,
             int? parentLabelId = null,
             string? type = null,
             int? timestamp = null
         )
         {
-            var sermonLabels = sermonsService.GetLabelsByParams(
+            var writingLabels = writingsService.GetLabelsByParams(
                 name: name,
                 parentLabelId: parentLabelId,
                 type: type
             );
 
-            var categories = sermonLabels.Where(l => l.Type == "Category").ToList();
-            var topics = sermonLabels.Where(l => l.Type == "Topic").ToList();
+            var categories = writingLabels.Where(l => l.Type == "Category").ToList();
+            var topics = writingLabels.Where(l => l.Type == "Topic").ToList();
 
-            var labelResult = new SermonLabelSearchResult
+            var labelResult = new WritingLabelSearchResult
             {
                 Categories = categories,
                 Topics = topics,
             };
-            var result = new SearchResult<SermonLabelSearchResult>
+            var result = new SearchResult<WritingLabelSearchResult>
             {
                 Result = labelResult,
                 Timestamp = timestamp,
@@ -329,20 +325,22 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         }
 
         /// <summary>
-        /// Get complete sermon label by slug
+        /// Get complete writing label by slug
         /// </summary>
         /// <param name="slug">slug</param>
-        /// <returns>the complete sermon label</returns>
+        /// <returns>the complete writing label</returns>
         [HttpGet]
         [Route("labels/{slug}")]
         [AllowAnonymous]
-        public ActionResult<SermonLabelCompleteViewModel> GetCompleteSermonLabelBySlug(string slug)
+        public ActionResult<WritingLabelCompleteViewModel> GetCompleteWritingLabelBySlug(
+            string slug
+        )
         {
-            var label = sermonsService.GetLabelBySlug(slug);
+            var label = writingsService.GetLabelBySlug(slug);
             if (label is null)
-                return NotFound(Messages.SermonLabelNotFound);
+                return NotFound(Messages.WritingLabelNotFound);
 
-            var completeLabel = sermonsService.BuildSermonLabelComplete(label.Id);
+            var completeLabel = writingsService.BuildWritingLabelComplete(label.Id);
 
             return Ok(completeLabel);
         }
@@ -357,7 +355,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpPost]
         [Route("labels")]
         [HasRole(Role = UserRoles.WRITER)]
-        public async Task<ActionResult<SermonLabelViewModel>> PostNewLabel(
+        public async Task<ActionResult<WritingLabelViewModel>> PostNewLabel(
             [FromQuery] string name,
             string type,
             int? parentLabelId = null
@@ -367,15 +365,15 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
             {
                 if (type == "Category" && parentLabelId != null)
                 {
-                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                    return BadRequest(Messages.WritingLabelTypeInvalid);
                 }
 
                 if (type == "Topic" && parentLabelId is null)
                 {
-                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                    return BadRequest(Messages.WritingLabelTypeInvalid);
                 }
 
-                var label = await sermonsService.PostNewLabel(name, type, parentLabelId);
+                var label = await writingsService.PostNewLabel(name, type, parentLabelId);
                 return Ok(label);
             }
             catch (Exception ex)
@@ -394,7 +392,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         [HttpPatch]
         [Route("labels/{id}")]
         [HasRole(Role = UserRoles.WRITER)]
-        public async Task<ActionResult<SermonLabelViewModel>> UpdateLabel(
+        public async Task<ActionResult<WritingLabelViewModel>> UpdateLabel(
             int id,
             [FromQuery] string name,
             int? parentLabelId = null
@@ -402,21 +400,21 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         {
             try
             {
-                var oldLabel = sermonsService.GetLabelById(id, true);
+                var oldLabel = writingsService.GetLabelById(id, true);
                 if (oldLabel is null)
-                    return NotFound(Messages.SermonLabelNotFound);
+                    return NotFound(Messages.WritingLabelNotFound);
 
                 if (oldLabel.Type == "Category" && parentLabelId != null)
                 {
-                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                    return BadRequest(Messages.WritingLabelTypeInvalid);
                 }
 
                 if (oldLabel.Type == "Topic" && parentLabelId is null)
                 {
-                    return BadRequest(Messages.SermonLabelTypeInvalid);
+                    return BadRequest(Messages.WritingLabelTypeInvalid);
                 }
 
-                var label = await sermonsService.UpdateLabel(oldLabel, name);
+                var label = await writingsService.UpdateLabel(oldLabel, name);
                 return Ok(label);
             }
             catch (Exception ex)
@@ -437,9 +435,9 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         {
             try
             {
-                var oldLabel = sermonsService.GetLabelById(id);
+                var oldLabel = writingsService.GetLabelById(id);
 
-                var deletedLabelId = await sermonsService.DeleteLabel(oldLabel!);
+                var deletedLabelId = await writingsService.DeleteLabel(oldLabel!);
                 return Ok(deletedLabelId);
             }
             catch (Exception ex)

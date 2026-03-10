@@ -32,5 +32,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             return isWriter != null;
         }
+
+        /// <summary>
+        /// Check if the user is banner man
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns>whether is banner man</returns>
+        public bool IsBannerMan(int id)
+        {
+            var isBannerMan = context.BannerMans.Find(id);
+
+            return isBannerMan != null;
+        }
     }
 }
