@@ -22,8 +22,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
 {
     options.UseLazyLoadingProxies();
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
 // Add authentication to the container.
@@ -55,7 +55,7 @@ builder.Services.AddSwaggerGen(c =>
         new OpenApiInfo
         {
             Title = "TravelTips API",
-            Version = "v0.4",
+            Version = "v0.8",
             Description = "Updated version of TravelTips API",
         }
     );
