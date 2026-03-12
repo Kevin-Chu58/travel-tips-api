@@ -68,7 +68,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             User? GetUserByUserId(string userId);
             Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
-            Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users);
+            Task<UserViewModel> GetUserViewModelById(int id);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
             Task<bool> AcceptUserAgreementAsync(int id);
 

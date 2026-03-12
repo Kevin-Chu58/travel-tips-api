@@ -137,44 +137,51 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         }
 
         /// <summary>
-        /// Get a list of user view models
+        /// Get a user view model by id
         /// </summary>
-        /// <param name="users">users</param>
-        /// <returns>a list of user view models</returns>
-        public async Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users)
+        /// <param name="id">user id</param>
+        /// <returns>the user view model with the id</returns>
+        public async Task<UserViewModel> GetUserViewModelById(int id)
         {
-            var userList = users.ToList();
-
-            // Collect all imageIds we need
-            var imageIds = userList
-                .Where(u => u.ImageId != null)
-                .Select(u => u.ImageId!.Value)
-                .Distinct()
-                .ToList();
-
-            // Fetch images in one call (important for performance)
-            var images =
-                imageIds.Count != 0
-                    ? (await imagesService.GetImagesByIds([.. imageIds])).ToDictionary(i => i.Id)
-                    : [];
-
-            return userList.Select(user =>
-            {
-                images.TryGetValue(user.ImageId ?? -1, out var image);
-
-                return new UserViewModel
+            var user = await context
+                .Users.Where(u => u.Id == id)
+                .Select(u => new
                 {
-                    Id = user.Id,
-                    UserId = user.UserId,
-                    Username = user.Username ?? "",
-                    Picture = image?.Url ?? user.ExternalImageUrl,
-                    Email = user.Email,
-                    UserAgreement = user.UserAgreement,
-                    EmailVerified = user.EmailVerified,
-                    IsAdmin = userRolesService.IsAdmin(user.Id),
-                    IsWriter = userRolesService.IsWriter(user.Id),
-                };
-            });
+                    u.Id,
+                    u.UserId,
+                    u.Username,
+                    u.Email,
+                    u.UserAgreement,
+                    u.EmailVerified,
+                    IsAdmin = u.Admin != null,
+                    IsWriter = u.Writer != null,
+                    IsBannerMan = u.BannerMan != null,
+                    u.ImageId,
+                    u.ExternalImageUrl,
+                })
+                .SingleAsync();
+
+            // Fetch image in one call (important for performance)
+            var image =
+                user.ImageId != null
+                    ? (await imagesService.GetImagesByIds([user.ImageId.Value])).FirstOrDefault()
+                    : null;
+
+            var picture = image?.Url ?? user.ExternalImageUrl;
+
+            return new UserViewModel
+            {
+                Id = user.Id,
+                UserId = user.UserId,
+                Username = user.Username ?? "",
+                Picture = image?.Url ?? user.ExternalImageUrl,
+                Email = user.Email,
+                UserAgreement = user.UserAgreement,
+                EmailVerified = user.EmailVerified,
+                IsAdmin = user.IsAdmin,
+                IsWriter = user.IsWriter,
+                IsBannerMan = user.IsBannerMan,
+            };
         }
 
         /// <summary>
@@ -230,6 +237,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     u.Username,
                     IsAdmin = u.Admin != null,
                     IsWriter = u.Writer != null,
+                    IsBannerMan = u.BannerMan != null,
                     NumTrips = u
                         .Trips.Where(t => t.IsPublic == true && t.IsHidden == false)
                         .Count(),

@@ -63,10 +63,15 @@ namespace TravelTipsAPI.Authorization
             bool isAdmin,
                 isWriter,
                 isBannerMan;
+
+            // admin has all permissions, so check it first
+            isAdmin = _userRolesService.IsAdmin(UserId);
+            if (isAdmin)
+                return true;
+
             switch (role)
             {
                 case UserRoles.ADMIN:
-                    isAdmin = _userRolesService.IsAdmin(UserId);
                     return isAdmin;
 
                 case UserRoles.WRITER:

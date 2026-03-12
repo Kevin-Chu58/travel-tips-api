@@ -7,9 +7,9 @@ public partial class BannerStyling
 {
     public int Id { get; set; }
 
-    public string Name { get; set; } = null!;
-
     public string? Styling { get; set; }
+
+    public string Name { get; set; } = null!;
 
     public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
 }

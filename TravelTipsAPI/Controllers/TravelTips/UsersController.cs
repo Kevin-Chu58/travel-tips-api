@@ -123,11 +123,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                var user = usersService.GetUserById(userId);
-                var userViewModel = (await usersService.GetUserViewModels([user])).First();
-
-                userViewModel.IsAdmin = userRolesService.IsAdmin(userId);
-                userViewModel.IsWriter = userRolesService.IsWriter(userId);
+                var userViewModel = await usersService.GetUserViewModelById(userId);
 
                 return Ok(userViewModel);
             }

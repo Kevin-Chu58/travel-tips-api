@@ -13,6 +13,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public bool EmailVerified { get; set; }
         public bool? IsAdmin { get; set; }
         public bool? IsWriter { get; set; }
+        public bool? IsBannerMan { get; set; }
 
         public static explicit operator UserViewModel(User user)
         {
