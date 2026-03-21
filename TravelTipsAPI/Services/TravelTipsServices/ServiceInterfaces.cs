@@ -4,6 +4,7 @@ using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using TravelTipsAPI.ViewModels.db_gospel;
 using TravelTipsAPI.ViewModels.db_image;
+using TravelTipsAPI.ViewModels.db_plan;
 using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
@@ -67,9 +68,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? limit = null
             );
             User? GetUserByUserId(string userId);
+            User? GetUserByStripeCustomerId(string stripeCustomerId);
             Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
             Task<UserViewModel> GetUserViewModelById(int id);
-            Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
+            Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel user);
             Task<bool> AcceptUserAgreementAsync(int id);
 
             // user profile
@@ -335,6 +337,25 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 BannerStylingPatchViewModel bannerStylingPatch
             );
             bool ValidateStyling(string? styling);
+        }
+    }
+
+    public class PlanSchema
+    {
+        public interface ISubscriptionsService
+        {
+            Subscription? FindLastSubscriptionByUserId(int userId);
+            SubscriptionViewModel? GetActiveSubscriptionByUserId(int userId);
+            IEnumerable<SubscriptionViewModel> GetSubscriptionsByUserIdWithCursor(
+                int userId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            Task AddSubscription(SubscriptionPostViewModel newSubscription);
+            Task UpdateSubscription(
+                Subscription subscription,
+                SubscriptionPatchViewModel subscriptionPatch
+            );
         }
     }
 }

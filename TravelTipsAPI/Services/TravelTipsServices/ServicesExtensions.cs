@@ -1,11 +1,13 @@
 ﻿using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.TravelTipsServices.Feed;
 using TravelTipsAPI.Services.TravelTipsServices.Gospel;
+using TravelTipsAPI.Services.TravelTipsServices.Plan;
 using TravelTipsAPI.Services.TravelTipsServices.Search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.GospelSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
@@ -38,6 +40,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<IWritingsService, WritingsService>();
             // feed schema
             services.AddScoped<IBannersService, BannersService>();
+            // plan schema
+            services.AddScoped<ISubscriptionsService, SubscriptionsService>();
 
             return services;
         }

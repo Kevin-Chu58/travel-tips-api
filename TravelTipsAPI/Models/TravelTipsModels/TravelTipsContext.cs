@@ -17,7 +17,7 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Banner> Banners { get; set; }
 
-    public virtual DbSet<BannerMan> BannerMans { get; set; }
+    public virtual DbSet<BannerMan> BannerMen { get; set; }
 
     public virtual DbSet<BannerStyling> BannerStylings { get; set; }
 
@@ -32,6 +32,10 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<Image> Images { get; set; }
 
     public virtual DbSet<Region> Regions { get; set; }
+
+    public virtual DbSet<Subscription> Subscriptions { get; set; }
+
+    public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
 
     public virtual DbSet<Trip> Trips { get; set; }
 
@@ -138,11 +142,11 @@ public partial class TravelTipsContext : DbContext
 
         modelBuilder.Entity<BannerMan>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("pk_banner_mans");
+            entity.HasKey(e => e.UserId).HasName("pk_banner_men");
 
-            entity.ToTable("BannerMans", "db_role");
+            entity.ToTable("BannerMen", "db_role");
 
-            entity.HasIndex(e => e.UserId, "idx_banner_man_user_id");
+            entity.HasIndex(e => e.UserId, "idx_banner_men_user_id");
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
@@ -151,7 +155,7 @@ public partial class TravelTipsContext : DbContext
                 .WithOne(p => p.BannerMan)
                 .HasForeignKey<BannerMan>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_users_banner_mans");
+                .HasConstraintName("fk_users_banner_men");
         });
 
         modelBuilder.Entity<BannerStyling>(entity =>
@@ -323,6 +327,57 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_regions_parent");
         });
 
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_subscriptions");
+
+            entity.ToTable("Subscriptions", "db_plan");
+
+            entity
+                .HasIndex(
+                    e => new
+                    {
+                        e.UserId,
+                        e.Start,
+                        e.End,
+                    },
+                    "idx_subscription_user_record"
+                )
+                .IsDescending(false, true, true);
+
+            entity
+                .HasIndex(e => new { e.UserId, e.PlanId }, "uidx_subscription_only_active")
+                .IsUnique()
+                .HasFilter("([Status]='active')");
+
+            entity.Property(e => e.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
+            entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.StripeSubscriptionId).HasMaxLength(255).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.Plan)
+                .WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_subscriptions_subscription_plans");
+
+            entity
+                .HasOne(d => d.User)
+                .WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_subscriptions");
+        });
+
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_subscription_plans");
+
+            entity.ToTable("SubscriptionPlans", "db_plan");
+
+            entity.Property(e => e.Description).HasMaxLength(100).IsUnicode(false);
+        });
+
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
@@ -477,10 +532,13 @@ public partial class TravelTipsContext : DbContext
                 .HasIndex(e => new { e.FollowingCount, e.Id }, "idx_users_followingCount_id")
                 .IsDescending();
 
+            entity.HasIndex(e => e.StripeCustomerId, "idx_users_stripe_customer_id");
+
             entity.HasIndex(e => new { e.Username, e.Id }, "idx_users_username_id");
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.ExternalImageUrl).IsUnicode(false);
+            entity.Property(e => e.StripeCustomerId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50);
 

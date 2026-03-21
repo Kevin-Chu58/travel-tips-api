@@ -40,7 +40,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <returns>whether is banner man</returns>
         public bool IsBannerMan(int id)
         {
-            var isBannerMan = context.BannerMans.Find(id);
+            var isBannerMan = context.BannerMen.Find(id);
 
             return isBannerMan != null;
         }

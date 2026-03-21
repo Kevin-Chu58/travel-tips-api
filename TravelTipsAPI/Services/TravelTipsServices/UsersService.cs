@@ -98,6 +98,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return user;
         }
 
+        public User? GetUserByStripeCustomerId(string stripeCustomerId)
+        {
+            var user = context.Users.FirstOrDefault(user =>
+                user.StripeCustomerId == stripeCustomerId
+            );
+            return user;
+        }
+
         /// <summary>
         /// Get a list of user simple view models
         /// </summary>
@@ -158,6 +166,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     IsBannerMan = u.BannerMan != null,
                     u.ImageId,
                     u.ExternalImageUrl,
+                    u.RenewSubscription,
+                    u.StripeCustomerId,
                 })
                 .SingleAsync();
 
@@ -181,6 +191,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 IsAdmin = user.IsAdmin,
                 IsWriter = user.IsWriter,
                 IsBannerMan = user.IsBannerMan,
+                RenewSubscription = user.RenewSubscription,
+                StripeCustomerId = user.StripeCustomerId,
             };
         }
 
@@ -200,9 +212,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             user.Email = userPatchViewModel.Email ?? user.Email;
             user.Username = userPatchViewModel.Username ?? user.Username;
 
+            // stripe settings
+            user.RenewSubscription = userPatchViewModel.RenewSubscription ?? user.RenewSubscription;
+            user.StripeCustomerId = userPatchViewModel.StripeCustomerId ?? user.StripeCustomerId;
+
             await context.SaveChangesAsync();
 
-            return (UserViewModel)user;
+            return await GetUserViewModelById(id);
         }
 
         /// <summary>

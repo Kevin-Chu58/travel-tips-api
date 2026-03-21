@@ -21,7 +21,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     public class UsersController(
         IFollowersService followersService,
         IUsersService usersService,
-        IUserRolesService userRolesService,
+        //IUserRolesService userRolesService,
         IImagesService imagesService
     ) : TravelTipsControllerBase
     {
@@ -339,6 +339,28 @@ namespace TravelTipsAPI.Controllers.TravelTips
             try
             {
                 await usersService.UnfollowAsync(id, userId);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // subscription
+
+        [HttpPatch]
+        [Route("renewSubscription")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult> UpdateRenewSubscription([FromQuery] bool renewSubscription)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            try
+            {
+                await usersService.UpdateUserAsync(
+                    userId,
+                    new UserPatchViewModel { RenewSubscription = renewSubscription }
+                );
                 return Ok();
             }
             catch (Exception ex)

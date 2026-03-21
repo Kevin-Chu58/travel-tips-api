@@ -25,6 +25,10 @@ public partial class User
 
     public bool EmailVerified { get; set; }
 
+    public bool RenewSubscription { get; set; }
+
+    public string? StripeCustomerId { get; set; }
+
     public virtual Admin? Admin { get; set; }
 
     public virtual BannerMan? BannerMan { get; set; }
@@ -42,6 +46,8 @@ public partial class User
     public virtual Image? Image { get; set; }
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
+
+    public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 

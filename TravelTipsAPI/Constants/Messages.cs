@@ -120,5 +120,11 @@
         // - banner stylings
         public static readonly string BannerStylingNotFound = "Banner styling not found.";
         public static readonly string BannerStylingInvalid = "Banner styling is invalid.";
+
+        // subscription
+        public static readonly string SubscriptionTypeInvalid = "Invalid subscription type.";
+        public static readonly string SubscriptionAlreadyActive =
+            "User already has an active subscription.";
+        public static readonly string SubscriptionNotFound = "Subscription not found.";
     }
 }

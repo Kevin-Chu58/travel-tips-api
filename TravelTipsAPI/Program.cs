@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using TravelTipsAPI.BackgroundServices;
 using TravelTipsAPI.Clients;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.HereMapServices;
 using TravelTipsAPI.Middleware;
@@ -26,7 +27,7 @@ builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
-// Add authentication to the container.
+// Add authentication to the container
 
 builder
     .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -103,10 +104,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins(
-                    "https://travel-tips-ui-us-west-g2cxbjaydqejh0af.westus-01.azurewebsites.net",
-                    "http://localhost:5173"
-                )
+                .WithOrigins(Global.URL_PRODUCTION, Global.URL_LOCALHOST)
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }

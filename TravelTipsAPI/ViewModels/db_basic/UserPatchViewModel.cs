@@ -4,5 +4,7 @@
     {
         public string? Username { get; set; }
         public string? Email { get; set; }
+        public bool? RenewSubscription { get; set; }
+        public string? StripeCustomerId { get; set; }
     }
 }
