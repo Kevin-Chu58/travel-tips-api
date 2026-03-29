@@ -247,6 +247,8 @@ namespace TravelTipsAPI.Controllers.Stripe
                     if (user == null)
                         return Ok();
 
+                    var tx = await context.Database.BeginTransactionAsync();
+
                     // find the active subscription with the same StripeSubscriptionId and cancel it
                     await subscriptionsService.ExpireActiveSubscriptionByUserId(user.Id);
 
@@ -254,7 +256,7 @@ namespace TravelTipsAPI.Controllers.Stripe
                     var userSubExtend = userExtendsService.FindUserSubExtendByUserId(user.Id);
                     await userExtendsService.UpdateSubExtendCycle(userSubExtend, null, null);
 
-                    await context.SaveChangesAsync();
+                    await tx.CommitAsync();
                 }
                 else if (stripeEvent.Type == EventTypes.CustomerDeleted)
                 {
@@ -268,14 +270,17 @@ namespace TravelTipsAPI.Controllers.Stripe
                     var tx = await context.Database.BeginTransactionAsync();
 
                     // set StripeCustomerId to null for the user
-                    await usersService.RemoveUserStripeCustomerId(user.Id);
+                    // NOTE: only for Stripe sandbox testing purpose (mannual customer delete),
+                    //       in production we should not delete the Stripe customer
+                    //       but rather keep them
+                    //await usersService.RemoveUserStripeCustomerId(user.Id);
+
+                    // find the active subscription with the same StripeSubscriptionId and cancel it
+                    await subscriptionsService.ExpireActiveSubscriptionByUserId(user.Id);
 
                     // reset the subscription extension cycle to default (all max counts to default)
                     var userSubExtend = userExtendsService.FindUserSubExtendByUserId(user.Id);
                     await userExtendsService.UpdateSubExtendCycle(userSubExtend, null, null);
-
-                    // find the active subscription with the same StripeSubscriptionId and cancel it
-                    await subscriptionsService.ExpireActiveSubscriptionByUserId(user.Id);
 
                     await tx.CommitAsync();
                 }
