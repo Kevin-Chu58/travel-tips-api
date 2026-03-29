@@ -85,7 +85,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             int? userId = null,
             IEnumerable<UserSimpleViewModel>? users = null,
             Dictionary<int, int>? dayCounts = null,
-            bool isRestricted = false
+            bool isRestricted = false,
+            IEnumerable<int>? editableTripIds = null
         )
         {
             // get simple user
@@ -136,6 +137,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                         : null,
                 Budget = trip.Budget,
                 SharedUsers = sharedSimpleUsers,
+                IsReadonly = editableTripIds == null || !editableTripIds.Contains(trip.Id),
             };
             return tripViewModel;
         }
@@ -170,6 +172,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="cursor">trip cursor</param>
         /// <param name="tripOrderByEnum">order by enum</param>
         /// <param name="limit">limit</param>
+        /// <param name="isMy">whether only get my trips, used for my trip page</param>
         /// <returns>a list of trips</returns>
         public async Task<IEnumerable<TripViewModel>> GetTripsByParams(
             int? userId = null,
@@ -183,7 +186,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             bool isRestricted = false,
             TripCursor? cursor = null,
             TripOrderByEnum? tripOrderByEnum = null,
-            int? limit = null
+            int? limit = null,
+            bool isMy = false
         )
         {
             var query = context.Trips.AsQueryable();
@@ -216,12 +220,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 // if region is country, then also include all its states
                 else if (region.Type == "Country")
                 {
-                    var stateIds = context
-                        .Regions.Where(r => r.ParentRegionId == region.Id || r.Id == region.Id)
-                        .Select(r => r.Id)
-                        .ToList();
+                    //var stateIds = context
+                    //    .Regions.Where(r => r.ParentRegionId == region.Id || r.Id == region.Id)
+                    //    .Select(r => r.Id);
                     query = query.Where(t =>
-                        t.RegionId != null && stateIds.Contains(t.RegionId.Value)
+                        t.RegionId != null
+                        && context
+                            .Regions.Where(r => r.ParentRegionId == region.Id || r.Id == region.Id)
+                            .Select(r => r.Id)
+                            .Contains(t.RegionId.Value)
                     );
                 }
             }
@@ -246,6 +253,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             var users = usersService.GetUsersByIds(distinctUserIds);
             var simpleUsers = await usersService.GetUserSimpleViewModels(users);
 
+            // subscription preload
+            var editableTripIds =
+                isMy == true && userId != null ? GetEditableTripIds(userId.Value) : [];
+
             // days preload
             var tripIds = trips.Select(t => t.Id).ToList();
             var dayCounts = context
@@ -259,7 +270,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             foreach (var trip in trips)
             {
                 results.Add(
-                    await GetTripViewModel(trip, userId, simpleUsers, dayCounts, isRestricted)
+                    await GetTripViewModel(
+                        trip,
+                        userId,
+                        simpleUsers,
+                        dayCounts,
+                        isRestricted,
+                        editableTripIds
+                    )
                 );
             }
 
@@ -453,6 +471,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return trip.Budget ?? 0;
         }
 
+        public async Task<int> DeleteTripAsync(Trip trip)
+        {
+            context.Trips.Remove(trip);
+            await context.SaveChangesAsync();
+
+            return trip.Id;
+        }
+
         /// <summary>
         /// Whether you are the owner of a list of trips
         /// </summary>
@@ -509,6 +535,53 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     new SqlParameter("@id", tripId)
                 );
             }
+        }
+
+        // subscriptions
+
+        /// <summary>
+        /// Get a list of trip ids that the user can edit based on the subscription
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <returns>a list of trip ids</returns>
+        public IEnumerable<int> GetEditableTripIds(int userId)
+        {
+            var maxTripCount = context
+                .UserSubExtends.Where(use => use.UserId == userId)
+                .Select(use => use.MaxTripCount)
+                .FirstOrDefault();
+
+            var editableTripIds = context
+                .Trips.Where(t => t.CreatedBy == userId)
+                .OrderByDescending(t => t.CreatedAt)
+                .ThenByDescending(t => t.Id)
+                .Take(maxTripCount)
+                .Select(t => t.Id)
+                .ToList();
+
+            return editableTripIds;
+        }
+
+        /// <summary>
+        /// Check if a user can modify a trip based on max trip count in their subscription
+        /// </summary>
+        /// <param name="tripId">trip id</param>
+        /// <param name="userId">user id</param>
+        /// <returns>whether user can modify the trip</returns>
+        public bool CanUserEditTrip(int tripId, int userId)
+        {
+            var maxTripCount = context
+                .UserSubExtends.Where(use => use.UserId == userId)
+                .Select(use => use.MaxTripCount)
+                .FirstOrDefault();
+
+            // only check the most recent maxTripCount trips due to subsctipion status
+            return context
+                .Trips.Where(t => t.CreatedBy == userId)
+                .OrderByDescending(t => t.CreatedAt)
+                .ThenByDescending(t => t.Id)
+                .Take(maxTripCount)
+                .Any(t => t.Id == tripId);
         }
     }
 }

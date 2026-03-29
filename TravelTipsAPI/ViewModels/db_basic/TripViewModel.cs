@@ -20,6 +20,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public RegionCompleteViewModel? Region { get; set; }
         public IEnumerable<ImageViewModel>? Images { get; set; }
         public IEnumerable<UserSimpleViewModel>? SharedUsers { get; set; }
+        public bool IsReadonly { get; set; }
 
         public static explicit operator TripViewModel(Trip trip)
         {
@@ -34,6 +35,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 IsBookmarked = false,
                 Budget = trip.Budget,
                 BookmarkCount = trip.BookmarkCount,
+                IsReadonly = true,
             };
         }
     }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 
@@ -15,6 +16,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     public class TripAttractionOrdersController(
         ITripsService tripsService,
         ITripSharesService tripSharesService,
+        IDaysService daysService,
         ITripAttractionOrdersService taosService
     ) : TravelTipsControllerBase
     {
@@ -104,6 +106,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
+            var isEditable = daysService.CanUserEditDay(id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
+
             // check day max restriction
             var taoViewModels = await taosService.GetTaosByDayId(id, true);
 
@@ -143,10 +149,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] TripAttractionOrderPatchViewModel taoPatch
         )
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var tao = taosService.FindTaoById(id);
 
             if (tao is null)
                 return NotFound(Messages.TaoNotFound);
+
+            var isEditable = taosService.CanUserEditTao(id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
 
             try
             {
@@ -187,9 +198,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPatch]
         [Route("{id}/detach-highlight")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
-        public async Task<ActionResult<TripAttractionOrderViewModel>> UpdateTaoHighlight(int id)
+        public async Task<ActionResult<TripAttractionOrderViewModel>> DetachTaoHighlight(int id)
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var tao = taosService.FindTaoById(id);
+
+            var isEditable = taosService.CanUserEditTao(id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
 
             if (tao is null)
                 return NotFound(Messages.TaoNotFound);
@@ -216,11 +232,19 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPatch]
         [Route("{id}/privacy/{status}")]
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
+        [HasRole(Role = UserRoles.MEMBER)]
         public async Task<ActionResult<bool>> UpdateTaoPrivacy(int id, bool status)
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var tao = taosService.FindTaoById(id);
+
             if (tao is null)
                 return NotFound(Messages.TaoNotFound);
+
+            var isEditable = taosService.CanUserEditTao(id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
+
             try
             {
                 var newStatus = await taosService.PatchTaoSetPrivate(tao, status);
@@ -242,7 +266,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.TRIP_ATTRACTION_ORDERS)]
         public async Task<ActionResult<int>> DeleteTaosById(int id)
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var tao = taosService.FindTaoById(id);
+
+            var isEditable = taosService.CanUserEditTao(id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
 
             var taoId = await taosService.DeleteTaoById(tao!);
 

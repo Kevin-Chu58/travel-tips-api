@@ -17,6 +17,13 @@
         public static readonly string UserNotFound = "User not found";
         public static readonly string UserIdNotFound = "User Auth Id not found.";
 
+        // User Extends
+        // - user sub extends
+        public static readonly string UserSubExtendNotFound =
+            "User Subscription Statistics not found.";
+        public static readonly string MonthlyPdfGenerationLimitReached =
+            "User monthly pdf generation limit is reached.";
+
         // Regions
         public static readonly string RegionNotFound = "Region not found.";
         public static readonly string RegionInvalid = "Region invalid.";
@@ -121,7 +128,13 @@
         public static readonly string BannerStylingNotFound = "Banner styling not found.";
         public static readonly string BannerStylingInvalid = "Banner styling is invalid.";
 
-        // subscription
+        // memberships
+        public static readonly string MembershipRequired = "You do not have membership.";
+
+        // Stripe
+        public static readonly string StripeSessionNotFound = "Stripe session not found.";
+
+        // subscriptions
         public static readonly string SubscriptionTypeInvalid = "Invalid subscription type.";
         public static readonly string SubscriptionAlreadyActive =
             "User already has an active subscription.";

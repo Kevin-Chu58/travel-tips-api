@@ -4,11 +4,6 @@ namespace TravelTipsAPI.Constants
 {
     public class StripeEnum
     {
-        //public static readonly string MonthlyMember = "1-month member";
-        //public static readonly string ThreeMonthMember = "3-month member";
-        //public static readonly string SixMonthMember = "6-month member";
-        //public static readonly string YearlyMember = "1-year member";
-
         public enum Subscription
         {
             MonthlyMember = 1,
@@ -16,16 +11,6 @@ namespace TravelTipsAPI.Constants
             SixMonthMember = 3,
             YearlyMember = 4,
         };
-
-        //public static readonly Dictionary<string, Subscription> SubscriptionMap = new(
-        //    StringComparer.OrdinalIgnoreCase
-        //)
-        //{
-        //    { MonthlyMember, Subscription.MonthlyMember },
-        //    { ThreeMonthMember, Subscription.ThreeMonthMember },
-        //    { SixMonthMember, Subscription.SixMonthMember },
-        //    { YearlyMember, Subscription.YearlyMember },
-        //};
 
         public static readonly Dictionary<Subscription, string> PriceIdMap = new()
         {

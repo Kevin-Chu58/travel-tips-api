@@ -17,8 +17,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
     public class DaysController(
         ITripsService tripsService,
         ITripSharesService tripSharesService,
-        IDaysService daysService,
-        ITripAttractionOrdersService taosService
+        IDaysService daysService
     ) : TravelTipsControllerBase
     {
         /// <summary>
@@ -62,6 +61,10 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
+            var isEditable = tripsService.CanUserEditTrip(id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
+
             // check day max restriction
             var dayViewModels = daysService.GetDaysByTripId(id);
 
@@ -86,27 +89,27 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <param name="id">day id</param>
         /// <param name="dayPatch">day details to be updated</param>
         /// <returns>the updated day</returns>
-        [HttpPatch]
-        [Route("{id}")]
-        [IsOwner(Resource = Resources.DAYS)]
-        public async Task<ActionResult<DayViewModel>> UpdateDay(
-            int id,
-            [FromBody] DayPatchViewModel dayPatch
-        )
-        {
-            try
-            {
-                Day day = daysService.FindDayById(id);
+        //[HttpPatch]
+        //[Route("{id}")]
+        //[IsOwner(Resource = Resources.DAYS)]
+        //public async Task<ActionResult<DayViewModel>> UpdateDay(
+        //    int id,
+        //    [FromBody] DayPatchViewModel dayPatch
+        //)
+        //{
+        //    try
+        //    {
+        //        Day day = daysService.FindDayById(id);
 
-                var updatedDayViewModel = await daysService.PatchDayAsync(day, dayPatch);
+        //        var updatedDayViewModel = await daysService.PatchDayAsync(day, dayPatch);
 
-                return Ok(updatedDayViewModel);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+        //        return Ok(updatedDayViewModel);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return BadRequest(ex.Message);
+        //    }
+        //}
 
         /// <summary>
         /// Delete a day by its id
@@ -118,9 +121,13 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.DAYS)]
         public async Task<ActionResult> DeleteDay(int id)
         {
-            _ = await taosService.DeleteTaosByDayId(id);
-
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             Day day = daysService.FindDayById(id);
+
+            var isEditable = tripsService.CanUserEditTrip(day.TripId, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
+
             await daysService.DeleteDay(day);
 
             return Ok();

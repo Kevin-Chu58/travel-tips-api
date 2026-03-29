@@ -3,14 +3,14 @@ using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.BackgroundServices
 {
-    public class TripBookmarkRebuildService : BackgroundService
+    public class TripCountRebuildService : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<TripBookmarkRebuildService> _logger;
+        private readonly ILogger<TripCountRebuildService> _logger;
 
-        public TripBookmarkRebuildService(
+        public TripCountRebuildService(
             IServiceProvider serviceProvider,
-            ILogger<TripBookmarkRebuildService> logger
+            ILogger<TripCountRebuildService> logger
         )
         {
             _serviceProvider = serviceProvider;
@@ -26,22 +26,22 @@ namespace TravelTipsAPI.BackgroundServices
             {
                 try
                 {
-                    _logger.LogInformation("Rebuilding trip bookmark counts...");
+                    _logger.LogInformation("Rebuilding trip counts...");
 
-                    await RebuildBookmarkCounts(stoppingToken);
+                    await RebuildTripCounts(stoppingToken);
 
-                    _logger.LogInformation("Trip bookmark counts rebuild complete.");
+                    _logger.LogInformation("Trip counts rebuild complete.");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to rebuild trip bookmark counts.");
+                    _logger.LogError(ex, "Failed to rebuild trip counts.");
                 }
 
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
         }
 
-        private async Task RebuildBookmarkCounts(CancellationToken token)
+        private async Task RebuildTripCounts(CancellationToken token)
         {
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TravelTipsContext>();
@@ -51,7 +51,7 @@ namespace TravelTipsAPI.BackgroundServices
                 @"
                 DECLARE @result int;
                 EXEC @result = sp_getapplock 
-                    @Resource = 'RebuildTripBookmark',
+                    @Resource = 'RebuildTripCount',
                     @LockMode = 'Exclusive',
                     @LockOwner = 'Session',
                     @LockTimeout = 0;
@@ -64,32 +64,32 @@ namespace TravelTipsAPI.BackgroundServices
             "
             );
 
-            // main SQL: rebuild trip bookmark counts
+            // main SQL: rebuild trip counts
             await db.Database.ExecuteSqlRawAsync(
                 @"
-                SELECT TripId, COUNT(*) AS Cnt 
-                INTO #TripBookmarkCounts 
-                FROM db_search.Bookmarks 
-                GROUP BY TripId; 
+                SELECT CreatedBy, COUNT(*) AS Cnt 
+                INTO #TripCounts 
+                FROM db_basic.Trips 
+                GROUP BY CreatedBy; 
 
-                CREATE INDEX IDX_TripBookmarkCounts_TripId 
-                ON #TripBookmarkCounts(TripId); 
+                CREATE INDEX IDX_TripCounts_CreatedBy 
+                ON #TripCounts(CreatedBy); 
                 
                 WHILE 1 = 1 
                 BEGIN 
                     ;WITH cte AS ( 
-                        SELECT TOP (200) t.Id 
-                        FROM db_basic.Trips t 
-                        LEFT JOIN #TripBookmarkCounts c 
-                        ON c.TripId = t.Id 
-                        WHERE ISNULL(t.BookmarkCount, 0) <> ISNULL(c.Cnt, 0) 
-                        ORDER BY t.Id 
+                        SELECT TOP (200) u.UserId as Id
+                        FROM db_basic.UserSubExtends u 
+                        LEFT JOIN #TripCounts c 
+                        ON c.CreatedBy = u.UserId 
+                        WHERE u.TripCount <> ISNULL(c.Cnt, 0) 
+                        ORDER BY u.UserId 
                     ) 
-                    UPDATE t 
-                    SET BookmarkCount = ISNULL(c.Cnt, 0) 
-                    FROM db_basic.Trips t 
-                    JOIN cte ON cte.Id = t.Id 
-                    LEFT JOIN #TripBookmarkCounts c ON c.TripId = t.Id; 
+                    UPDATE u 
+                    SET u.TripCount = ISNULL(c.Cnt, 0) 
+                    FROM db_basic.UserSubExtends u 
+                    JOIN cte ON cte.Id = u.UserId 
+                    LEFT JOIN #TripCounts c ON c.CreatedBy = u.UserId; 
 
                 IF @@ROWCOUNT = 0 BREAK; 
             END

@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
@@ -7,7 +6,6 @@ using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
-using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
@@ -20,7 +18,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     public class UsersService(
         TravelTipsContext context,
         IFollowersService followersService,
-        IUserRolesService userRolesService,
         IImagesService imagesService
     ) : IUsersService
     {
@@ -168,6 +165,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     u.ExternalImageUrl,
                     u.RenewSubscription,
                     u.StripeCustomerId,
+                    u.UserSubExtend,
                 })
                 .SingleAsync();
 
@@ -193,6 +191,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 IsBannerMan = user.IsBannerMan,
                 RenewSubscription = user.RenewSubscription,
                 StripeCustomerId = user.StripeCustomerId,
+                UserSubExtend = (UserSubExtendViewModel)user.UserSubExtend,
             };
         }
 
@@ -219,6 +218,19 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             return await GetUserViewModelById(id);
+        }
+
+        /// <summary>
+        /// Remove the user stripe customer id
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns></returns>
+        public async Task RemoveUserStripeCustomerId(int id)
+        {
+            var user = context.Users.Find(id) ?? throw new Exception(Messages.UserNotFound);
+
+            user.StripeCustomerId = null;
+            await context.SaveChangesAsync();
         }
 
         /// <summary>

@@ -5,6 +5,7 @@ using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Controllers.TravelTips;
 using TravelTipsAPI.ViewModels.Stripe;
+using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 
@@ -14,12 +15,10 @@ namespace TravelTipsAPI.Controllers.Stripe
     public class StripeController(
         IConfiguration config,
         IUsersService usersService,
-        ISubscriptionsService subscriptionsService
+        ISubscriptionsService subscriptionsService,
+        IStripeService stripeService
     ) : TravelTipsControllerBase
     {
-        private readonly string _apiKey =
-            config["Stripe:ApiKey"] ?? throw new ArgumentException("Stripe:ApiKey not configured");
-
         /// <summary>
         /// Create a checkout session for Stripe
         /// </summary>
@@ -68,7 +67,7 @@ namespace TravelTipsAPI.Controllers.Stripe
 
             try
             {
-                var client = new StripeClient(_apiKey);
+                var client = new StripeClient(stripeService.GetApiKey());
                 var service = new SessionService(client);
                 Session session = await service.CreateAsync(options);
                 return Ok(session.Url); // Redirect user to this URL

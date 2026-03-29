@@ -16,5 +16,6 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public bool? IsBannerMan { get; set; }
         public bool RenewSubscription { get; set; }
         public string? StripeCustomerId { get; set; }
+        public UserSubExtendViewModel? UserSubExtend { get; set; }
     }
 }

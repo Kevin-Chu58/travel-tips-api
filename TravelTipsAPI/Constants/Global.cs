@@ -3,7 +3,7 @@
     public class Global
     {
         // User Agent
-        public static readonly string USER_AGENT = "TravelTips/0.8";
+        public static readonly string USER_AGENT = "TravelTips/v0.8";
 
         // url
         public static readonly string URL_PRODUCTION =
@@ -19,5 +19,14 @@
         public static readonly int HIGHLIGHT_DEFAULT_LIMIT = 20;
         public static readonly int BANNER_DEFAULT_LIMIT = 20;
         public static readonly int SUBSCRIPTION_DEFAULT_LIMIT = 20;
+
+        // subscription related
+        public static readonly int SUBSCRIPTION_GRACE_PERIOD_DAYS = 3;
+
+        public static readonly int MAX_TRIPS = 3;
+        public static readonly int MAX_TRIPS_MEMBER = 50;
+
+        public static readonly int MAX_PDF_GENERATION_PER_MONTH = 0;
+        public static readonly int MAX_PDF_GENERATION_PER_MONTH_MEMBER = 15;
     }
 }

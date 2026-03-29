@@ -273,11 +273,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public async Task DeleteImageAsync(Image image)
         {
-            var tripImages = context
-                .TripImages.Where(tripImage => tripImage.ImageId == image.Id)
-                .ToList();
-
-            context.TripImages.RemoveRange(tripImages);
             context.Images.Remove(image);
             await context.SaveChangesAsync();
 

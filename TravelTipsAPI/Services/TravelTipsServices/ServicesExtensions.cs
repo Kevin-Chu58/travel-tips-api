@@ -26,6 +26,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<IFollowersService, FollowersService>();
             // basic schema
             services.AddScoped<IUsersService, UsersService>();
+            services.AddScoped<IUserExtendsService, UserExtendsService>();
             services.AddScoped<ITripsService, TripsService>();
             services.AddScoped<ITripSharesService, TripSharesService>();
             services.AddScoped<IDaysService, DaysService>();

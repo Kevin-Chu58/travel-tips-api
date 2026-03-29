@@ -1,0 +1,17 @@
+﻿using static TravelTipsAPI.Services.StripeServices.StripeSchema;
+
+namespace TravelTipsAPI.Services.StripeServices
+{
+    public static class ServicesExtensions
+    {
+        public static IServiceCollection AddStripeServices(this IServiceCollection services)
+        {
+            services.AddHttpContextAccessor();
+            services.AddHttpClient();
+
+            services.AddScoped<IStripeService, StripeService>();
+
+            return services;
+        }
+    }
+}

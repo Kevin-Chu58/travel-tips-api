@@ -1,14 +1,21 @@
-﻿using TravelTipsAPI.Models.TravelTipsModels;
+﻿using Stripe;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_plan;
-using TravelTipsAPI.ViewModels.db_search;
+using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Plan
 {
-    public class SubscriptionsService(TravelTipsContext context) : ISubscriptionsService
+    public class SubscriptionsService(TravelTipsContext context, IStripeService stripeService)
+        : ISubscriptionsService
     {
-        public Subscription? FindLastSubscriptionByUserId(int userId)
+        /// <summary>
+        /// get the last subscription by user id
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <returns>the last subscription</returns>
+        public Models.TravelTipsModels.Subscription? FindLastSubscriptionByUserId(int userId)
         {
             var subscription = context
                 .Subscriptions.Where(s => s.UserId == userId)
@@ -17,6 +24,24 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
             return subscription;
         }
 
+        /// <summary>
+        /// find the active subscription by user id
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <returns>the active subscription</returns>
+        public Models.TravelTipsModels.Subscription? FindActiveSubscriptionByUserId(int userId)
+        {
+            var subscription = context
+                .Subscriptions.Where(s => s.UserId == userId && s.Status == "active")
+                .FirstOrDefault();
+            return subscription;
+        }
+
+        /// <summary>
+        /// Get the active subscription by user id
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <returns>subscription view model</returns>
         public SubscriptionViewModel? GetActiveSubscriptionByUserId(int userId)
         {
             var subscription = context
@@ -40,6 +65,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
             return subscription;
         }
 
+        /// <summary>
+        /// Get a list of subscriptions based on user id, with pagination support using cursor and limit
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <param name="cursor">general cursor</param>
+        /// <param name="limit">limit</param>
+        /// <returns>a list of subscriptions</returns>
         public IEnumerable<SubscriptionViewModel> GetSubscriptionsByUserIdWithCursor(
             int userId,
             GeneralCursor? cursor = null,
@@ -55,7 +87,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
 
             if (limit != null)
             {
-                query = query.Take(limit.Value);
+                query = query.OrderByDescending(s => s.Start).Take(limit.Value);
             }
             var subscriptions = query
                 .Select(s => new SubscriptionViewModel
@@ -81,7 +113,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
         // triggered by Stripe webhook when a checkout session is completed
         public async Task AddSubscription(SubscriptionPostViewModel newSubscription)
         {
-            var subscription = new Subscription
+            var subscription = new Models.TravelTipsModels.Subscription
             {
                 UserId = newSubscription.UserId,
                 PlanId = newSubscription.PlanId,
@@ -97,8 +129,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
             await context.SaveChangesAsync();
         }
 
+        /// <summary>
+        /// update an existing subscription
+        /// </summary>
+        /// <param name="subscription">subscription</param>
+        /// <param name="subscriptionPatch">subscription details to be updated</param>
+        /// <returns></returns>
         public async Task UpdateSubscription(
-            Subscription subscription,
+            Models.TravelTipsModels.Subscription subscription,
             SubscriptionPatchViewModel subscriptionPatch
         )
         {
@@ -113,6 +151,43 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
 
             context.Subscriptions.Update(subscription);
             await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Expires the active subscription for a specified user.
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <returns></returns>
+        public async Task ExpireActiveSubscriptionByUserId(int userId)
+        {
+            var activeSubscription = context
+                .Subscriptions.Where(s => s.UserId == userId && s.Status == "active")
+                .FirstOrDefault();
+
+            if (activeSubscription == null)
+                return; // no active subscription to expire
+
+            activeSubscription.Status = "expired";
+            activeSubscription.End = DateTime.UtcNow;
+            context.Subscriptions.Update(activeSubscription);
+            await context.SaveChangesAsync();
+        }
+
+        // subscription status
+
+        /// <summary>
+        /// Update the subscription status (auto-renew or not) in Stripe
+        /// </summary>
+        /// <param name="subId">subscription id</param>
+        /// <param name="cancelSub">cancel subscription status</param>
+        /// <returns></returns>
+        public async Task UpdateSubscriptionStatus(string subId, bool cancelSub)
+        {
+            var service = new SubscriptionService();
+            var serviceOptions = stripeService.GetRequestOptions();
+            var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelSub };
+
+            await service.UpdateAsync(subId, options, serviceOptions);
         }
     }
 }

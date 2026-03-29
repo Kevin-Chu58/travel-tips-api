@@ -6,6 +6,7 @@ using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.Utils.ObjectUtils;
@@ -21,8 +22,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
     public class UsersController(
         IFollowersService followersService,
         IUsersService usersService,
-        //IUserRolesService userRolesService,
-        IImagesService imagesService
+        IUserExtendsService userExtendsService,
+        IImagesService imagesService,
+        ISubscriptionsService subscriptionsService
     ) : TravelTipsControllerBase
     {
         /// <summary>
@@ -355,17 +357,97 @@ namespace TravelTipsAPI.Controllers.TravelTips
         public async Task<ActionResult> UpdateRenewSubscription([FromQuery] bool renewSubscription)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var activeSubscription = subscriptionsService.GetActiveSubscriptionByUserId(userId);
+
             try
             {
+                if (activeSubscription != null)
+                {
+                    await subscriptionsService.UpdateSubscriptionStatus(
+                        activeSubscription.StripeSubscriptionId,
+                        cancelSub: !renewSubscription
+                    );
+                }
+
                 await usersService.UpdateUserAsync(
                     userId,
                     new UserPatchViewModel { RenewSubscription = renewSubscription }
                 );
                 return Ok();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return BadRequest(ex.Message);
+                try
+                {
+                    if (activeSubscription != null)
+                    {
+                        await subscriptionsService.UpdateSubscriptionStatus(
+                            activeSubscription.StripeSubscriptionId,
+                            cancelSub: renewSubscription
+                        );
+                    }
+                    return Ok();
+                }
+                catch (Exception rollbackEx)
+                {
+                    // Log the rollback failure
+                    Console.WriteLine(
+                        $"Stripe renew subscription status rollback failed: {rollbackEx.Message}"
+                    );
+                    return BadRequest(rollbackEx.Message);
+                }
+            }
+        }
+
+        // subscription features
+
+        //[HttpGet]
+        //[Route("user-sub-extension")]
+        //[IsOwner(Resource = Resources.NONE)]
+        //public async Task<ActionResult<UserSubExtendViewModel>> GetUpdatedUserSubExtend()
+        //{
+        //    var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+        //    try
+        //    {
+        //        var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
+        //            userId
+        //        );
+
+        //        return Ok(userSubExtend);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
+
+        [HttpPost]
+        [Route("generate-pdf")]
+        [HasRole(Role = UserRoles.MEMBER)]
+        public async Task<ActionResult> GeneratePdf()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            try
+            {
+                var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
+                    userId
+                );
+
+                if (userSubExtend == null)
+                    return BadRequest(Messages.UserSubExtendNotFound);
+
+                if (userSubExtend.PdfDownloadCount >= userSubExtend.MaxPdfDownloadCount)
+                    return BadRequest(Messages.MonthlyPdfGenerationLimitReached);
+
+                await userExtendsService.UpdateSubExtendNewTripPdf(userSubExtend);
+
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
     }

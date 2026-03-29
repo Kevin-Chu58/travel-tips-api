@@ -1,4 +1,5 @@
 ﻿using OpenAI.Batch;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
@@ -72,6 +73,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
             Task<UserViewModel> GetUserViewModelById(int id);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel user);
+            Task RemoveUserStripeCustomerId(int id);
             Task<bool> AcceptUserAgreementAsync(int id);
 
             // user profile
@@ -85,6 +87,20 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task UnfollowAsync(int followedId, int followingId);
         }
 
+        public interface IUserExtendsService
+        {
+            UserSubExtend FindUserSubExtendByUserId(int userId);
+            Task<UserSubExtend> GetUpdatedUserSubExtendByUserId(int userId);
+            Task<UserSubExtend> UpdateSubExtendCycle(
+                UserSubExtend userSubExtend,
+                DateTimeOffset? subStart,
+                int? monthIndex,
+                int? subscription = null
+            );
+            Task UpdateSubExtendNewTripPdf(UserSubExtend userSubExtend);
+            Task UpdateSubExtendTripCount(UserSubExtend userSubExtend, int increment);
+        }
+
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
@@ -94,7 +110,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? userId = null,
                 IEnumerable<UserSimpleViewModel>? users = null,
                 Dictionary<int, int>? dayCounts = null,
-                bool isRestricted = false
+                bool isRestricted = false,
+                IEnumerable<int>? editableTripIds = null
             );
             IEnumerable<int> GetMyTripIds(int id);
             Task<IEnumerable<TripViewModel>> GetTripsByParams(
@@ -109,7 +126,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 bool isRestricted = false,
                 TripCursor? cursor = null,
                 TripOrderByEnum? tripOrderByEnum = null,
-                int? limit = null
+                int? limit = null,
+                bool isMy = false
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
@@ -117,11 +135,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
             Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int? regionId);
             Task<int> UpdateBudgetAsync(Trip trip, int? budget);
+            Task<int> DeleteTripAsync(Trip trip);
             bool IsOwnerList(int id, int[] tripIds);
 
             // bookmarks
             Task BookmarkAsync(int userId, int tripId);
             Task UnbookmarkAsync(int userId, int tripId);
+
+            // subscirptions
+            IEnumerable<int> GetEditableTripIds(int userId);
+            bool CanUserEditTrip(int tripId, int userId);
         }
 
         public interface ITripSharesService
@@ -144,6 +167,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
             Task<DayViewModel> DeleteDay(Day day);
+
+            // subscriptions
+            bool CanUserEditDay(int userId, int dayId);
         }
 
         public interface IAttractionsService
@@ -222,9 +248,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao);
             Task<bool> PatchTaoSetPrivate(TripAttractionOrder tao, bool isPrivate);
             Task<int> DeleteTaoById(TripAttractionOrder tao);
-            Task<int> DeleteTaosByDayId(int dayId);
+
+            //Task<int> DeleteTaosByDayId(int dayId);
             void IsTimeValid(TimeOnly time);
             void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId, int taoId = 0);
+
+            // subscriptions
+            bool CanUserEditTao(int userId, int taoId);
         }
     }
 
@@ -235,6 +265,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             bool IsAdmin(int userId);
             bool IsWriter(int userId);
             bool IsBannerMan(int userId);
+
+            // subscriptions
+            bool IsUserMember(int userId);
         }
     }
 
@@ -345,6 +378,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ISubscriptionsService
         {
             Subscription? FindLastSubscriptionByUserId(int userId);
+            Subscription? FindActiveSubscriptionByUserId(int userId);
             SubscriptionViewModel? GetActiveSubscriptionByUserId(int userId);
             IEnumerable<SubscriptionViewModel> GetSubscriptionsByUserIdWithCursor(
                 int userId,
@@ -356,6 +390,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Subscription subscription,
                 SubscriptionPatchViewModel subscriptionPatch
             );
+            Task ExpireActiveSubscriptionByUserId(int userId);
+
+            // subscription status
+            Task UpdateSubscriptionStatus(string subId, bool cancelSub);
         }
     }
 }

@@ -42,48 +42,45 @@ namespace TravelTipsAPI.Authorization
                 var emailVerified = (bool)(context.HttpContext.Items["email_verified"] ?? false);
 
                 if (!emailVerified)
+                {
                     context.Result = new ObjectResult(Messages.EmailUnverified)
                     {
                         StatusCode = 401,
                     };
-                return;
+                    return;
+                }
             }
 
             var isAuthorized = UserHasRole(Role);
             if (!isAuthorized)
             {
-                context.Result = new ObjectResult(Messages.AccessDenied) { StatusCode = 403 };
+                if (Role == UserRoles.MEMBER)
+                {
+                    context.Result = new ObjectResult(Messages.MembershipRequired)
+                    {
+                        StatusCode = 403,
+                    };
+                }
+                else
+                {
+                    context.Result = new ObjectResult(Messages.AccessDenied) { StatusCode = 403 };
+                }
                 return;
             }
         }
 
         private bool UserHasRole(string role)
         {
-            // arrange the roles from the highest to the lowest
-            bool isAdmin,
-                isWriter,
-                isBannerMan;
-
-            // admin has all permissions, so check it first
-            isAdmin = _userRolesService.IsAdmin(UserId);
-            if (isAdmin)
+            if (_userRolesService.IsAdmin(UserId))
                 return true;
 
-            switch (role)
+            return role switch
             {
-                case UserRoles.ADMIN:
-                    return isAdmin;
-
-                case UserRoles.WRITER:
-                    isWriter = _userRolesService.IsWriter(UserId);
-                    return isWriter;
-
-                case UserRoles.BANNER_MAN:
-                    isBannerMan = _userRolesService.IsBannerMan(UserId);
-                    return isBannerMan;
-            }
-
-            return false;
+                UserRoles.WRITER => _userRolesService.IsWriter(UserId),
+                UserRoles.BANNER_MAN => _userRolesService.IsBannerMan(UserId),
+                UserRoles.MEMBER => _userRolesService.IsUserMember(UserId),
+                _ => false,
+            };
         }
     }
 }

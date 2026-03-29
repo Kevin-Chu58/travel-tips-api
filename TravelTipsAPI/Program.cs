@@ -12,6 +12,7 @@ using TravelTipsAPI.Middleware;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.Auth0Services;
 using TravelTipsAPI.Services.AzureKeyVaultServices;
+using TravelTipsAPI.Services.StripeServices;
 using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.Services.WikiCommonsServices;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
@@ -45,7 +46,17 @@ builder
     });
 
 // Add Controllers
-builder.Services.AddControllers();
+builder
+    .Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System
+            .Text
+            .Json
+            .Serialization
+            .ReferenceHandler
+            .IgnoreCycles;
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -60,6 +71,7 @@ builder.Services.AddSwaggerGen(c =>
             Description = "Updated version of TravelTips API",
         }
     );
+    c.CustomSchemaIds(type => type.FullName);
 });
 
 // Add Services
@@ -67,10 +79,12 @@ builder.Services.AddServices();
 builder.Services.AddAuth0Services();
 builder.Services.AddHereMapServices();
 builder.Services.AddWikiCommonsServices();
+builder.Services.AddStripeServices();
 
 // Add Background Services
 builder.Services.AddHostedService<HighlightUsageRebuildService>();
 builder.Services.AddHostedService<TripBookmarkRebuildService>();
+builder.Services.AddHostedService<TripCountRebuildService>();
 builder.Services.AddHostedService<UserFollowRebuildService>();
 
 // get the firebase config and register it

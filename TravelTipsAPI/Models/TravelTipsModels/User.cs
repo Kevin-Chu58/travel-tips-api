@@ -55,6 +55,8 @@ public partial class User
 
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
 
+    public virtual UserSubExtend? UserSubExtend { get; set; }
+
     public virtual Writer? Writer { get; set; }
 
     public virtual ICollection<Writing> Writings { get; set; } = new List<Writing>();
