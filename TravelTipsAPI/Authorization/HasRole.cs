@@ -71,6 +71,7 @@ namespace TravelTipsAPI.Authorization
 
         private bool UserHasRole(string role)
         {
+            // admin has all permissions except using max limit kind of services
             if (_userRolesService.IsAdmin(UserId))
                 return true;
 

@@ -602,8 +602,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>unshared user information</returns>
         [HttpDelete]
         [Route("{id}/unshare/{userAuthId}")]
-        [IsOwner(Resource = Resources.TRIPS)]
         [HasRole(Role = UserRoles.MEMBER)]
+        [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<UserSimpleViewModel>> UnshareTripWithUserAsync(
             int id,
             string userAuthId
@@ -640,8 +640,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>the number of shared users removed</returns>
         [HttpDelete]
         [Route("{id}/unshare")]
-        [IsOwner(Resource = Resources.TRIPS)]
         [HasRole(Role = UserRoles.MEMBER)]
+        [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<int>> UnshareTripWithAllAsync(int id)
         {
             try
