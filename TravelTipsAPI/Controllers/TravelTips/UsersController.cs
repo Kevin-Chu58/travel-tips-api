@@ -422,6 +422,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
         //    }
         //}
 
+        [HttpGet]
+        [Route("me/member")]
+        [HasRole(Role = UserRoles.MEMBER)]
+        public ActionResult IsMember()
+        {
+            return Ok();
+        }
+
         [HttpPost]
         [Route("generate-pdf")]
         [HasRole(Role = UserRoles.MEMBER)]

@@ -169,7 +169,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<DayViewModel> DeleteDay(Day day);
 
             // subscriptions
-            bool CanUserEditDay(int userId, int dayId);
+            bool CanUserEditDay(int dayId, int userId);
         }
 
         public interface IAttractionsService
@@ -248,13 +248,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao);
             Task<bool> PatchTaoSetPrivate(TripAttractionOrder tao, bool isPrivate);
             Task<int> DeleteTaoById(TripAttractionOrder tao);
-
-            //Task<int> DeleteTaosByDayId(int dayId);
             void IsTimeValid(TimeOnly time);
             void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId, int taoId = 0);
 
             // subscriptions
-            bool CanUserEditTao(int userId, int taoId);
+            bool CanUserEditTao(int taoId, int userId);
         }
     }
 

@@ -20,7 +20,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         IBookmarksService bookmarksService,
         IUsersService usersService,
         IRegionsService regionsService,
-        ITripSharesService tripSharesService
+        ITripSharesService tripSharesService,
+        ILogger<TripsService> logger
     ) : ITripsService
     {
         /// <summary>
@@ -558,6 +559,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 .Take(maxTripCount)
                 .Select(t => t.Id)
                 .ToList();
+
+            logger.LogInformation(editableTripIds.ToArray().ToString());
 
             return editableTripIds;
         }
