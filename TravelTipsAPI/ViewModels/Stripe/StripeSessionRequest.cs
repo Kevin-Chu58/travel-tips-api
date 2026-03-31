@@ -1,4 +1,4 @@
-﻿using TravelTipsAPI.Constants;
+﻿using TravelTipsAPI.Constants.Enums;
 
 namespace TravelTipsAPI.ViewModels.Stripe
 {

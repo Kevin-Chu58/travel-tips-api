@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Stripe;
 using Stripe.Checkout;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Controllers.TravelTips;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
@@ -18,7 +19,6 @@ namespace TravelTipsAPI.Controllers.Stripe
     [IgnoreAntiforgeryToken]
     public class StripeWebhookController(
         TravelTipsContext context,
-        //IConfiguration config,
         IUsersService usersService,
         IUserExtendsService userExtendsService,
         ISubscriptionsService subscriptionsService,

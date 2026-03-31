@@ -31,9 +31,13 @@ public partial class User
 
     public virtual Admin? Admin { get; set; }
 
+    public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();
+
     public virtual BannerMan? BannerMan { get; set; }
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
+
+    public virtual ICollection<Business> Businesses { get; set; } = new List<Business>();
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
 

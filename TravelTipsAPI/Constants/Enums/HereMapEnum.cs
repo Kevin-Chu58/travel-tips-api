@@ -1,4 +1,4 @@
-﻿namespace TravelTipsAPI.Constants
+﻿namespace TravelTipsAPI.Constants.Enums
 {
     public class HereMapEnum
     {

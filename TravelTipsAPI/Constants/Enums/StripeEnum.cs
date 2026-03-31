@@ -1,6 +1,6 @@
 ﻿using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace TravelTipsAPI.Constants
+namespace TravelTipsAPI.Constants.Enums
 {
     public class StripeEnum
     {

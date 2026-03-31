@@ -3,6 +3,7 @@ using Stripe;
 using Stripe.Checkout;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Controllers.TravelTips;
 using TravelTipsAPI.ViewModels.Stripe;
 using static TravelTipsAPI.Services.StripeServices.StripeSchema;
@@ -13,7 +14,6 @@ namespace TravelTipsAPI.Controllers.Stripe
 {
     [Route("api/[controller]")]
     public class StripeController(
-        IConfiguration config,
         IUsersService usersService,
         ISubscriptionsService subscriptionsService,
         IStripeService stripeService

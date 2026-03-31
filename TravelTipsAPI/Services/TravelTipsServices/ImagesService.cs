@@ -7,6 +7,7 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_image;
+using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
@@ -123,7 +124,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public IEnumerable<int> GetImageIdsByUserId(int id)
         {
             var imageIds = context
-                .Images.Where(i => i.CreatedBy == id && !i.IsBanner)
+                .Images.Where(i => i.CreatedBy == id && i.Type == null)
                 .Select(i => i.Id)
                 .ToList();
 
@@ -132,7 +133,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public IEnumerable<int> GetBannerImageIds()
         {
-            var imageIds = context.Images.Where(i => i.IsBanner).Select(i => i.Id).ToList();
+            var imageIds = context.Images.Where(i => i.Type == "banner").Select(i => i.Id).ToList();
             return imageIds;
         }
 
@@ -165,7 +166,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             string contentType,
             int userId,
             string? name,
-            bool isBanner = false
+            ImageType? type
         )
         {
             try
@@ -189,7 +190,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     Guid = guid,
                     Name = name,
                     CreatedBy = userId,
-                    IsBanner = isBanner,
+                    Type = GetImageTypeStr(type),
                 };
 
                 context.Images.Add(newImage);

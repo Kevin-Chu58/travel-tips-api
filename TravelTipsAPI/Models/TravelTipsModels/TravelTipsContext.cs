@@ -11,6 +11,12 @@ public partial class TravelTipsContext : DbContext
     public TravelTipsContext(DbContextOptions<TravelTipsContext> options)
         : base(options) { }
 
+    public virtual DbSet<Ad> Ads { get; set; }
+
+    public virtual DbSet<AdSubLog> AdSubLogs { get; set; }
+
+    public virtual DbSet<AdTarget> AdTargets { get; set; }
+
     public virtual DbSet<Admin> Admins { get; set; }
 
     public virtual DbSet<Attraction> Attractions { get; set; }
@@ -22,6 +28,8 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<BannerStyling> BannerStylings { get; set; }
 
     public virtual DbSet<Bookmark> Bookmarks { get; set; }
+
+    public virtual DbSet<Business> Businesses { get; set; }
 
     public virtual DbSet<Day> Days { get; set; }
 
@@ -36,6 +44,8 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<Subscription> Subscriptions { get; set; }
 
     public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+
+    public virtual DbSet<TargetRule> TargetRules { get; set; }
 
     public virtual DbSet<Trip> Trips { get; set; }
 
@@ -60,6 +70,75 @@ public partial class TravelTipsContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Ad>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_ads");
+
+            entity.ToTable("Ads", "db_feed");
+
+            entity.HasIndex(e => new { e.Status, e.Approval }, "idx_ad_filter");
+
+            entity.HasIndex(e => new { e.CreatedBy, e.BusinessId }, "idx_ad_owner");
+
+            entity.Property(e => e.Approval).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.StripSubscriptionId).HasMaxLength(255).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.Business)
+                .WithMany(p => p.Ads)
+                .HasForeignKey(d => d.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_businesses_ads");
+
+            entity
+                .HasOne(d => d.CreatedByNavigation)
+                .WithMany(p => p.Ads)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_ads");
+        });
+
+        modelBuilder.Entity<AdSubLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_ad_sub_logs");
+
+            entity.ToTable("AdSubLogs", "db_feed");
+
+            entity.HasIndex(e => e.AdId, "idx_ad_sub_log_ad");
+
+            entity.Property(e => e.Note).HasMaxLength(100).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.Ad)
+                .WithMany(p => p.AdSubLogs)
+                .HasForeignKey(d => d.AdId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_ads_ad_sub_logs");
+        });
+
+        modelBuilder.Entity<AdTarget>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_ad_targets");
+
+            entity.ToTable("AdTargets", "db_feed");
+
+            entity.HasIndex(e => e.AdId, "idx_ad_target_ad");
+
+            entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_ad_target_filter");
+
+            entity.Property(e => e.StripeItemId).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.TargetValue).HasMaxLength(100);
+
+            entity
+                .HasOne(d => d.Ad)
+                .WithMany(p => p.AdTargets)
+                .HasForeignKey(d => d.AdId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_ads_ad_targets");
+        });
+
         modelBuilder.Entity<Admin>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("pk_admins");
@@ -197,6 +276,27 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_users_bookmarks");
         });
 
+        modelBuilder.Entity<Business>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_businesses");
+
+            entity.ToTable("Businesses", "db_feed");
+
+            entity.HasIndex(e => new { e.CreatedBy, e.Status }, "idx_business_status");
+
+            entity.Property(e => e.Address).HasMaxLength(200);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.Website).HasMaxLength(100).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.CreatedByNavigation)
+                .WithMany(p => p.Businesses)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_businesses");
+        });
+
         modelBuilder.Entity<Day>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_days");
@@ -290,11 +390,12 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Images", "db_image");
 
-            entity.HasIndex(e => new { e.CreatedBy, e.IsBanner }, "idx_image_filter");
+            entity.HasIndex(e => new { e.CreatedBy, e.Type }, "idx_image_type");
 
             entity.HasIndex(e => e.CreatedBy, "idx_image_user_id");
 
             entity.Property(e => e.Name).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Type).HasMaxLength(10).IsUnicode(false);
 
             entity
                 .HasOne(d => d.CreatedByNavigation)
@@ -378,6 +479,18 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("SubscriptionPlans", "db_plan");
 
             entity.Property(e => e.Description).HasMaxLength(100).IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TargetRule>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_target_rules");
+
+            entity.ToTable("TargetRules", "db_feed");
+
+            entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_target_rules_filter");
+
+            entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.TargetValue).HasMaxLength(100);
         });
 
         modelBuilder.Entity<Trip>(entity =>

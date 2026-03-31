@@ -8,6 +8,7 @@ using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_plan;
 using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -284,7 +285,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 string contentType,
                 int userId,
                 string? name,
-                bool isBanner = false
+                ImageType? type
             );
             Task<byte[]> DownloadImageAsync(int userId, Guid guid);
             Task UpdateImageName(Image image, string newName);

@@ -4,6 +4,7 @@ using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
@@ -81,7 +82,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     stream,
                     contentType,
                     userId,
-                    name
+                    name,
+                    type: null
                 );
 
                 return Ok(imageViewModel);
@@ -103,7 +105,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
 
-                if (image.IsBanner)
+                if (image.Type == "banner")
                     return BadRequest(Messages.ImageUnauthorized);
 
                 await imagesService.UpdateImageName(image, name);
@@ -128,7 +130,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
 
-                if (image.IsBanner)
+                if (image.Type == "banner")
                     return BadRequest(Messages.ImageUnauthorized);
 
                 var user = usersService.GetUserById(userId);
@@ -181,7 +183,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                     contentType,
                     userId,
                     name,
-                    isBanner: true
+                    type: ImageType.Banner
                 );
 
                 return Ok(imageViewModel);
@@ -203,7 +205,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
 
-                if (!image.IsBanner)
+                if (image.Type != "banner")
                     return BadRequest(Messages.ImageUnauthorized);
 
                 await imagesService.UpdateImageName(image, name);
@@ -226,7 +228,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 if (image == null)
                     return NotFound(Messages.ImageNotFound);
 
-                if (!image.IsBanner)
+                if (image.Type != "banner")
                     return BadRequest(Messages.ImageUnauthorized);
 
                 if (bannerCount > 0)

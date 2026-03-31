@@ -13,7 +13,7 @@ public partial class Image
 
     public Guid Guid { get; set; }
 
-    public bool IsBanner { get; set; }
+    public string? Type { get; set; }
 
     public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
 
