@@ -243,7 +243,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         /// <returns>the updated writing</returns>
         [HttpPatch]
         [Route("{id}")]
-        [IsOwner(Resource = Resources.SERMONS)]
+        [IsOwner(Resource = Resources.WRITINGS)]
         [HasRole(Role = UserRoles.WRITER)]
         public async Task<ActionResult<WritingViewModel>> PatchWriting(
             int id,
@@ -271,7 +271,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Gospel
         /// <returns>the deleted writing id</returns>
         [HttpDelete]
         [Route("{id}")]
-        [IsOwner(Resource = Resources.SERMONS)]
+        [IsOwner(Resource = Resources.WRITINGS)]
         [HasRole(Role = UserRoles.WRITER)]
         public async Task<ActionResult<int>> DeleteWriting(int id)
         {

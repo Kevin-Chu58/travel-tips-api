@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using TravelTipsAPI.Constants;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.GospelSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
@@ -27,6 +28,7 @@ namespace TravelTipsAPI.Authorization
         private ITripAttractionOrdersService _tripAttractionOrdersService;
         private IImagesService _imagesService;
         private IWritingsService _writingsService;
+        private IBusinessesService _businessesService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -48,6 +50,8 @@ namespace TravelTipsAPI.Authorization
                 context.HttpContext.RequestServices.GetRequiredService<IImagesService>();
             _writingsService =
                 context.HttpContext.RequestServices.GetRequiredService<IWritingsService>();
+            _businessesService =
+                context.HttpContext.RequestServices.GetRequiredService<IBusinessesService>();
 
             UserId = (int)(context.HttpContext.Items["user_id"] ?? 0);
 
@@ -87,43 +91,42 @@ namespace TravelTipsAPI.Authorization
 
         private bool HasOwnership(string resource)
         {
-            IEnumerable<int> myTrips,
-                myDays,
-                myAttractions,
-                myHighlights,
-                myTripAttractionOrders,
-                myWritings;
-
             switch (resource)
             {
                 case Resources.TRIPS:
-                    myTrips = _tripsService.GetMyTripIds(UserId);
+                    var myTrips = _tripsService.GetMyTripIds(UserId);
                     return myTrips.Any(tripId => tripId == ResourceId);
 
                 case Resources.DAYS:
-                    myDays = _daysService.GetMyDayIds(UserId);
+                    var myDays = _daysService.GetMyDayIds(UserId);
                     return myDays.Any(dayId => dayId == ResourceId);
 
                 case Resources.ATTRACTIONS:
-                    myAttractions = _attractionsService.GetMyHighlights(UserId);
+                    var myAttractions = _attractionsService.GetMyHighlights(UserId);
                     return myAttractions.Any(aId => aId == ResourceId);
 
                 case Resources.HIGHLIGHTS:
-                    myHighlights = _highlightsService.GetMyHighlights(UserId);
+                    var myHighlights = _highlightsService.GetMyHighlights(UserId);
                     return myHighlights.Any(aId => aId == ResourceId);
 
                 case Resources.TRIP_ATTRACTION_ORDERS:
-                    myTripAttractionOrders = _tripAttractionOrdersService.GetMyTaos(UserId);
+                    var myTripAttractionOrders = _tripAttractionOrdersService.GetMyTaos(UserId);
                     return myTripAttractionOrders.Any(taoId => taoId == ResourceId);
 
                 case Resources.IMAGES:
                     return _imagesService.IsOwner(UserId, ResourceId);
 
-                case Resources.SERMONS:
-                    myWritings = _writingsService.GetMyWritings(UserId);
+                case Resources.WRITINGS:
+                    var myWritings = _writingsService.GetMyWritings(UserId);
                     return myWritings.Any(writingId => writingId == ResourceId);
+
+                case Resources.BUSINESSES:
+                    var myBusinesses = _businessesService.GetMyBusinesses(UserId);
+                    return myBusinesses.Any(businessId => businessId == ResourceId);
+
+                default:
+                    return false;
             }
-            return false;
         }
     }
 }

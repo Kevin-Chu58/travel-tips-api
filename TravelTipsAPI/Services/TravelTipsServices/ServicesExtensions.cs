@@ -41,6 +41,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<IWritingsService, WritingsService>();
             // feed schema
             services.AddScoped<IBannersService, BannersService>();
+            services.AddScoped<IBusinessesService, BusinessesService>();
+            services.AddScoped<IAdsService, AdsService>();
             // plan schema
             services.AddScoped<ISubscriptionsService, SubscriptionsService>();
 

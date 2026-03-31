@@ -139,5 +139,17 @@
         public static readonly string SubscriptionAlreadyActive =
             "User already has an active subscription.";
         public static readonly string SubscriptionNotFound = "Subscription not found.";
+
+        // Businesses
+        public static readonly string BusinessNotFound = "Business not found.";
+        public static readonly string BusinessStatusCannotBeUpdated =
+            "Business status cannot be updated.";
+        public static readonly string BusinessStatusInvalid = "Business status is invalid.";
+        public static readonly string BusinessInactive = "Business is inactive.";
+
+        // Ads
+        public static readonly string AdNotFound = "Ad not found.";
+        public static readonly string AdStatusCannotBeUpdated = "Ad status cannot be updated.";
+        public static readonly string AdStatusInvalid = "Ad status is invalid.";
     }
 }

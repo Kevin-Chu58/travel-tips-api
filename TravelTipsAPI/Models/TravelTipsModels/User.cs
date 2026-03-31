@@ -51,6 +51,8 @@ public partial class User
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
+    public virtual Reviewer? Reviewer { get; set; }
+
     public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();

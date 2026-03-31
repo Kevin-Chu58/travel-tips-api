@@ -11,13 +11,13 @@ public partial class Ad
 
     public int BusinessId { get; set; }
 
-    public Guid AdImageGuid { get; set; }
+    public int ImageId { get; set; }
 
     public string? StripSubscriptionId { get; set; }
 
-    public string? Status { get; set; }
+    public string? SubStatus { get; set; }
 
-    public string Approval { get; set; } = null!;
+    public string Status { get; set; } = null!;
 
     public virtual ICollection<AdSubLog> AdSubLogs { get; set; } = new List<AdSubLog>();
 
@@ -26,4 +26,6 @@ public partial class Ad
     public virtual Business Business { get; set; } = null!;
 
     public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual Image Image { get; set; } = null!;
 }

@@ -159,7 +159,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="contentType">image content type</param>
         /// <param name="userId">user id</param>
         /// <param name="name">image file name</param>
-        /// <param name="isBanner">whether the image is in banners</param>
+        /// <param name="type">image type</param>
         /// <returns>the posted image</returns>
         public async Task<ImageViewModel> PostNewImageAsync(
             Stream stream,

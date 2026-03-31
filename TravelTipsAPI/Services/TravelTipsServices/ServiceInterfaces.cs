@@ -8,6 +8,7 @@ using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_plan;
 using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
+using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
@@ -264,6 +265,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             bool IsAdmin(int userId);
             bool IsWriter(int userId);
             bool IsBannerMan(int userId);
+            bool IsReviewer(int userId);
 
             // subscriptions
             bool IsUserMember(int userId);
@@ -369,6 +371,41 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 BannerStylingPatchViewModel bannerStylingPatch
             );
             bool ValidateStyling(string? styling);
+        }
+
+        public interface IBusinessesService
+        {
+            Business? FindBusinessById(int businessId);
+            IEnumerable<int> GetMyBusinesses(int userId);
+            IEnumerable<BusinessViewModel> GetBusinessesByParams(
+                int? userId = null,
+                AdStatus? status = null
+            );
+            Task<BusinessViewModel> PostNewBusiness(
+                BusinessPostViewModel postViewModel,
+                int userId
+            );
+            Task<BusinessViewModel> UpdateBusiness(
+                Business business,
+                BusinessPatchViewModel businessPatch
+            );
+            Task<string> UpdateBusinessActiveStatus(Business business, bool isActive);
+            Task<string> UpdateBusinessStatus(Business business, AdStatus status);
+        }
+
+        public interface IAdsService
+        {
+            Ad? FindAdById(int adId);
+            IEnumerable<int> GetMyAds(int userId);
+            IEnumerable<AdViewModel> GetAdsByParams(
+                int? userId = null,
+                int? businessId = null,
+                AdStatus? status = null
+            );
+            Task<AdViewModel> PostNewAd(AdPostViewModel postViewModel, int userId, int businessId);
+            Task<AdViewModel> UpdateAd(Ad ad, AdPatchViewModel adPatch);
+            Task<string> UpdateAdActiveStatus(Ad ad, bool isActive);
+            Task<string> UpdateAdStatus(Ad ad, AdStatus status);
         }
     }
 

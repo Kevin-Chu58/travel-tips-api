@@ -79,6 +79,8 @@ namespace TravelTipsAPI.Authorization
             {
                 UserRoles.WRITER => _userRolesService.IsWriter(UserId),
                 UserRoles.BANNER_MAN => _userRolesService.IsBannerMan(UserId),
+                UserRoles.REVIEWER => _userRolesService.IsReviewer(UserId),
+                // subscriptions
                 UserRoles.MEMBER => _userRolesService.IsUserMember(UserId),
                 _ => false,
             };

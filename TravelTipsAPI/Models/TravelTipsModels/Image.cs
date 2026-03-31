@@ -15,6 +15,8 @@ public partial class Image
 
     public string? Type { get; set; }
 
+    public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();
+
     public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;

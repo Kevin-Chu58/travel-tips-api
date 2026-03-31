@@ -94,6 +94,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
         }
 
+        /// <summary>
+        /// Update image name
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <param name="name">new image name</param>
+        /// <returns></returns>
         [HttpPatch]
         [Route("{id}/name/{name}")]
         [IsOwner(Resource = Resources.IMAGES)]
@@ -117,6 +123,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
         }
 
+        /// <summary>
+        /// Delete an existing image
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <returns>the deleted image id</returns>
         [HttpDelete]
         [Route("{id}")]
         [IsOwner(Resource = Resources.IMAGES)]
@@ -148,10 +159,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
         // banner images
 
+        /// <summary>
+        /// Get banner images
+        /// </summary>
+        /// <returns>a list of banner images</returns>
         [HttpGet]
         [Route("banner")]
-        [HasRole(Role = UserRoles.ADMIN)]
-        public async Task<ActionResult<ImageViewModel>> GetBannerImages()
+        [HasRole(Role = UserRoles.BANNER_MAN)]
+        public async Task<ActionResult<IEnumerable<ImageViewModel>>> GetBannerImages()
         {
             var imageIds = imagesService.GetBannerImageIds().ToArray();
 
@@ -160,9 +175,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
             return Ok(images);
         }
 
+        /// <summary>
+        /// Upload banner image
+        /// </summary>
+        /// <param name="name">image name</param>
+        /// <param name="file">image data</param>
+        /// <returns>new banner image</returns>
         [HttpPost]
         [Route("banner")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult<ImageViewModel>> UploadBannerImage(
             [FromForm] string? name,
             IFormFile file
@@ -194,9 +215,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
         }
 
+        /// <summary>
+        /// Update banner image name
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <param name="name">uew image name</param>
+        /// <returns></returns>
         [HttpPatch]
         [Route("banner/{id}/name/{name}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult> UpdateBannerImageName(int id, string name)
         {
             try
@@ -217,9 +244,14 @@ namespace TravelTipsAPI.Controllers.TravelTips
             }
         }
 
+        /// <summary>
+        /// Delete a banner image
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <returns>the deleted image id</returns>
         [HttpDelete]
         [Route("banner/{id}")]
-        [HasRole(Role = UserRoles.ADMIN)]
+        [HasRole(Role = UserRoles.BANNER_MAN)]
         public async Task<ActionResult<int>> DeleteBannerImage(int id)
         {
             try

@@ -41,6 +41,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Region> Regions { get; set; }
 
+    public virtual DbSet<Reviewer> Reviewers { get; set; }
+
     public virtual DbSet<Subscription> Subscriptions { get; set; }
 
     public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
@@ -76,13 +78,13 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Ads", "db_feed");
 
-            entity.HasIndex(e => new { e.Status, e.Approval }, "idx_ad_filter");
+            entity.HasIndex(e => new { e.SubStatus, e.Status }, "idx_ad_filter");
 
             entity.HasIndex(e => new { e.CreatedBy, e.BusinessId }, "idx_ad_owner");
 
-            entity.Property(e => e.Approval).HasMaxLength(20).IsUnicode(false);
-            entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.StripSubscriptionId).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.SubStatus).HasMaxLength(10).IsUnicode(false);
 
             entity
                 .HasOne(d => d.Business)
@@ -97,6 +99,13 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_ads");
+
+            entity
+                .HasOne(d => d.Image)
+                .WithMany(p => p.Ads)
+                .HasForeignKey(d => d.ImageId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_images_ads");
         });
 
         modelBuilder.Entity<AdSubLog>(entity =>
@@ -125,7 +134,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => e.AdId, "idx_ad_target_ad");
 
-            entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_ad_target_filter");
+            entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_ad_target_search");
 
             entity.Property(e => e.StripeItemId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
@@ -426,6 +435,24 @@ public partial class TravelTipsContext : DbContext
                 .WithMany(p => p.InverseParentRegion)
                 .HasForeignKey(d => d.ParentRegionId)
                 .HasConstraintName("fk_regions_parent");
+        });
+
+        modelBuilder.Entity<Reviewer>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_reviewers");
+
+            entity.ToTable("Reviewers", "db_role");
+
+            entity.HasIndex(e => e.UserId, "idx_reviewers_user_id");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+
+            entity
+                .HasOne(d => d.User)
+                .WithOne(p => p.Reviewer)
+                .HasForeignKey<Reviewer>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_reviewers");
         });
 
         modelBuilder.Entity<Subscription>(entity =>

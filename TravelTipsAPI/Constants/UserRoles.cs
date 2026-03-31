@@ -5,6 +5,7 @@
         public const string ADMIN = "Admin";
         public const string WRITER = "Writer";
         public const string BANNER_MAN = "BannerMan";
+        public const string REVIEWER = "Reviewer";
 
         // subscription
         public const string MEMBER = "Member";
