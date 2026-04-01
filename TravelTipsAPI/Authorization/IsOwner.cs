@@ -29,6 +29,7 @@ namespace TravelTipsAPI.Authorization
         private IImagesService _imagesService;
         private IWritingsService _writingsService;
         private IBusinessesService _businessesService;
+        private IAdsService _adsService;
 
         private int ResourceId { get; set; }
         private int UserId { get; set; }
@@ -52,6 +53,7 @@ namespace TravelTipsAPI.Authorization
                 context.HttpContext.RequestServices.GetRequiredService<IWritingsService>();
             _businessesService =
                 context.HttpContext.RequestServices.GetRequiredService<IBusinessesService>();
+            _adsService = context.HttpContext.RequestServices.GetRequiredService<IAdsService>();
 
             UserId = (int)(context.HttpContext.Items["user_id"] ?? 0);
 
@@ -123,6 +125,10 @@ namespace TravelTipsAPI.Authorization
                 case Resources.BUSINESSES:
                     var myBusinesses = _businessesService.GetMyBusinesses(UserId);
                     return myBusinesses.Any(businessId => businessId == ResourceId);
+
+                case Resources.ADS:
+                    var myAds = _adsService.GetMyAds(UserId);
+                    return myAds.Any(adId => adId == ResourceId);
 
                 default:
                     return false;

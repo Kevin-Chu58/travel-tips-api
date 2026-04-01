@@ -6,6 +6,7 @@ namespace TravelTipsAPI.ViewModels.db_feed
     {
         public int Id { get; set; }
         public int BusinessId { get; set; }
+        public int ImageId { get; set; }
         public string? Picture { get; set; }
         public string? SubStatus { get; set; }
         public required string Status { get; set; }
@@ -16,6 +17,7 @@ namespace TravelTipsAPI.ViewModels.db_feed
             {
                 Id = ad.Id,
                 BusinessId = ad.BusinessId,
+                ImageId = ad.ImageId,
                 SubStatus = ad.SubStatus,
                 Status = ad.Status,
             };

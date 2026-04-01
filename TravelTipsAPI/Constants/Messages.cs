@@ -145,7 +145,7 @@
         public static readonly string BusinessStatusCannotBeUpdated =
             "Business status cannot be updated.";
         public static readonly string BusinessStatusInvalid = "Business status is invalid.";
-        public static readonly string BusinessInactive = "Business is inactive.";
+        public static readonly string BusinessIsNotActive = "Business is not active.";
 
         // Ads
         public static readonly string AdNotFound = "Ad not found.";

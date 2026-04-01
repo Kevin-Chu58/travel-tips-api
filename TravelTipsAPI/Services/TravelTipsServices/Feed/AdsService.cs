@@ -1,6 +1,7 @@
 ﻿using TravelTipsAPI.Constants;
 using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
