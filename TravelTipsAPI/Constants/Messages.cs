@@ -151,5 +151,40 @@
         public static readonly string AdNotFound = "Ad not found.";
         public static readonly string AdStatusCannotBeUpdated = "Ad status cannot be updated.";
         public static readonly string AdStatusInvalid = "Ad status is invalid.";
+
+        // Ad Targets
+        public static readonly string AdTargetNotFound = "Ad target not found.";
+        public static readonly string AdTargetLimitReached = "Ad target limit reached for the ad.";
+        public static readonly string AdTargetTypeInvalid = "Ad target type is invalid.";
+        public static readonly string AdTargetNotBelongToAd =
+            "Ad target does not belong to the ad.";
+
+        // Ad Sub Logs
+
+        // - notes
+        public static readonly string NewAdCreated =
+            "New ad \"{0}\" created, now waiting for approval.";
+        public static readonly string AdApproved = "Ad \"{0}\" approved.";
+        public static readonly string AdDenied = "Ad \"{0}\" denied.";
+        public static readonly string AdRequestChange = "Ad \"{0}\" requested change.";
+        public static readonly string AdActive = "Ad \"{0}\" is active.";
+        public static readonly string AdInactive = "Ad \"{0}\" is inactive.";
+        public static readonly string AdUpdated = "Ad \"{0}\" updated, now waiting for approval.";
+        public static readonly string NewAdTargetAdded = "New ad target on \"{0}\" added.";
+        public static readonly string AdTargetWeightIncreased =
+            "Ad target on \"{0}\" weight increased.";
+        public static readonly string AdTargetWeightDecreased =
+            "Ad target on \"{0}\" weight decreased.";
+        public static readonly string AdTargetCanceled =
+            "Ad target on \"{0}\" canceled for future renewal.";
+        public static readonly string AdTargetReinstated =
+            "Ad target on \"{0}\" reinstated for future renewal.";
+        public static readonly string AdNewCycle =
+            "Ad \"{0}\" starts a new cycle. Ad target(s) on {1} are removed.";
+
+        // Target Rules (Ads)
+        public static readonly string TargetRuleNotFound = "Target rule not found.";
+        public static readonly string TargetRuleMinWeightNotMet =
+            "Ad target does not meet the minimum weight requirement for the target rule.";
     }
 }

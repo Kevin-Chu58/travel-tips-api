@@ -1,5 +1,6 @@
 ﻿using OpenAI.Batch;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
@@ -106,7 +107,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
-            Task<TripViewModel?> GetTripById(int id, int? userId = null, bool isRestricted = false);
+            Task<TripViewModel?> GetTripById(
+                int id,
+                int? userId = null,
+                bool isRestricted = false,
+                bool isMy = false
+            );
             Task<TripViewModel> GetTripViewModel(
                 Trip trip,
                 int? userId = null,
@@ -406,6 +412,42 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<AdViewModel> UpdateAd(Ad ad, AdPatchViewModel adPatch);
             Task<string> UpdateAdActiveStatus(Ad ad, bool isActive);
             Task<string> UpdateAdStatus(Ad ad, AdStatus status);
+
+            // ad sub logs
+
+            IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdId(int adId);
+            Task PostNewAdSubLog(int adId, string note, int? oldValue, int? newValue);
+        }
+
+        public interface IAdTargetsService
+        {
+            AdTarget? FindAdTargetById(int adTargetId);
+            IEnumerable<AdTargetViewModel> GetAdTargetsByAdId(int adId);
+            Task PostNewAdTarget(AdTargetPostViewModel postViewModel, int adId);
+            Task<int> IncreaseAdTargetWeight(AdTarget adTarget, int increment);
+            Task<int> DecreaseAdTargetWeight(AdTarget adTarget, int decrement);
+            Task<int> SetAdTargetAsPrimary(AdTarget adTarget);
+            Task CancelAdTarget(AdTarget adTarget, bool cancel);
+            Task UpdateAdTargetCycleByAdId(int adId);
+        }
+
+        public interface ITargetRulesService
+        {
+            TargetRule? FindTargetRuleById(int targetRuleId);
+            IEnumerable<TargetRuleViewModel> GetTargetRulesByType(AdTargetEnum.AdTarget targetType);
+            TargetRuleViewModel? GetTargetRule(string targetTypeStr, string? targetValue);
+            Task<TargetRuleViewModel> PostNewTargetRule(
+                AdTargetEnum.AdTarget targetType,
+                string? targetValue,
+                int MinWeight
+            );
+            Task<TargetRuleViewModel> UpdateTargetRule(
+                TargetRule targetRule,
+                AdTargetEnum.AdTarget? targetType = null,
+                string? targetValue = null,
+                int? minWeight = null
+            );
+            Task<int> DeleteTargetRule(TargetRule targetRule);
         }
     }
 

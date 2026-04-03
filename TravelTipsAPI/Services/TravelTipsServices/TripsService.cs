@@ -59,15 +59,22 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="id">trip id</param>
         /// <param name="userId">my user id if any</param>
         /// <param name="isRestricted">is user owner or shared with</param>
+        /// <param name="isMy">whether only get my trips, used for my trip page</param>
         /// <returns>the trip view model</returns>
         public async Task<TripViewModel?> GetTripById(
             int id,
             int? userId = null,
-            bool isRestricted = false
+            bool isRestricted = false,
+            bool isMy = false
         )
         {
             var trip = (
-                await GetTripsByParams(ids: [id], userId: userId, isRestricted: isRestricted)
+                await GetTripsByParams(
+                    ids: [id],
+                    userId: userId,
+                    isRestricted: isRestricted,
+                    isMy: isMy
+                )
             ).FirstOrDefault();
             return trip;
         }
@@ -360,7 +367,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.Trips.AddAsync(newTrip);
             await context.SaveChangesAsync();
 
-            var newTripViewModel = await GetTripById(newTrip.Id)!;
+            var newTripViewModel = await GetTripById(newTrip.Id, isMy: true)!;
 
             return newTripViewModel!;
         }

@@ -9,7 +9,7 @@ public partial class TargetRule
 
     public string TargetType { get; set; } = null!;
 
-    public string TargetValue { get; set; } = null!;
+    public string? TargetValue { get; set; }
 
     public int MinWeight { get; set; }
 }

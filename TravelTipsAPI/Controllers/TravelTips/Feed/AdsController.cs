@@ -214,5 +214,21 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
                 return BadRequest(ex.Message);
             }
         }
+
+        // ad sub logs
+
+        /// <summary>
+        /// Get a list of ad sub logs by ad id
+        /// </summary>
+        /// <param name="id">ad id</param>
+        /// <returns>a list of ad sub logs</returns>
+        [HttpGet]
+        [Route("{id}/logs")]
+        [IsOwner(Resource = Resources.ADS)]
+        public ActionResult<IEnumerable<AdSubLogViewModel>> GetAdSubLogs(int id)
+        {
+            var logs = adsService.GetAdSubLogsByAdId(id);
+            return Ok(logs);
+        }
     }
 }

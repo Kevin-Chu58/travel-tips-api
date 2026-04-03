@@ -82,9 +82,13 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => new { e.CreatedBy, e.BusinessId }, "idx_ad_owner");
 
+            entity.Property(e => e.ButtonLabel).HasMaxLength(100);
+            entity.Property(e => e.Link).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.StripSubscriptionId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.SubStatus).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.Text).HasMaxLength(300);
+            entity.Property(e => e.Title).HasMaxLength(100);
 
             entity
                 .HasOne(d => d.Business)
@@ -114,7 +118,9 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("AdSubLogs", "db_feed");
 
-            entity.HasIndex(e => e.AdId, "idx_ad_sub_log_ad");
+            entity
+                .HasIndex(e => new { e.AdId, e.Time }, "idx_latest_ad_sub_log_by_adId")
+                .IsDescending(false, true);
 
             entity.Property(e => e.Note).HasMaxLength(100).IsUnicode(false);
 

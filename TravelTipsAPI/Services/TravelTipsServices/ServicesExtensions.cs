@@ -43,6 +43,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<IBannersService, BannersService>();
             services.AddScoped<IBusinessesService, BusinessesService>();
             services.AddScoped<IAdsService, AdsService>();
+            services.AddScoped<IAdTargetsService, AdTargetsService>();
+            services.AddScoped<ITargetRulesService, TargetRulesService>();
             // plan schema
             services.AddScoped<ISubscriptionsService, SubscriptionsService>();
 
