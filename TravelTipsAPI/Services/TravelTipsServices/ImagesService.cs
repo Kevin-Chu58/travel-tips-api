@@ -43,6 +43,20 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return result?.Image;
         }
 
+        public Image? FindImageAndBusinessCountById(out int businessCount, int id)
+        {
+            var result = context
+                .Images.AsNoTracking()
+                .Include(i => i.Businesses)
+                .Where(i => i.Id == id)
+                .Select(i => new { Image = i, i.Businesses.Count })
+                .FirstOrDefault();
+
+            businessCount = result?.Count ?? 0;
+
+            return result?.Image;
+        }
+
         /// <summary>
         /// Get a list of images by their ids
         /// </summary>
@@ -155,22 +169,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Post new image by uploading to Firebase storage and storing the file path
         /// </summary>
-        /// <param name="stream">image data stream</param>
-        /// <param name="contentType">image content type</param>
+        /// <param name="file">image blob file</param>
         /// <param name="userId">user id</param>
         /// <param name="name">image file name</param>
         /// <param name="type">image type</param>
         /// <returns>the posted image</returns>
         public async Task<ImageViewModel> PostNewImageAsync(
-            Stream stream,
-            string contentType,
+            IFormFile file,
             int userId,
             string? name,
             ImageType? type
         )
         {
+            if (file == null || file.Length == 0)
+                throw new Exception(Messages.ImageNoFileUpload);
+
             try
             {
+                using var stream = file.OpenReadStream();
+                var contentType = file.ContentType;
+
                 if (stream == null || stream.Length == 0)
                     throw new ArgumentException(Messages.ImageStreamEmpty);
 
@@ -203,6 +221,45 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<ImageViewModel> OverwriteImageAsync(Image image, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                throw new Exception(Messages.ImageNoFileUpload);
+
+            try
+            {
+                using var newStream = file.OpenReadStream();
+                var contentType = file.ContentType;
+
+                if (newStream == null || newStream.Length == 0)
+                    throw new ArgumentException(Messages.ImageStreamEmpty);
+
+                // Reconstruct the exact filename and path used in the original upload
+                string fileName = $"{image.Guid}{GetExtensionFromContentType(contentType)}";
+                string storagePath = $"{image.CreatedBy}/{fileName}";
+
+                // Uploading to the same path will overwrite the existing file in Firebase
+                await uploader.UploadFileAsync(
+                    newStream,
+                    contentType,
+                    config["Firebase:BucketName"]!,
+                    storagePath
+                );
+
+                // Invalidate the cache for this image
+                var cacheKey = GetImageUpstashKey(image.Id);
+                await cache.DeleteKeyAsync(cacheKey);
+
+                var newImageViewModel = await GenerateNewImageAsync(image: image);
+
+                return newImageViewModel;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to overwrite image: {ex.Message}");
             }
         }
 
@@ -274,17 +331,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public async Task DeleteImageAsync(Image image)
         {
+            var imageId = image.Id;
+            Guid imageGuid = image.Guid;
+            var createdBy = image.CreatedBy;
+
             context.Images.Remove(image);
             await context.SaveChangesAsync();
 
-            string fileName = $"{image.Guid}{GetExtensionFromContentType("image/jpeg")}";
+            string fileName = $"{imageGuid}{GetExtensionFromContentType("image/jpeg")}";
 
             await uploader.DeleteFileAsync(
                 config["Firebase:BucketName"]!,
-                $"{image.CreatedBy}/{fileName}"
+                $"{createdBy}/{fileName}"
             );
 
-            var key = GetImageUpstashKey(image.Id);
+            var key = GetImageUpstashKey(imageId);
             await cache.DeleteKeyAsync(key);
         }
 

@@ -17,7 +17,11 @@ public partial class Business
 
     public string Status { get; set; } = null!;
 
+    public int? ImageId { get; set; }
+
     public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual Image? Image { get; set; }
 }

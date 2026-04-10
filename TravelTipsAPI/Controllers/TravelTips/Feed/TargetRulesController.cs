@@ -20,9 +20,9 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         [HttpGet]
         [Route("{type}")]
         [HasRole(Role = UserRoles.ADMIN)]
-        public ActionResult<IEnumerable<TargetRuleViewModel>> GetTargetRulesByType(AdTarget type)
+        public ActionResult<IEnumerable<TargetRuleViewModel>> GetTargetRulesByType(int type)
         {
-            var result = targetRulesService.GetTargetRulesByType(type);
+            var result = targetRulesService.GetTargetRulesByType((AdTarget)type);
             return Ok(result);
         }
 
@@ -33,11 +33,11 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// <param name="value">target value</param>
         /// <returns>a target rule</returns>
         [HttpGet]
-        [Route("{type}/{value}")]
+        [Route("{type}/value/{value}")]
         [HasRole(Role = UserRoles.ADMIN)]
-        public ActionResult<TargetRuleViewModel?> GetTargetRule(AdTarget type, string? value)
+        public ActionResult<TargetRuleViewModel?> GetTargetRule(int type, string? value)
         {
-            var typeStr = GetAdTargetStr(type);
+            var typeStr = GetAdTargetStr((AdTarget)type);
             if (typeStr == null)
                 return BadRequest(Messages.AdTargetTypeInvalid);
 
@@ -62,13 +62,13 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         [Route("")]
         [HasRole(Role = UserRoles.ADMIN)]
         public async Task<ActionResult<TargetRuleViewModel>> PostNewTargetRule(
-            [FromQuery] AdTarget targetType,
-            string? targetValue,
-            int minWeight
+            [FromQuery] int minWeight,
+            int targetType,
+            string? targetValue
         )
         {
             var result = await targetRulesService.PostNewTargetRule(
-                targetType,
+                (AdTarget)targetType,
                 targetValue,
                 minWeight
             );
@@ -88,9 +88,9 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         [HasRole(Role = UserRoles.ADMIN)]
         public async Task<ActionResult<TargetRuleViewModel>> UpdateTargetRuleMinWeight(
             int id,
-            [FromQuery] AdTarget targetType,
-            string? targetValue,
-            int minWeight
+            [FromQuery] int minWeight,
+            int targetType,
+            string? targetValue
         )
         {
             var targetRule = targetRulesService.FindTargetRuleById(id);
@@ -99,7 +99,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
             var result = await targetRulesService.UpdateTargetRule(
                 targetRule,
-                targetType,
+                (AdTarget)targetType,
                 targetValue,
                 minWeight
             );

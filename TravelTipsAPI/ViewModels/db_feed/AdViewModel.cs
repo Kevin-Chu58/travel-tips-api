@@ -6,14 +6,17 @@ namespace TravelTipsAPI.ViewModels.db_feed
     {
         public int Id { get; set; }
         public int BusinessId { get; set; }
-        public int ImageId { get; set; }
+        public string? BusinessName { get; set; }
         public required string Title { get; set; }
+        public int ImageId { get; set; }
         public string? Text { get; set; }
-        public string? ButtonLabel { get; set; }
+        public string? LinkLabel { get; set; }
         public string? Link { get; set; }
         public string? Picture { get; set; }
+        public string? StripSubscriptionId { get; set; }
         public string? SubStatus { get; set; }
         public required string Status { get; set; }
+        public int TemplateId { get; set; }
 
         public static explicit operator AdViewModel(Ad ad)
         {
@@ -24,10 +27,12 @@ namespace TravelTipsAPI.ViewModels.db_feed
                 ImageId = ad.ImageId,
                 Title = ad.Title,
                 Text = ad.Text,
-                ButtonLabel = ad.ButtonLabel,
+                LinkLabel = ad.LinkLabel,
                 Link = ad.Link,
+                StripSubscriptionId = ad.StripSubscriptionId,
                 SubStatus = ad.SubStatus,
                 Status = ad.Status,
+                TemplateId = ad.TemplateId,
             };
         }
     }

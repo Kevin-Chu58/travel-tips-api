@@ -52,17 +52,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
                 throw new Exception(Messages.AdTargetLimitReached);
             }
 
-            // Check if the target type is valid and get the corresponding string value
-            var adTargetStr = AdTargetEnum.GetAdTargetStr(postViewModel.TargetType);
-            if (adTargetStr == null)
-            {
-                throw new Exception(Messages.AdTargetTypeInvalid);
-            }
-
             var adTarget = new Models.TravelTipsModels.AdTarget
             {
                 AdId = adId,
-                TargetType = adTargetStr,
+                TargetType = postViewModel.TargetType,
                 TargetValue = postViewModel.TargetValue,
                 Weight = postViewModel.Weight,
             };

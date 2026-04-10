@@ -1,15 +1,19 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips.Feed
 {
     [Route("api/[controller]")]
-    public class BusinessesController(IBusinessesService businessesService)
-        : TravelTipsControllerBase
+    public class BusinessesController(
+        IBusinessesService businessesService,
+        IImagesService imagesService
+    ) : TravelTipsControllerBase
     {
         /// <summary>
         /// Get all my businesses
@@ -23,7 +27,47 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
             var businesses = businessesService.GetBusinessesByParams(userId, null);
+            //var result = await AppendImagesToBusinessesAsync(businesses);
+
             return Ok(businesses);
+        }
+
+        /// <summary>
+        /// Get my non-pending businesses
+        /// </summary>
+        /// <returns>my non-pending businesses</returns>
+        //[HttpGet]
+        //[Route("my/non-pending")]
+        //[IsOwner(Resource = Resources.NONE)]
+        //public ActionResult<IEnumerable<BusinessViewModel>> GetMyNonPendingBusinesses()
+        //{
+        //    var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+        //    var businesses = businessesService.GetBusinessesByParams(
+        //        userId,
+        //        null,
+        //        AdStatus.Pending
+        //    );
+        //    return Ok(businesses);
+        //}
+
+        /// <summary>
+        /// Get a business by id
+        /// </summary>
+        /// <param name="id">business id</param>
+        /// <returns>the business with the id</returns>
+        [HttpGet]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.BUSINESSES)]
+        public async Task<ActionResult<BusinessViewModel>> GetBusinessById(int id)
+        {
+            var business = businessesService.FindBusinessById(id);
+            if (business == null)
+                return NotFound(Messages.BusinessNotFound);
+
+            var result = await AppendImagesToBusinessesAsync([(BusinessViewModel)business]);
+
+            return Ok(result.First());
         }
 
         /// <summary>
@@ -33,13 +77,17 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         [HttpGet]
         [Route("")]
         [HasRole(Role = UserRoles.REVIEWER)]
-        public ActionResult<IEnumerable<BusinessViewModel>> GetBusinessesByParams(
+        public async Task<ActionResult<IEnumerable<BusinessViewModel>>> GetBusinessesByParams(
             [FromQuery] int? userId,
-            [FromQuery] AdStatus? status
+            [FromQuery] int? status
         )
         {
-            var businesses = businessesService.GetBusinessesByParams(userId, status);
-            return Ok(businesses);
+            AdStatus? statusEnum = status != null ? (AdStatus)status : null;
+
+            var businesses = businessesService.GetBusinessesByParams(userId, statusEnum);
+            var result = await AppendImagesToBusinessesAsync(businesses);
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -74,8 +122,6 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
             [FromBody] BusinessPatchViewModel updatedBusiness
         )
         {
-            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
             var business = businessesService.FindBusinessById(id);
             if (business == null)
                 return NotFound(Messages.BusinessNotFound);
@@ -89,7 +135,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// </summary>
         /// <param name="id">business id</param>
         /// <param name="isActive">new active status</param>
-        /// <returns></returns>
+        /// <returns>the new status</returns>
         [HttpPatch]
         [Route("{id}/active-status")]
         [IsOwner(Resource = Resources.BUSINESSES)]
@@ -121,7 +167,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// </summary>
         /// <param name="id">business id</param>
         /// <param name="status">new status</param>
-        /// <returns></returns>
+        /// <returns>the new status</returns>
         [HttpPatch]
         [Route("{id}/status")]
         [HasRole(Role = UserRoles.REVIEWER)]
@@ -143,6 +189,36 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
             {
                 return BadRequest(ex.Message);
             }
+        }
+
+        private async Task<IEnumerable<BusinessViewModel>> AppendImagesToBusinessesAsync(
+            IEnumerable<BusinessViewModel> businesses
+        )
+        {
+            var businessList = businesses.ToList();
+            var imageIds = businesses
+                .Where(bs => bs.ImageId != null)
+                .Select(bs => (int)bs.ImageId!)
+                .ToArray();
+
+            var images = await imagesService.GetImagesByIds(imageIds);
+
+            // Create a lookup dictionary for O(1) retrieval
+            var imageDict = images.ToDictionary(img => img.Id, img => img);
+
+            // Map each business to its corresponding image
+            foreach (var business in businessList)
+            {
+                if (
+                    business.ImageId != null
+                    && imageDict.TryGetValue((int)business.ImageId, out var image)
+                )
+                {
+                    business.Picture = image.Url;
+                }
+            }
+
+            return businessList;
         }
     }
 }

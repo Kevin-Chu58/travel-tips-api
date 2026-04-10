@@ -92,6 +92,7 @@
         public static readonly string ImageUnauthorized = "Image access unauthorized.";
         public static readonly string ImageStreamEmpty = "Uploaded image stream is empty.";
         public static readonly string ImageNameTooLong = "Image name too long.";
+        public static readonly string ImageNoFileUpload = "No image file uploaded.";
 
         // - trip image
         public static readonly string ImageTripAttached = "Image is attached to trip.";
@@ -99,6 +100,9 @@
 
         // - banner image
         public static readonly string ImageBannerAttached = "Image is attached to banner.";
+
+        // - business image
+        public static readonly string ImageBusinessAttached = "Image is attached to business.";
 
         // - user image (picture)
         public static readonly string ImageUserPicture = "Image is profile picture.";
@@ -151,6 +155,7 @@
         public static readonly string AdNotFound = "Ad not found.";
         public static readonly string AdStatusCannotBeUpdated = "Ad status cannot be updated.";
         public static readonly string AdStatusInvalid = "Ad status is invalid.";
+        public static readonly string AdImageIsMissing = "Ad image is missing.";
 
         // Ad Targets
         public static readonly string AdTargetNotFound = "Ad target not found.";
@@ -160,16 +165,16 @@
             "Ad target does not belong to the ad.";
 
         // Ad Sub Logs
+        public static readonly string AdSubLogReasonInvalid = "Reason in log is invalid.";
 
         // - notes
-        public static readonly string NewAdCreated =
-            "New ad \"{0}\" created, now waiting for approval.";
-        public static readonly string AdApproved = "Ad \"{0}\" approved.";
-        public static readonly string AdDenied = "Ad \"{0}\" denied.";
-        public static readonly string AdRequestChange = "Ad \"{0}\" requested change.";
-        public static readonly string AdActive = "Ad \"{0}\" is active.";
-        public static readonly string AdInactive = "Ad \"{0}\" is inactive.";
-        public static readonly string AdUpdated = "Ad \"{0}\" updated, now waiting for approval.";
+        public static readonly string NewAdCreated = "New ad created, now pending.";
+        public static readonly string AdApproved = "Ad approved, due to {0}.";
+        public static readonly string AdDenied = "Ad denied, due to {0}.";
+        public static readonly string AdRequestChange = "Ad requested change, due to {0}.";
+        public static readonly string AdActive = "Ad is active.";
+        public static readonly string AdInactive = "Ad is inactive.";
+        public static readonly string AdUpdated = "Ad updated, now pending.";
         public static readonly string NewAdTargetAdded = "New ad target on \"{0}\" added.";
         public static readonly string AdTargetWeightIncreased =
             "Ad target on \"{0}\" weight increased.";
@@ -180,7 +185,7 @@
         public static readonly string AdTargetReinstated =
             "Ad target on \"{0}\" reinstated for future renewal.";
         public static readonly string AdNewCycle =
-            "Ad \"{0}\" starts a new cycle. Ad target(s) on {1} are removed.";
+            "Ad starts a new cycle. Ad target(s) on {0} are removed.";
 
         // Target Rules (Ads)
         public static readonly string TargetRuleNotFound = "Target rule not found.";

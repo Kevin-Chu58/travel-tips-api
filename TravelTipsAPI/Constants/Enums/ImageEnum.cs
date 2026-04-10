@@ -5,6 +5,7 @@
         public enum ImageType
         {
             Banner,
+            Business,
             Ad,
         };
 
@@ -13,9 +14,11 @@
             switch (type)
             {
                 case ImageType.Banner:
-                    return "Banner";
+                    return "banner";
+                case ImageType.Business:
+                    return "business";
                 case ImageType.Ad:
-                    return "Ad";
+                    return "ad";
                 default:
                     return null;
             }

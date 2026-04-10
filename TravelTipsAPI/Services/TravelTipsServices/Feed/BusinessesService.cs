@@ -33,10 +33,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// </summary>
         /// <param name="userId">user id</param>
         /// <param name="status">business status</param>
+        /// <param name="excludeStatus">business status excluded</param>
         /// <returns>a list of businesses that fit the params</returns>
         public IEnumerable<BusinessViewModel> GetBusinessesByParams(
             int? userId = null,
-            AdStatus? status = null
+            AdStatus? status = null,
+            AdStatus? excludeStatus = null
         )
         {
             if (userId == null && status == null)
@@ -54,6 +56,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             {
                 var statusStr = GetAdStatusStr(status);
                 query = query.Where(b => b.Status == statusStr);
+            }
+
+            if (excludeStatus.HasValue)
+            {
+                var excludeStatusStr = GetAdStatusStr(excludeStatus);
+                query = query.Where(b => b.Status != excludeStatusStr);
             }
 
             return query.Select(b => (BusinessViewModel)b).ToList();
@@ -106,6 +114,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             return (BusinessViewModel)business;
         }
 
+        public async Task RemoveBusinessImage(Business business)
+        {
+            business.ImageId = null;
+
+            await context.SaveChangesAsync();
+        }
+
         /// <summary>
         /// Update the business active status
         /// </summary>
@@ -117,7 +132,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             // Only update status if the current status is Active or Inactive
             if (
                 business.Status != GetAdStatusStr(AdStatus.Active)
-                || business.Status != GetAdStatusStr(AdStatus.Inactive)
+                && business.Status != GetAdStatusStr(AdStatus.Inactive)
             )
             {
                 throw new Exception(Messages.BusinessStatusCannotBeUpdated);

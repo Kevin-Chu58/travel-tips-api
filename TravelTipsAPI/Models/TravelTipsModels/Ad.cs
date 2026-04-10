@@ -23,9 +23,11 @@ public partial class Ad
 
     public string? Text { get; set; }
 
-    public string? ButtonLabel { get; set; }
+    public string? LinkLabel { get; set; }
 
     public string? Link { get; set; }
+
+    public int TemplateId { get; set; }
 
     public virtual ICollection<AdSubLog> AdSubLogs { get; set; } = new List<AdSubLog>();
 

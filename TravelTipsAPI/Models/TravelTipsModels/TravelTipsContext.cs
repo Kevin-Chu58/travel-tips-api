@@ -82,13 +82,13 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => new { e.CreatedBy, e.BusinessId }, "idx_ad_owner");
 
-            entity.Property(e => e.ButtonLabel).HasMaxLength(100);
             entity.Property(e => e.Link).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.LinkLabel).HasMaxLength(50);
             entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
             entity.Property(e => e.StripSubscriptionId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.SubStatus).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.Text).HasMaxLength(300);
-            entity.Property(e => e.Title).HasMaxLength(100);
+            entity.Property(e => e.Text).HasMaxLength(100);
+            entity.Property(e => e.Title).HasMaxLength(50);
 
             entity
                 .HasOne(d => d.Business)
@@ -310,6 +310,12 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_businesses");
+
+            entity
+                .HasOne(d => d.Image)
+                .WithMany(p => p.Businesses)
+                .HasForeignKey(d => d.ImageId)
+                .HasConstraintName("fk_images_businesses");
         });
 
         modelBuilder.Entity<Day>(entity =>

@@ -9,6 +9,8 @@ namespace TravelTipsAPI.ViewModels.db_feed
         public required string Website { get; set; }
         public required string Address { get; set; }
         public required string Status { get; set; }
+        public int? ImageId { get; set; }
+        public string? Picture { get; set; }
 
         public static explicit operator BusinessViewModel(Business business)
         {
@@ -19,6 +21,7 @@ namespace TravelTipsAPI.ViewModels.db_feed
                 Website = business.Website,
                 Address = business.Address,
                 Status = business.Status,
+                ImageId = business.ImageId,
             };
         }
     }

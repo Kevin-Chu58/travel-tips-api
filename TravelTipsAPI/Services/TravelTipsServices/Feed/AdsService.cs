@@ -20,6 +20,23 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             return context.Ads.FirstOrDefault(a => a.Id == adId);
         }
 
+        public AdViewModel GetAdById(int adId)
+        {
+            var adInfo = context
+                .Ads.Where(a => a.Id == adId)
+                .Select(a => new { Ad = (AdViewModel)a, a.Business })
+                .FirstOrDefault();
+
+            var result = adInfo?.Ad;
+
+            if (result == null)
+                throw new Exception(Messages.AdNotFound);
+
+            result.BusinessName = adInfo?.Business.Name;
+
+            return result;
+        }
+
         /// <summary>
         /// Get a list of ads by params
         /// </summary>
@@ -80,17 +97,19 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             int businessId
         )
         {
-            var tx = context.Database.BeginTransaction();
+            if (postViewModel.ImageId == null)
+                throw new Exception(Messages.AdImageIsMissing);
 
             var ad = new Ad
             {
                 CreatedBy = userId,
                 BusinessId = businessId,
-                ImageId = postViewModel.ImageId,
+                ImageId = (int)postViewModel.ImageId,
                 Title = postViewModel.Title,
                 Text = postViewModel.Text,
-                ButtonLabel = postViewModel.ButtonLabel,
+                LinkLabel = postViewModel.ButtonLabel,
                 Link = postViewModel.Link,
+                TemplateId = postViewModel.TemplateId,
                 Status = GetAdStatusStr(AdStatus.Pending)!,
             };
 
@@ -98,10 +117,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             await context.SaveChangesAsync();
 
             // create a sub log for the new ad creation
-            var message = string.Format(Messages.NewAdCreated, ad.Title);
-            await PostNewAdSubLog(ad.Id, message, null, null);
-
-            tx.Commit();
+            await PostNewAdSubLog(ad.Id, Messages.NewAdCreated, null, null);
 
             return (AdViewModel)ad;
         }
@@ -116,16 +132,19 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         {
             var tx = context.Database.BeginTransaction();
 
-            ad.ImageId = adPatch.ImageId ?? ad.ImageId;
+            // not required to update image id, since the same image is overwritten
+            // by the new image file instead of creating a new one
+
             ad.Title = adPatch.Title ?? ad.Title;
             ad.Text = adPatch.Text ?? ad.Text;
-            ad.ButtonLabel = adPatch.ButtonLabel ?? ad.ButtonLabel;
+            ad.LinkLabel = adPatch.LinkLabel ?? ad.LinkLabel;
+            ad.Link = adPatch.Link ?? ad.Link;
+            ad.TemplateId = adPatch.TemplateId ?? ad.TemplateId;
 
             await context.SaveChangesAsync();
 
             // create a sub log for the ad update
-            var message = string.Format(Messages.AdUpdated, ad.Title);
-            await PostNewAdSubLog(ad.Id, message, null, null);
+            await PostNewAdSubLog(ad.Id, Messages.AdUpdated, null, null);
 
             tx.Commit();
 
@@ -143,7 +162,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             // Only update status if the current status is Active or Inactive
             if (
                 ad.Status != GetAdStatusStr(AdStatus.Active)
-                || ad.Status != GetAdStatusStr(AdStatus.Inactive)
+                && ad.Status != GetAdStatusStr(AdStatus.Inactive)
             )
             {
                 throw new Exception(Messages.AdStatusCannotBeUpdated);
@@ -186,8 +205,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// </summary>
         /// <param name="ad">ad</param>
         /// <param name="status">ad status</param>
+        /// <param name="reason">reason for the change</param>
         /// <returns>the new status</returns>
-        public async Task<string> UpdateAdStatus(Ad ad, AdStatus status)
+        public async Task<string> UpdateAdStatus(Ad ad, AdStatus status, string? reason = null)
         {
             var statusStr = GetAdStatusStr(status);
             if (statusStr == null)
@@ -208,10 +228,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
                     messageType = Messages.AdInactive;
                     break;
                 case AdStatus.RequestChange:
-                    messageType = Messages.AdRequestChange;
+                    messageType = string.Format(Messages.AdRequestChange, reason);
                     break;
                 case AdStatus.Denied:
-                    messageType = Messages.AdDenied;
+                    messageType = string.Format(Messages.AdDenied, reason);
                     break;
                 default:
                     break;
@@ -240,8 +260,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         {
             return context
                 .AdSubLogs.Where(log => log.AdId == adId)
-                .Select(log => (AdSubLogViewModel)log)
                 .OrderByDescending(log => log.Time)
+                .Select(log => (AdSubLogViewModel)log)
                 .ToList();
         }
 

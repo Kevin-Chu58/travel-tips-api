@@ -19,6 +19,8 @@ public partial class Image
 
     public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
 
+    public virtual ICollection<Business> Businesses { get; set; } = new List<Business>();
+
     public virtual User CreatedByNavigation { get; set; } = null!;
 
     public virtual ICollection<TripImage> TripImages { get; set; } = new List<TripImage>();

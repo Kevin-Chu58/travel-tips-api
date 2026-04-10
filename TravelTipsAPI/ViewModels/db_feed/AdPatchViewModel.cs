@@ -1,11 +1,21 @@
-﻿namespace TravelTipsAPI.ViewModels.db_feed
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace TravelTipsAPI.ViewModels.db_feed
 {
     public class AdPatchViewModel
     {
-        public int? ImageId { get; set; }
+        [MaxLength(50)]
         public string? Title { get; set; }
+
+        [MaxLength(100)]
         public string? Text { get; set; }
-        public string? ButtonLabel { get; set; }
+
+        [MaxLength(50)]
+        public string? LinkLabel { get; set; }
+
+        [MaxLength(255)]
         public string? Link { get; set; }
+        public int? TemplateId { get; set; }
+        public IFormFile? ImageFile { get; set; }
     }
 }

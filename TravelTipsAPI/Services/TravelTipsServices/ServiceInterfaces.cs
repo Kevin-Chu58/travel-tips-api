@@ -284,17 +284,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Image? FindImageById(int id);
             Image? FindImageAndBannerCountById(out int bannerCount, int id);
+            Image? FindImageAndBusinessCountById(out int businessCount, int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByTripId(int id);
             IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetBannerImageIds();
             Task<ImageViewModel> PostNewImageAsync(
-                Stream stream,
-                string contentType,
+                IFormFile file,
                 int userId,
                 string? name,
                 ImageType? type
             );
+            Task<ImageViewModel> OverwriteImageAsync(Image image, IFormFile file);
             Task<byte[]> DownloadImageAsync(int userId, Guid guid);
             Task UpdateImageName(Image image, string newName);
             Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
@@ -385,7 +386,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<int> GetMyBusinesses(int userId);
             IEnumerable<BusinessViewModel> GetBusinessesByParams(
                 int? userId = null,
-                AdStatus? status = null
+                AdStatus? status = null,
+                AdStatus? excludeStatus = null
             );
             Task<BusinessViewModel> PostNewBusiness(
                 BusinessPostViewModel postViewModel,
@@ -395,6 +397,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Business business,
                 BusinessPatchViewModel businessPatch
             );
+            Task RemoveBusinessImage(Business business);
             Task<string> UpdateBusinessActiveStatus(Business business, bool isActive);
             Task<string> UpdateBusinessStatus(Business business, AdStatus status);
         }
@@ -402,6 +405,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public interface IAdsService
         {
             Ad? FindAdById(int adId);
+            AdViewModel GetAdById(int adId);
             IEnumerable<int> GetMyAds(int userId);
             IEnumerable<AdViewModel> GetAdsByParams(
                 int? userId = null,
@@ -411,7 +415,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<AdViewModel> PostNewAd(AdPostViewModel postViewModel, int userId, int businessId);
             Task<AdViewModel> UpdateAd(Ad ad, AdPatchViewModel adPatch);
             Task<string> UpdateAdActiveStatus(Ad ad, bool isActive);
-            Task<string> UpdateAdStatus(Ad ad, AdStatus status);
+            Task<string> UpdateAdStatus(Ad ad, AdStatus status, string? reason = null);
 
             // ad sub logs
 

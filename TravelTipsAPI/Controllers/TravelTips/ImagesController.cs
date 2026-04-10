@@ -2,17 +2,23 @@
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
     [Route("api/[controller]")]
-    public class ImagesController(IImagesService imagesService, IUsersService usersService)
-        : TravelTipsControllerBase
+    public class ImagesController(
+        TravelTipsContext context,
+        IImagesService imagesService,
+        IUsersService usersService,
+        IBusinessesService businessesService
+    ) : TravelTipsControllerBase
     {
         // images
 
@@ -68,19 +74,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
             IFormFile file
         )
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
             try
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                using var stream = file.OpenReadStream();
-                var contentType = file.ContentType;
-
                 var imageViewModel = await imagesService.PostNewImageAsync(
-                    stream,
-                    contentType,
+                    file,
                     userId,
                     name,
                     type: null
@@ -189,19 +188,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
             IFormFile file
         )
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("No file uploaded.");
-
             try
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                using var stream = file.OpenReadStream();
-                var contentType = file.ContentType;
-
                 var imageViewModel = await imagesService.PostNewImageAsync(
-                    stream,
-                    contentType,
+                    file,
                     userId,
                     name,
                     type: ImageType.Banner
@@ -268,6 +260,100 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
                 await imagesService.DeleteImageAsync(image);
                 return Ok(id);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // business images
+
+        /// <summary>
+        /// Upload business image, overwrite image data if already exist
+        /// </summary>
+        /// <param name="file">image data</param>
+        /// <returns>new business image</returns>
+        [HttpPost]
+        [Route("business/{id}")]
+        [IsOwner(Resource = Resources.BUSINESSES)]
+        public async Task<ActionResult<ImageViewModel>> UploadBusinessImage(int id, IFormFile file)
+        {
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                var tx = context.Database.BeginTransaction();
+
+                var business = businessesService.FindBusinessById(id);
+                if (business == null)
+                    return NotFound(Messages.BusinessNotFound);
+
+                ImageViewModel imageViewModel;
+
+                if (business.ImageId == null)
+                {
+                    imageViewModel = await imagesService.PostNewImageAsync(
+                        file,
+                        userId,
+                        name: null,
+                        type: ImageType.Business
+                    );
+                }
+                else
+                {
+                    var image = imagesService.FindImageById((int)business.ImageId);
+                    if (image == null)
+                        return NotFound(Messages.ImageNotFound);
+
+                    imageViewModel = await imagesService.OverwriteImageAsync(image, file);
+                }
+
+                business.ImageId = imageViewModel.Id;
+                await context.SaveChangesAsync();
+
+                await tx.CommitAsync();
+
+                return Ok(imageViewModel);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Delete a business image
+        /// </summary>
+        /// <param name="id">image id</param>
+        /// <returns>the deleted image id</returns>
+        [HttpDelete]
+        [Route("business/{id}")]
+        [IsOwner(Resource = Resources.BUSINESSES)]
+        public async Task<ActionResult> DeleteBusinessImage(int id)
+        {
+            try
+            {
+                var business = businessesService.FindBusinessById(id);
+                if (business == null)
+                    return NotFound(Messages.BusinessNotFound);
+
+                var image = imagesService.FindImageById((int)business.ImageId);
+                if (image == null)
+                    return NotFound(Messages.ImageNotFound);
+
+                if (image.Type != GetImageTypeStr(ImageType.Business))
+                    return BadRequest(Messages.ImageUnauthorized);
+
+                var tx = await context.Database.BeginTransactionAsync();
+
+                await businessesService.RemoveBusinessImage(business);
+
+                await imagesService.DeleteImageAsync(image);
+
+                await tx.CommitAsync();
+
+                return Ok();
             }
             catch (Exception ex)
             {

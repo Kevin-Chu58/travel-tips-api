@@ -335,6 +335,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 // create the new trip if max trip count is not reached,
                 // and update the user's trip count in user sub extend
                 var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip.Title);
+                tripViewModel.IsReadonly = false;
+
                 await userExtendsService.UpdateSubExtendTripCount(userSubExtend, 1);
 
                 await tx.CommitAsync();
