@@ -3,10 +3,12 @@ using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Feed
 {
-    public class TargetRulesService(TravelTipsContext context) : ITargetRulesService
+    public class TargetRulesService(TravelTipsContext context, IRegionsService regionsService)
+        : ITargetRulesService
     {
         /// <summary>
         /// Find a target rule by id
@@ -38,17 +40,49 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// <summary>
         /// Get a target rule by target type and target value. If not found, return null
         /// </summary>
-        /// <param name="targetType">target type</param>
+        /// <param name="targetTypeStr">target type</param>
         /// <param name="targetValue">target value</param>
         /// <returns>a target rule</returns>
         public TargetRuleViewModel? GetTargetRule(string targetTypeStr, string? targetValue)
         {
-            return context
+            var isRegion =
+                targetTypeStr == AdTargetEnum.GetAdTargetStr(AdTargetEnum.AdTarget.Region);
+            var region = context.Regions.FirstOrDefault(r => r.Name == targetValue);
+            var regionParentIds =
+                region != null ? regionsService.GetRegionParentIds(region.Id).ToList() : [];
+
+            // convert region parent ids from int to string for comparison with TargetValue in TargetRule
+            var regionParentIdStrs = regionParentIds.Select(id => id.ToString()).ToList();
+
+            var targetRules = context
                 .TargetRules.Where(tr =>
-                    tr.TargetType == targetTypeStr && tr.TargetValue == targetValue
+                    tr.TargetType == targetTypeStr
+                    && (
+                        tr.TargetValue == null
+                        || tr.TargetValue == targetValue
+                        || (isRegion && regionParentIdStrs.Contains(tr.TargetValue))
+                    )
                 )
-                .Select(tr => (TargetRuleViewModel)tr)
-                .FirstOrDefault();
+                .ToList();
+
+            if (targetValue != null)
+            {
+                var targetRule = targetRules.FirstOrDefault(tr => tr.TargetValue == targetValue);
+                if (targetRule != null)
+                    return (TargetRuleViewModel)targetRule;
+            }
+
+            string?[] orderedRegionIds = [.. regionParentIdStrs, null];
+
+            // check the target rules in the order of region parent ids, and return the first matched target rule
+            foreach (var regionId in orderedRegionIds)
+            {
+                var targetRule = targetRules.FirstOrDefault(tr => tr.TargetValue == regionId);
+                if (targetRule != null)
+                    return (TargetRuleViewModel)targetRule;
+            }
+
+            return null;
         }
 
         /// <summary>

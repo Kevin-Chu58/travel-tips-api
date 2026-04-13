@@ -55,6 +55,33 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         }
 
         /// <summary>
+        /// Get a list of parent region ids of a region, ordered from the closest parent to the farthest parent (Continent)
+        /// </summary>
+        /// <param name="regionId">trgion if</param>
+        /// <returns>a list of parent region ids of a region</returns>
+        public IEnumerable<int> GetRegionParentIds(int regionId)
+        {
+            var parentIds = new List<int>();
+            var currentRegionId = regionId;
+            while (true)
+            {
+                if (!_regionCache.TryGetValue(currentRegionId, out var region))
+                    throw new Exception(Messages.RegionNotFound);
+
+                if (region.ParentRegionId.HasValue)
+                {
+                    parentIds.Add(region.ParentRegionId.Value);
+                    currentRegionId = region.ParentRegionId.Value;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            return parentIds;
+        }
+
+        /// <summary>
         /// Get regions by params
         /// </summary>
         /// <param name="type">region type</param>

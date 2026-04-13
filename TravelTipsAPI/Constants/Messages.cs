@@ -16,6 +16,8 @@
         // Users
         public static readonly string UserNotFound = "User not found";
         public static readonly string UserIdNotFound = "User Auth Id not found.";
+        public static readonly string UserStripeCustomerIdNotFound =
+            "User does not have a Stripe Customer Id";
 
         // User Extends
         // - user sub extends
@@ -137,6 +139,11 @@
 
         // Stripe
         public static readonly string StripeSessionNotFound = "Stripe session not found.";
+        public static readonly string StripePaymentTypeNotFound = "Stripe payment type not found.";
+        public static readonly string StripeSubscriptionItemNotFound =
+            "Stripe subscription item not found.";
+        public static readonly string StripeRenewSubscriptionInvalid =
+            "Renew subscription value is invalid.";
 
         // subscriptions
         public static readonly string SubscriptionTypeInvalid = "Invalid subscription type.";
@@ -156,6 +163,8 @@
         public static readonly string AdStatusCannotBeUpdated = "Ad status cannot be updated.";
         public static readonly string AdStatusInvalid = "Ad status is invalid.";
         public static readonly string AdImageIsMissing = "Ad image is missing.";
+        public static readonly string AdStripeSubIdMissing =
+            "Ad Stripe Subscription Id is missing.";
 
         // Ad Targets
         public static readonly string AdTargetNotFound = "Ad target not found.";
@@ -163,6 +172,20 @@
         public static readonly string AdTargetTypeInvalid = "Ad target type is invalid.";
         public static readonly string AdTargetNotBelongToAd =
             "Ad target does not belong to the ad.";
+        public static readonly string AdTargetWeightZeroInvalid =
+            "Ad target weight cannot be zero.";
+        public static readonly string AdTargetAlreadyExists =
+            "Ad target already exists for the ad.";
+        public static readonly string AdTargetAlreadyCanceled =
+            "Ad target has already been canceled.";
+        public static readonly string AdTargetStripeItemIdMissing =
+            "Ad target Stripe Subscription Item Id is missing.";
+        public static readonly string AdTargetNewWeightMustBeGreater =
+            "Ad target new weight must be greater than current weight.";
+        public static readonly string AdTargetNewWeightMustBeLess =
+            "Ad target new weight must be less than current weight.";
+        public static readonly string AdTargetPrimaryTargetCannotBeCanceled =
+            "Primary ad target cannot be canceled. Please assign another ad target as primary before canceling this ad target.";
 
         // Ad Sub Logs
         public static readonly string AdSubLogReasonInvalid = "Reason in log is invalid.";

@@ -23,8 +23,6 @@ public partial class Subscription
 
     public int TotalAmount { get; set; }
 
-    public string Currency { get; set; } = null!;
-
     public virtual SubscriptionPlan Plan { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;

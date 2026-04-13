@@ -24,6 +24,24 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         }
 
         /// <summary>
+        /// Find an ad target with its target type and target value. If not found, return null
+        /// </summary>
+        /// <param name="adId">ad id</param>
+        /// <param name="targetType">target type</param>
+        /// <param name="targetValue">target value</param>
+        /// <returns>an ad target with the id, if not found return null</returns>
+        public Models.TravelTipsModels.AdTarget? FindAdTargetByParams(
+            int adId,
+            string targetType,
+            string? targetValue
+        )
+        {
+            return context.AdTargets.FirstOrDefault(at =>
+                at.TargetType == targetType && at.TargetValue == targetValue && at.AdId == adId
+            );
+        }
+
+        /// <summary>
         /// Get a list of ad targets by ad id
         /// </summary>
         /// <param name="adId">ad id</param>
@@ -57,6 +75,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
                 AdId = adId,
                 TargetType = postViewModel.TargetType,
                 TargetValue = postViewModel.TargetValue,
+                StripeItemId = postViewModel.StripeItemId,
                 Weight = postViewModel.Weight,
             };
 
@@ -75,14 +94,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
 
             // If there is no primary ad target for the ad, set the new ad target as primary
             var primaryAdTarget = adTargets.FirstOrDefault(at => at.IsPrimary);
-            if (primaryAdTarget == null)
-            {
-                adTarget.IsPrimary = true;
-            }
-            else
-            {
-                adTarget.IsPrimary = false;
-            }
+            adTarget.IsPrimary = primaryAdTarget == null ? true : false;
 
             await context.AdTargets.AddAsync(adTarget);
             await context.SaveChangesAsync();
@@ -101,11 +113,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// Add weight to an target's weight
         /// </summary>
         /// <param name="adTarget">ad target</param>
-        /// <param name="increment">increment on weight</param>
+        /// <param name="newWeight">new weight</param>
         /// <returns>the new weight</returns>
         public async Task<int> IncreaseAdTargetWeight(
             Models.TravelTipsModels.AdTarget adTarget,
-            int increment
+            int newWeight
         )
         {
             var targetRule = targetRulesService.GetTargetRule(
@@ -114,15 +126,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             );
 
             // Check if the ad target meets the requirement of its target rule
-            if (targetRule != null && adTarget.Weight + increment < targetRule.MinWeight)
-            {
+            if (targetRule != null && newWeight < targetRule.MinWeight)
                 throw new Exception(Messages.TargetRuleMinWeightNotMet);
-            }
+
+            if (newWeight <= adTarget.Weight)
+                throw new Exception(Messages.AdTargetNewWeightMustBeGreater);
 
             var tx = context.Database.BeginTransaction();
 
             var weight = adTarget.Weight;
-            adTarget.Weight += increment;
+            adTarget.Weight = newWeight;
+            adTarget.FutureWeight = null;
             await context.SaveChangesAsync();
 
             // create a sub log for the ad target weight increase
@@ -143,11 +157,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// This is to avoid the weight change takes effect immediately and cause instability of ad serving.
         /// </summary>
         /// <param name="adTarget">ad target</param>
-        /// <param name="decrement">(future) decrement on weight</param>
+        /// <param name="newWeight">(future) new weight</param>
         /// <returns>the future new weight</returns>
         public async Task<int> DecreaseAdTargetWeight(
             Models.TravelTipsModels.AdTarget adTarget,
-            int decrement
+            int newWeight
         )
         {
             var targetRule = targetRulesService.GetTargetRule(
@@ -156,14 +170,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             );
 
             // Check if the ad target meets the requirement of its target rule
-            if (targetRule != null && adTarget.Weight - decrement < targetRule.MinWeight)
-            {
+            if (targetRule != null && newWeight < targetRule.MinWeight)
                 throw new Exception(Messages.TargetRuleMinWeightNotMet);
+
+            if (newWeight >= adTarget.Weight)
+                throw new Exception(Messages.AdTargetNewWeightMustBeGreater);
+
+            var newFutureWeight = newWeight;
+            if (newFutureWeight <= 0)
+            {
+                throw new Exception(Messages.AdTargetWeightZeroInvalid);
             }
 
             var tx = context.Database.BeginTransaction();
 
-            adTarget.FutureWeight = Math.Max(0, adTarget.Weight - decrement);
+            adTarget.FutureWeight = newFutureWeight;
             await context.SaveChangesAsync();
 
             // create a sub log for the ad target weight decrease
@@ -208,26 +229,19 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// Cancel/reinstate an ad target
         /// </summary>
         /// <param name="adTarget">ad target</param>
-        /// <param name="cancel">cancel status</param>
         /// <returns></returns>
-        public async Task CancelAdTarget(Models.TravelTipsModels.AdTarget adTarget, bool cancel)
+        public async Task CancelAdTarget(Models.TravelTipsModels.AdTarget adTarget)
         {
             var tx = context.Database.BeginTransaction();
 
-            if (cancel)
-            {
-                adTarget.FutureWeight = 0;
-            }
-            else
-            {
-                adTarget.FutureWeight = null;
-            }
+            adTarget.FutureWeight = 0;
+            adTarget.StripeItemId = null;
 
             await context.SaveChangesAsync();
 
             // create a sub log for the ad target weight decrease
             var message = string.Format(
-                cancel ? Messages.AdTargetCanceled : Messages.AdTargetReinstated,
+                Messages.AdTargetCanceled,
                 GetAdTargetDescription(adTarget)
             );
             await adsService.PostNewAdSubLog(adTarget.AdId, message, null, null);

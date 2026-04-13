@@ -13,7 +13,7 @@ public partial class Ad
 
     public int ImageId { get; set; }
 
-    public string? StripSubscriptionId { get; set; }
+    public string? StripeSubscriptionId { get; set; }
 
     public string? SubStatus { get; set; }
 

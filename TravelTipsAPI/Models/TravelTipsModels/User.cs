@@ -29,6 +29,8 @@ public partial class User
 
     public string? StripeCustomerId { get; set; }
 
+    public string? StripeCurrency { get; set; }
+
     public virtual Admin? Admin { get; set; }
 
     public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();

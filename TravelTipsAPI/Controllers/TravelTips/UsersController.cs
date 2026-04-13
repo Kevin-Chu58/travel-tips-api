@@ -7,7 +7,6 @@ using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
-using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.Utils.ObjectUtils;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;

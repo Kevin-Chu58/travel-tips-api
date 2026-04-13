@@ -37,6 +37,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
             return subscription;
         }
 
+        public Models.TravelTipsModels.Subscription? FindSubscriptionByStripeSubId(
+            string stripeSubId
+        )
+        {
+            var subscription = context
+                .Subscriptions.Where(s => s.StripeSubscriptionId == stripeSubId)
+                .FirstOrDefault();
+            return subscription;
+        }
+
         /// <summary>
         /// Get the active subscription by user id
         /// </summary>
@@ -53,7 +63,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
                     Start = s.Start.DateTime,
                     End = s.End.HasValue ? s.End.Value.DateTime : DateTime.MaxValue, // if end is null, treat it as active indefinitely
                     TotalAmount = s.TotalAmount,
-                    Currency = s.Currency,
                     StripeSubscriptionId = s.StripeSubscriptionId,
                     Status = s.Status,
                     CanceledAt = s.CanceledAt.HasValue
@@ -97,7 +106,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
                     Start = s.Start.DateTime,
                     End = s.End.HasValue ? s.End.Value.DateTime : DateTime.MaxValue, // if end is null, treat it as active indefinitely
                     TotalAmount = s.TotalAmount,
-                    Currency = s.Currency,
                     StripeSubscriptionId = s.StripeSubscriptionId,
                     Status = s.Status,
                     CanceledAt = s.CanceledAt.HasValue
@@ -120,7 +128,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
                 Start = DateTime.SpecifyKind(newSubscription.Start, DateTimeKind.Utc),
                 End = DateTime.SpecifyKind(newSubscription.End, DateTimeKind.Utc),
                 TotalAmount = newSubscription.TotalAmount,
-                Currency = newSubscription.Currency,
                 Status = "active", // new subscriptions are active by default
                 StripeSubscriptionId = newSubscription.StripeSubscriptionId,
             };
@@ -167,7 +174,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
             if (activeSubscription == null)
                 return; // no active subscription to expire
 
-            activeSubscription.Status = "expired";
+            activeSubscription.Status = "canceled";
             activeSubscription.End = DateTime.UtcNow;
             context.Subscriptions.Update(activeSubscription);
             await context.SaveChangesAsync();

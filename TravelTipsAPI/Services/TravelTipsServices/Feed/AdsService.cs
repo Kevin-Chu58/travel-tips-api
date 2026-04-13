@@ -1,14 +1,15 @@
-﻿using TravelTipsAPI.Constants;
+﻿using Stripe;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
+using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Feed
 {
-    public class AdsService(TravelTipsContext context) : IAdsService
+    public class AdsService(TravelTipsContext context, IStripeService stripeService) : IAdsService
     {
         /// <summary>
         /// Find an ad by id
@@ -168,18 +169,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
                 throw new Exception(Messages.AdStatusCannotBeUpdated);
             }
 
-            if (ad.Status == GetAdStatusStr(AdStatus.Active) && isActive)
-            {
-                // If the ad is already active and the new status is active, do nothing
-                return ad.Status;
-            }
-
-            if (ad.Status == GetAdStatusStr(AdStatus.Inactive) && !isActive)
-            {
-                // If the ad is already inactive and the new status is inactive, do nothing
-                return ad.Status;
-            }
-
             var tx = context.Database.BeginTransaction();
 
             ad.Status = isActive
@@ -249,6 +238,31 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             return ad.Status;
         }
 
+        /// <summary>
+        /// Update an ad stripe sub id
+        /// </summary>
+        /// <param name="ad">ad id</param>
+        /// <param name="stripeSubId">stripe subscription id</param>
+        /// <returns></returns>
+        public async Task UpdateAdStripeSubId(Ad ad, string stripeSubId)
+        {
+            ad.StripeSubscriptionId = stripeSubId;
+            await context.SaveChangesAsync();
+        }
+
+        /// <summary>
+        /// Update an ad Stripe subscription status,
+        /// which is reflected from the Stripe webhook events
+        /// </summary>
+        /// <param name="ad">ad id</param>
+        /// <param name="subStatus">new sub status</param>
+        /// <returns></returns>
+        public async Task UpdateAdStripeSubStatus(Ad ad, string subStatus)
+        {
+            ad.SubStatus = subStatus;
+            await context.SaveChangesAsync();
+        }
+
         // sub ad logs
 
         /// <summary>
@@ -285,6 +299,23 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             };
             context.AdSubLogs.Add(adSubLog);
             await context.SaveChangesAsync();
+        }
+
+        // subscription status
+
+        /// <summary>
+        /// Update the subscription status (auto-renew or not) in Stripe
+        /// </summary>
+        /// <param name="subId">subscription id</param>
+        /// <param name="cancelSub">cancel subscription status</param>
+        /// <returns></returns>
+        public async Task UpdateAdSubscriptionStatus(string subId, bool cancelSub)
+        {
+            var service = new SubscriptionService();
+            var serviceOptions = stripeService.GetRequestOptions();
+            var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelSub };
+
+            await service.UpdateAsync(subId, options, serviceOptions);
         }
     }
 }

@@ -2,6 +2,9 @@
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.Services.TravelTipsServices;
+using TravelTipsAPI.Services.TravelTipsServices.Plan;
+using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
@@ -294,6 +297,59 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         {
             var logs = adsService.GetAdSubLogsByAdId(id);
             return Ok(logs);
+        }
+
+        // subscription
+
+        /// <summary>
+        /// Update an ad subscription renew status in Stripe (auto-renew or not)
+        /// </summary>
+        /// <param name="id">ad id</param>
+        /// <param name="renewSubscription">new renew subscription status</param>
+        /// <returns></returns>
+        [HttpPatch]
+        [Route("{id}/renewSubscription")]
+        [IsOwner(Resource = Resources.ADS)]
+        public async Task<ActionResult> UpdateRenewSubscription(
+            int id,
+            [FromQuery] bool renewSubscription
+        )
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var ad = adsService.FindAdById(id);
+            if (ad == null)
+                return BadRequest(Messages.AdNotFound);
+
+            if (ad.StripeSubscriptionId == null)
+                return BadRequest(Messages.AdStripeSubIdMissing);
+
+            try
+            {
+                await adsService.UpdateAdSubscriptionStatus(
+                    ad.StripeSubscriptionId,
+                    cancelSub: !renewSubscription
+                );
+                return Ok();
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    await adsService.UpdateAdSubscriptionStatus(
+                        ad.StripeSubscriptionId,
+                        cancelSub: renewSubscription
+                    );
+                    return Ok();
+                }
+                catch (Exception rollbackEx)
+                {
+                    // Log the rollback failure
+                    Console.WriteLine(
+                        $"Stripe renew subscription status rollback failed: {rollbackEx.Message}"
+                    );
+                    return BadRequest(rollbackEx.Message);
+                }
+            }
         }
     }
 }

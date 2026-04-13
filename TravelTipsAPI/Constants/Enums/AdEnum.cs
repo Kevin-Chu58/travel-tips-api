@@ -13,21 +13,15 @@
 
         public static string? GetAdStatusStr(AdStatus? status)
         {
-            switch (status)
+            return status switch
             {
-                case AdStatus.Active:
-                    return "active";
-                case AdStatus.Inactive:
-                    return "inactive";
-                case AdStatus.Pending:
-                    return "pending";
-                case AdStatus.RequestChange:
-                    return "request change";
-                case AdStatus.Denied:
-                    return "denied";
-                default:
-                    return null;
-            }
+                AdStatus.Active => "active",
+                AdStatus.Inactive => "inactive",
+                AdStatus.Pending => "pending",
+                AdStatus.RequestChange => "request change",
+                AdStatus.Denied => "denied",
+                _ => null,
+            };
         }
     }
 }

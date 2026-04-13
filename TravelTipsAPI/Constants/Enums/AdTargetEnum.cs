@@ -12,19 +12,14 @@
 
         public static string? GetAdTargetStr(AdTarget? target)
         {
-            switch (target)
+            return target switch
             {
-                case AdTarget.Region:
-                    return "region";
-                case AdTarget.Budget:
-                    return "budget";
-                case AdTarget.CreatedBy:
-                    return "createdBy";
-                case AdTarget.Keyword:
-                    return "keyword";
-                default:
-                    return null;
-            }
+                AdTarget.Region => "region",
+                AdTarget.Budget => "budget",
+                AdTarget.CreatedBy => "createdBy",
+                AdTarget.Keyword => "keyword",
+                _ => null,
+            };
         }
     }
 }

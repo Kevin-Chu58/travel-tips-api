@@ -1,6 +1,4 @@
-﻿using OpenAI.Batch;
-using TravelTipsAPI.Constants;
-using TravelTipsAPI.Constants.Enums;
+﻿using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
@@ -11,6 +9,7 @@ using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
+using static TravelTipsAPI.Constants.Enums.StripeEnum;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -23,6 +22,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             RegionViewModel GetRegionById(int id);
             RegionViewModel GetRegionByName(string name);
+            IEnumerable<int> GetRegionParentIds(int regionId);
             IEnumerable<RegionViewModel> GetRegionsByParams(
                 string type,
                 string? name = null,
@@ -98,7 +98,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 UserSubExtend userSubExtend,
                 DateTimeOffset? subStart,
                 int? monthIndex,
-                int? subscription = null
+                SubscriptionEnum? subscription = null
             );
             Task UpdateSubExtendNewTripPdf(UserSubExtend userSubExtend);
             Task UpdateSubExtendTripCount(UserSubExtend userSubExtend, int increment);
@@ -416,22 +416,29 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<AdViewModel> UpdateAd(Ad ad, AdPatchViewModel adPatch);
             Task<string> UpdateAdActiveStatus(Ad ad, bool isActive);
             Task<string> UpdateAdStatus(Ad ad, AdStatus status, string? reason = null);
+            Task UpdateAdStripeSubId(Ad ad, string stripeSubId);
+            Task UpdateAdStripeSubStatus(Ad ad, string subStatus);
 
             // ad sub logs
 
             IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdId(int adId);
             Task PostNewAdSubLog(int adId, string note, int? oldValue, int? newValue);
+
+            // subscription status
+
+            Task UpdateAdSubscriptionStatus(string subId, bool cancelSub);
         }
 
         public interface IAdTargetsService
         {
             AdTarget? FindAdTargetById(int adTargetId);
+            AdTarget? FindAdTargetByParams(int adId, string targetType, string? targetValue);
             IEnumerable<AdTargetViewModel> GetAdTargetsByAdId(int adId);
             Task PostNewAdTarget(AdTargetPostViewModel postViewModel, int adId);
-            Task<int> IncreaseAdTargetWeight(AdTarget adTarget, int increment);
-            Task<int> DecreaseAdTargetWeight(AdTarget adTarget, int decrement);
+            Task<int> IncreaseAdTargetWeight(AdTarget adTarget, int newWeight);
+            Task<int> DecreaseAdTargetWeight(AdTarget adTarget, int newWeight);
             Task<int> SetAdTargetAsPrimary(AdTarget adTarget);
-            Task CancelAdTarget(AdTarget adTarget, bool cancel);
+            Task CancelAdTarget(AdTarget adTarget);
             Task UpdateAdTargetCycleByAdId(int adId);
         }
 
@@ -461,6 +468,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Subscription? FindLastSubscriptionByUserId(int userId);
             Subscription? FindActiveSubscriptionByUserId(int userId);
+            Subscription? FindSubscriptionByStripeSubId(string stripeSubId);
             SubscriptionViewModel? GetActiveSubscriptionByUserId(int userId);
             IEnumerable<SubscriptionViewModel> GetSubscriptionsByUserIdWithCursor(
                 int userId,
@@ -476,6 +484,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             // subscription status
             Task UpdateSubscriptionStatus(string subId, bool cancelSub);
+        }
+    }
+
+    public class RecordsSchema
+    {
+        public interface IProcessedStripeEventsService
+        {
+            bool DoesProcessedEventExist(string stripeEventId);
+            Task AddProcessedEvent(string stripeEventId);
         }
     }
 }

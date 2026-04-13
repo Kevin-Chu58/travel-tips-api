@@ -1,16 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models.TravelTipsModels;
 
-namespace TravelTipsAPI.BackgroundServices
+namespace TravelTipsAPI.BackgroundWorkers
 {
-    public class HighlightUsageRebuildService : BackgroundService
+    public class HighlightUsageRebuildWorker : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<HighlightUsageRebuildService> _logger;
+        private readonly ILogger<HighlightUsageRebuildWorker> _logger;
 
-        public HighlightUsageRebuildService(
+        public HighlightUsageRebuildWorker(
             IServiceProvider serviceProvider,
-            ILogger<HighlightUsageRebuildService> logger
+            ILogger<HighlightUsageRebuildWorker> logger
         )
         {
             _serviceProvider = serviceProvider;
@@ -34,7 +34,7 @@ namespace TravelTipsAPI.BackgroundServices
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to rebuild highlight useage counts.");
+                    _logger.LogError(ex, "Failed to rebuild highlight usage counts.");
                 }
 
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);

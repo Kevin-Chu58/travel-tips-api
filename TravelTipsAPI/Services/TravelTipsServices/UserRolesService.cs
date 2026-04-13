@@ -1,6 +1,4 @@
-﻿using TravelTipsAPI.BackgroundServices;
-using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.Services.TravelTipsServices.Plan;
+﻿using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 

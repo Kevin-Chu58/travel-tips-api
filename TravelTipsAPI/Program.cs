@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using TravelTipsAPI.BackgroundServices;
+using TravelTipsAPI.BackgroundWorkers;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
@@ -12,6 +12,7 @@ using TravelTipsAPI.Middleware;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.Auth0Services;
 using TravelTipsAPI.Services.AzureKeyVaultServices;
+using TravelTipsAPI.Services.BackgroundServices;
 using TravelTipsAPI.Services.StripeServices;
 using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.Services.WikiCommonsServices;
@@ -80,12 +81,13 @@ builder.Services.AddAuth0Services();
 builder.Services.AddHereMapServices();
 builder.Services.AddWikiCommonsServices();
 builder.Services.AddStripeServices();
+builder.Services.AddBackgroundWorkerServices();
 
 // Add Background Services
-builder.Services.AddHostedService<HighlightUsageRebuildService>();
-builder.Services.AddHostedService<TripBookmarkRebuildService>();
-builder.Services.AddHostedService<TripCountRebuildService>();
-builder.Services.AddHostedService<UserFollowRebuildService>();
+builder.Services.AddHostedService<HighlightUsageRebuildWorker>();
+builder.Services.AddHostedService<TripBookmarkRebuildWorker>();
+builder.Services.AddHostedService<TripCountRebuildWorker>();
+builder.Services.AddHostedService<UserFollowRebuildWorker>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];

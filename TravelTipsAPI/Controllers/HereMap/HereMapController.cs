@@ -23,7 +23,7 @@ namespace TravelTipsAPI.Controllers.HereMap
         ITripSharesService tripSharesService,
         ITripAttractionOrdersService tripAttractionOrdersService,
         IHereMapDiscoverService hereMapDiscoverService,
-        IHereMapLookupService hereMapLookupService,
+        //IHereMapLookupService hereMapLookupService,
         IHereMapRoutingService hereMapRoutingService,
         IConfiguration config
     ) : TravelTipsControllerBase

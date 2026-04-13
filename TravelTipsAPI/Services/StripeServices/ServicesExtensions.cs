@@ -10,6 +10,7 @@ namespace TravelTipsAPI.Services.StripeServices
             services.AddHttpClient();
 
             services.AddScoped<IStripeService, StripeService>();
+            services.AddScoped<IStripeWebhooksService, StripeWebhooksService>();
 
             return services;
         }

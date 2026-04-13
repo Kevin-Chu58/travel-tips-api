@@ -2,12 +2,14 @@
 using TravelTipsAPI.Services.TravelTipsServices.Feed;
 using TravelTipsAPI.Services.TravelTipsServices.Gospel;
 using TravelTipsAPI.Services.TravelTipsServices.Plan;
+using TravelTipsAPI.Services.TravelTipsServices.Record;
 using TravelTipsAPI.Services.TravelTipsServices.Search;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.GospelSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.RecordsSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 
@@ -47,6 +49,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<ITargetRulesService, TargetRulesService>();
             // plan schema
             services.AddScoped<ISubscriptionsService, SubscriptionsService>();
+            // record schema
+            services.AddScoped<IProcessedStripeEventsService, ProcessedStripeEventsService>();
 
             return services;
         }

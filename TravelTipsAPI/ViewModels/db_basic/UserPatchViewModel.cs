@@ -6,5 +6,6 @@
         public string? Email { get; set; }
         public bool? RenewSubscription { get; set; }
         public string? StripeCustomerId { get; set; }
+        public string? StripeCurrency { get; set; }
     }
 }

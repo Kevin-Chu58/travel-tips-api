@@ -23,10 +23,6 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
             return Ok(result);
         }
 
-        // TODO - create new Stripe session for new ad target
-
-        // TODO - create new Stripe session for increasing ad target weight
-
         /// <summary>
         /// Decrease the weight of an ad target
         /// </summary>
@@ -51,6 +47,9 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
                 if (adTarget.AdId != id)
                     return BadRequest(Messages.AdTargetNotBelongToAd);
+
+                // TODO - invoke Stripe API to update the quantity in
+                // the Stripe item id associated with the ad target
 
                 await adTargetsService.DecreaseAdTargetWeight(adTarget, decrement);
                 return Ok();
@@ -88,7 +87,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
                 // TODO - invoke Stripe API to cancel the Stripe item id associated with the ad target
 
-                await adTargetsService.CancelAdTarget(adTarget, cancel);
+                await adTargetsService.CancelAdTarget(adTarget);
                 return Ok();
             }
             catch (Exception ex)

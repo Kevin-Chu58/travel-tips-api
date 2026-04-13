@@ -1,5 +1,6 @@
 ﻿using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
+using static TravelTipsAPI.Constants.Enums.StripeEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 
@@ -57,7 +58,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             UserSubExtend userSubExtend,
             DateTimeOffset? subStart,
             int? monthIndex,
-            int? subscription = null
+            SubscriptionEnum? subscription = null
         )
         {
             userSubExtend.CycleStart =
@@ -72,10 +73,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             {
                 switch (subscription)
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                    case 4:
+                    case SubscriptionEnum.MonthlyMember:
+                    case SubscriptionEnum.ThreeMonthMember:
+                    case SubscriptionEnum.SixMonthMember:
+                    case SubscriptionEnum.YearlyMember:
                         userSubExtend.MaxPdfDownloadCount =
                             Global.MAX_PDF_GENERATION_PER_MONTH_MEMBER;
                         userSubExtend.MaxTripCount = Global.MAX_TRIPS_MEMBER;

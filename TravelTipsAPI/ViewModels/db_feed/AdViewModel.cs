@@ -13,7 +13,7 @@ namespace TravelTipsAPI.ViewModels.db_feed
         public string? LinkLabel { get; set; }
         public string? Link { get; set; }
         public string? Picture { get; set; }
-        public string? StripSubscriptionId { get; set; }
+        public string? StripeSubscriptionId { get; set; }
         public string? SubStatus { get; set; }
         public required string Status { get; set; }
         public int TemplateId { get; set; }
@@ -29,7 +29,7 @@ namespace TravelTipsAPI.ViewModels.db_feed
                 Text = ad.Text,
                 LinkLabel = ad.LinkLabel,
                 Link = ad.Link,
-                StripSubscriptionId = ad.StripSubscriptionId,
+                StripeSubscriptionId = ad.StripeSubscriptionId,
                 SubStatus = ad.SubStatus,
                 Status = ad.Status,
                 TemplateId = ad.TemplateId,

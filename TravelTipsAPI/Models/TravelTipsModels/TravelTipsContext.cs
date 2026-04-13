@@ -39,6 +39,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<ProcessedStripeEvent> ProcessedStripeEvents { get; set; }
+
     public virtual DbSet<Region> Regions { get; set; }
 
     public virtual DbSet<Reviewer> Reviewers { get; set; }
@@ -85,7 +87,7 @@ public partial class TravelTipsContext : DbContext
             entity.Property(e => e.Link).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.LinkLabel).HasMaxLength(50);
             entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
-            entity.Property(e => e.StripSubscriptionId).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.StripeSubscriptionId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.SubStatus).HasMaxLength(10).IsUnicode(false);
             entity.Property(e => e.Text).HasMaxLength(100);
             entity.Property(e => e.Title).HasMaxLength(50);
@@ -426,6 +428,15 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_users_images");
         });
 
+        modelBuilder.Entity<ProcessedStripeEvent>(entity =>
+        {
+            entity.HasKey(e => e.StripeEventId).HasName("pk_processed_stripe_events");
+
+            entity.ToTable("ProcessedStripeEvents", "db_record");
+
+            entity.Property(e => e.StripeEventId).HasMaxLength(255).IsUnicode(false);
+        });
+
         modelBuilder.Entity<Region>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_regions");
@@ -473,6 +484,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Subscriptions", "db_plan");
 
+            entity.HasIndex(e => e.StripeSubscriptionId, "idx_subscription_stripe_sub_id");
+
             entity.HasIndex(e => new { e.UserId, e.Status }, "idx_subscription_user_active");
 
             entity
@@ -492,7 +505,6 @@ public partial class TravelTipsContext : DbContext
                 .IsUnique()
                 .HasFilter("([Status]='active')");
 
-            entity.Property(e => e.Currency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
             entity.Property(e => e.StripeSubscriptionId).HasMaxLength(255).IsUnicode(false);
 
@@ -709,6 +721,7 @@ public partial class TravelTipsContext : DbContext
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.ExternalImageUrl).IsUnicode(false);
+            entity.Property(e => e.StripeCurrency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
             entity.Property(e => e.StripeCustomerId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50);

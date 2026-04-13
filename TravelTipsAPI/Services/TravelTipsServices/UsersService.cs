@@ -214,6 +214,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             // stripe settings
             user.RenewSubscription = userPatchViewModel.RenewSubscription ?? user.RenewSubscription;
             user.StripeCustomerId = userPatchViewModel.StripeCustomerId ?? user.StripeCustomerId;
+            user.StripeCurrency = userPatchViewModel.StripeCurrency ?? user.StripeCurrency;
 
             await context.SaveChangesAsync();
 

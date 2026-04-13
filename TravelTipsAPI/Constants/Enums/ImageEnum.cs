@@ -11,17 +11,13 @@
 
         public static string? GetImageTypeStr(ImageType? type)
         {
-            switch (type)
+            return type switch
             {
-                case ImageType.Banner:
-                    return "banner";
-                case ImageType.Business:
-                    return "business";
-                case ImageType.Ad:
-                    return "ad";
-                default:
-                    return null;
-            }
+                ImageType.Banner => "banner",
+                ImageType.Business => "business",
+                ImageType.Ad => "ad",
+                _ => null,
+            };
         }
     }
 }
