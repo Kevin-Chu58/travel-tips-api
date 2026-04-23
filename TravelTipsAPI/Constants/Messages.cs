@@ -165,6 +165,7 @@
         public static readonly string AdImageIsMissing = "Ad image is missing.";
         public static readonly string AdStripeSubIdMissing =
             "Ad Stripe Subscription Id is missing.";
+        public static readonly string AdSubscriptionCanceled = "Ad subscription has been canceled.";
 
         // Ad Targets
         public static readonly string AdTargetNotFound = "Ad target not found.";
@@ -185,7 +186,7 @@
         public static readonly string AdTargetNewWeightMustBeLess =
             "Ad target new weight must be less than current weight.";
         public static readonly string AdTargetPrimaryTargetCannotBeCanceled =
-            "Primary ad target cannot be canceled. Please assign another ad target as primary before canceling this ad target.";
+            "Primary ad target cannot be canceled.";
 
         // Ad Sub Logs
         public static readonly string AdSubLogReasonInvalid = "Reason in log is invalid.";
@@ -199,16 +200,14 @@
         public static readonly string AdInactive = "Ad is inactive.";
         public static readonly string AdUpdated = "Ad updated, now pending.";
         public static readonly string NewAdTargetAdded = "New ad target on \"{0}\" added.";
+        public static readonly string AdTargetTypeValueUpdated =
+            "Ad target on \"{0}\" type updated to \"{1}\".";
         public static readonly string AdTargetWeightIncreased =
             "Ad target on \"{0}\" weight increased.";
         public static readonly string AdTargetWeightDecreased =
             "Ad target on \"{0}\" weight decreased.";
-        public static readonly string AdTargetCanceled =
-            "Ad target on \"{0}\" canceled for future renewal.";
-        public static readonly string AdTargetReinstated =
-            "Ad target on \"{0}\" reinstated for future renewal.";
-        public static readonly string AdNewCycle =
-            "Ad starts a new cycle. Ad target(s) on {0} are removed.";
+        public static readonly string AdTargetDeleted = "Ad target on \"{0}\" deleted.";
+        public static readonly string AdNewCycle = "Ad starts a new cycle.";
 
         // Target Rules (Ads)
         public static readonly string TargetRuleNotFound = "Target rule not found.";

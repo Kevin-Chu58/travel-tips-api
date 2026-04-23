@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Stripe;
-using Stripe.Checkout;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Controllers.TravelTips;
@@ -19,6 +18,7 @@ namespace TravelTipsAPI.Controllers.Stripe
         ISubscriptionsService subscriptionsService,
         IAdsService adsService,
         IAdTargetsService adTargetsService,
+        ITargetRulesService targetRulesService,
         IStripeService stripeService
     ) : TravelTipsControllerBase
     {
@@ -101,6 +101,27 @@ namespace TravelTipsAPI.Controllers.Stripe
 
         // preview invoices
 
+        [HttpPost]
+        [Route("preview-invoice/{id}/ad-weight/billing-cycle")]
+        [IsOwner(Resource = Resources.ADS)]
+        public async Task<
+            ActionResult<StripeBillingCyclePreviewInvoiceResponse>
+        > PreviewBillingCycleInvoiceOnAdWeights(int id)
+        {
+            var ad = adsService.FindAdById(id);
+            if (ad == null)
+                return NotFound(Messages.AdNotFound);
+            try
+            {
+                var response = await stripeService.PreviewBillingCycleInvoiceOnAdWeights(ad);
+                return Ok(response);
+            }
+            catch (StripeException e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         /// <summary>
         /// Preview the upcoming invoice with more weights on ad the ad target is attached to
         /// </summary>
@@ -112,7 +133,11 @@ namespace TravelTipsAPI.Controllers.Stripe
         [IsOwner(Resource = Resources.ADS)]
         public async Task<
             ActionResult<StripePreviewInvoiceResponse>
-        > PreviewUpcomingInvoiceOnAdWeights(int id, [FromBody] StripeAdWeightRequest request)
+        > PreviewUpcomingInvoiceOnAdWeights(
+            int id,
+            [FromQuery] int? adTargetId,
+            [FromBody] StripeAdWeightRequest request
+        )
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -124,10 +149,19 @@ namespace TravelTipsAPI.Controllers.Stripe
                 if (ad == null)
                     return NotFound(Messages.AdNotFound);
 
+                AdTarget? adTarget = null;
+                if (adTargetId != null)
+                {
+                    adTarget = adTargetsService.FindAdTargetById((int)adTargetId);
+                    if (adTarget == null)
+                        return NotFound(Messages.AdTargetNotFound);
+                }
+
                 var response = await stripeService.PreviewUpcomingInvoiceOnAdWeights(
                     user,
                     ad,
-                    request
+                    request,
+                    adTarget
                 );
                 return Ok(response);
             }
@@ -162,21 +196,51 @@ namespace TravelTipsAPI.Controllers.Stripe
             if (ad == null)
                 return NotFound(Messages.AdNotFound);
 
+            if (ad.StripeSubscriptionId == null)
+                return BadRequest(Messages.AdStripeSubIdMissing);
+
+            if (ad.SubStatus == "canceled")
+                return BadRequest(Messages.AdSubscriptionCanceled);
+
             // check if the target type and value exists on this ad only when adTargetId is null
+            // because ad target id is only null when creating a new ad target
             var _adTarget = adTargetsService.FindAdTargetByParams(
                 id,
                 request.TargetType,
                 request.TargetValue
             );
-            if (_adTarget != null)
+            if (_adTarget != null && adTargetId == null)
                 return BadRequest(Messages.AdTargetAlreadyExists);
 
+            // try to find the ad target if provides the id, and return error if not found
             AdTarget? adTarget = null;
             if (adTargetId != null)
             {
                 adTarget = adTargetsService.FindAdTargetById((int)adTargetId);
                 if (adTarget == null)
                     return NotFound(Messages.AdTargetNotFound);
+            }
+
+            if (ad.StripeSubscriptionId == null)
+                throw new Exception(Messages.AdStripeSubIdMissing);
+
+            // check target rule whether the new weight meets the min weight requirement
+            var targetRule = targetRulesService.GetTargetRule(
+                request.TargetType,
+                request.TargetValue
+            );
+            if (targetRule is null)
+                throw new Exception(Messages.TargetRuleNotFound);
+
+            if (request.Weight < targetRule.MinWeight)
+                throw new Exception(Messages.TargetRuleMinWeightNotMet);
+
+            // if the weight does not change,
+            // only update the ad target in database without calling Stripe API to update subscription
+            if (request.Weight == adTarget?.Weight)
+            {
+                await adTargetsService.UpdateAdTarget(adTarget, request);
+                return Ok();
             }
 
             try

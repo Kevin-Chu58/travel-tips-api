@@ -21,10 +21,14 @@ namespace TravelTipsAPI.Services.StripeServices
             );
 
             // preview invoices
+            Task<StripeBillingCyclePreviewInvoiceResponse> PreviewBillingCycleInvoiceOnAdWeights(
+                Ad ad
+            );
             Task<StripePreviewInvoiceResponse> PreviewUpcomingInvoiceOnAdWeights(
                 User user,
                 Ad ad,
-                StripeAdWeightRequest request
+                StripeAdWeightRequest request,
+                AdTarget? adTarget
             );
 
             // update subscriptions
@@ -34,6 +38,10 @@ namespace TravelTipsAPI.Services.StripeServices
                 AdTarget? adTarget
             );
             Task UpdateSubscriptionOnDeleteAdTarget(Ad ad, AdTarget adTarget);
+
+            // subscription status
+
+            Task UpdateSubscriptionStatus(string subId, bool cancelSub);
         }
 
         public interface IStripeWebhooksService

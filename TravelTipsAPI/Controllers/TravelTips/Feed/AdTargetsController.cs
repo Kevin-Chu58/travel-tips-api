@@ -24,70 +24,49 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         }
 
         /// <summary>
-        /// Decrease the weight of an ad target
-        /// </summary>
-        /// <param name="id">ad id, for authorization check only</param>
-        /// <param name="targetId">tar</param>
-        /// <param name="decrement"></param>
-        /// <returns></returns>
-        [HttpPatch]
-        [Route("{id}/ad-target/{targetId}")]
-        [IsOwner(Resource = Resources.ADS)]
-        public async Task<ActionResult> DecreaseAdTargetWeight(
-            int id,
-            int targetId,
-            [FromBody] int decrement
-        )
-        {
-            try
-            {
-                var adTarget = adTargetsService.FindAdTargetById(targetId);
-                if (adTarget == null)
-                    return NotFound(Messages.AdTargetNotFound);
-
-                if (adTarget.AdId != id)
-                    return BadRequest(Messages.AdTargetNotBelongToAd);
-
-                // TODO - invoke Stripe API to update the quantity in
-                // the Stripe item id associated with the ad target
-
-                await adTargetsService.DecreaseAdTargetWeight(adTarget, decrement);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// Cancel/reinstate an ad target
+        /// Get the analytics of an ad target
         /// </summary>
         /// <param name="id">ad id</param>
         /// <param name="targetId">ad target id</param>
-        /// <param name="cancel">cancel status</param>
+        /// <returns>the analytics</returns>
+        [HttpGet]
+        [Route("{id}/ad-target/{targetId}/analytics")]
+        public ActionResult<AdTargetAnalytics> GetAdTargetAnalytics(int id, int targetId)
+        {
+            var adTarget = adTargetsService.FindAdTargetById(targetId);
+
+            if (adTarget == null)
+                return NotFound(Messages.AdTargetNotFound);
+
+            if (adTarget.AdId != id)
+                return BadRequest(Messages.AdTargetNotBelongToAd);
+
+            var analytics = adTargetsService.GetAdTargetRanking(adTarget);
+            return Ok(analytics);
+        }
+
+        /// <summary>
+        /// Set an ad target as primary for the ad
+        /// </summary>
+        /// <param name="id">ad id</param>
+        /// <param name="targetId">ad target id</param>
         /// <returns></returns>
         [HttpPatch]
-        [Route("{id}/ad-target/{targetId}/cancel")]
+        [Route("{id}/ad-target/{targetId}/primary")]
         [IsOwner(Resource = Resources.ADS)]
-        public async Task<ActionResult> CancelAdTarget(
-            int id,
-            int targetId,
-            [FromQuery] bool cancel
-        )
+        public async Task<ActionResult> SetAdTargetAsPrimary(int id, int targetId)
         {
             try
             {
                 var adTarget = adTargetsService.FindAdTargetById(targetId);
+
                 if (adTarget == null)
                     return NotFound(Messages.AdTargetNotFound);
 
                 if (adTarget.AdId != id)
                     return BadRequest(Messages.AdTargetNotBelongToAd);
 
-                // TODO - invoke Stripe API to cancel the Stripe item id associated with the ad target
-
-                await adTargetsService.CancelAdTarget(adTarget);
+                await adTargetsService.SetAdTargetAsPrimary(adTarget);
                 return Ok();
             }
             catch (Exception ex)

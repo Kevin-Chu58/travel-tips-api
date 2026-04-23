@@ -179,22 +179,5 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Plan
             context.Subscriptions.Update(activeSubscription);
             await context.SaveChangesAsync();
         }
-
-        // subscription status
-
-        /// <summary>
-        /// Update the subscription status (auto-renew or not) in Stripe
-        /// </summary>
-        /// <param name="subId">subscription id</param>
-        /// <param name="cancelSub">cancel subscription status</param>
-        /// <returns></returns>
-        public async Task UpdateSubscriptionStatus(string subId, bool cancelSub)
-        {
-            var service = new SubscriptionService();
-            var serviceOptions = stripeService.GetRequestOptions();
-            var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelSub };
-
-            await service.UpdateAsync(subId, options, serviceOptions);
-        }
     }
 }

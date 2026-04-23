@@ -107,9 +107,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// Get a list of user simple view models
         /// </summary>
         /// <param name="users">users</param>
+        /// <param name="showPicture">whether to show picture</param>
         /// <returns>a list of user simple view models</returns>
         public async Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(
-            IEnumerable<User> users
+            IEnumerable<User> users,
+            bool showPicture = true
         )
         {
             var userList = users.ToList();
@@ -123,7 +125,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             // Fetch images in one call (important for performance)
             var images =
-                imageIds.Count != 0
+                showPicture && imageIds.Count != 0
                     ? (await imagesService.GetImagesByIds([.. imageIds])).ToDictionary(i => i.Id)
                     : [];
 
@@ -136,7 +138,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     Id = user.Id,
                     UserId = user.UserId,
                     Username = user.Username ?? "",
-                    Picture = image?.Url ?? user.ExternalImageUrl,
+                    Picture = showPicture ? (image?.Url ?? user.ExternalImageUrl) : null,
                 };
             });
         }

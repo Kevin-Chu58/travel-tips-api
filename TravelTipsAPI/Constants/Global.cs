@@ -19,6 +19,7 @@
         public static readonly int HIGHLIGHT_DEFAULT_LIMIT = 20;
         public static readonly int BANNER_DEFAULT_LIMIT = 20;
         public static readonly int SUBSCRIPTION_DEFAULT_LIMIT = 20;
+        public static readonly int AD_SUB_LOG_DEFAULT_LIMIT = 20;
 
         // Max Limit Per Entity
         public static readonly int AD_TARGET_LIMIT_PER_AD = 10;

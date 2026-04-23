@@ -1,24 +1,33 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
-using TravelTipsAPI.Services.TravelTipsServices;
-using TravelTipsAPI.Services.TravelTipsServices.Plan;
-using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
+using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
+using static TravelTipsAPI.Constants.Enums.AdTargetEnum;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
+using static TravelTipsAPI.Services.StripeServices.StripeSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.Utils.ObjectUtils;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Controllers.TravelTips.Feed
 {
     [Route("api/[controller]")]
     public class AdsController(
         TravelTipsContext context,
+        IUsersService usersService,
+        IRegionsService regionsService,
         IBusinessesService businessesService,
         IAdsService adsService,
-        IImagesService imagesService
+        IImagesService imagesService,
+        IStripeService stripeService
     ) : TravelTipsControllerBase
     {
         /// <summary>
@@ -103,6 +112,57 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
             {
                 return BadRequest(e);
             }
+        }
+
+        [HttpGet]
+        [Route("feed")]
+        [AllowAnonymous]
+        public async Task<ActionResult<AdViewModel?>> GetAdFeed(
+            [FromQuery] string? title,
+            int? createdBy = null,
+            string? countrySlug = null,
+            string? stateSlug = null,
+            int? budget = null
+        )
+        {
+            List<(string, string)> targets = [];
+
+            if (title != null && title.Length > 2)
+                targets.Add((GetAdTargetStr(AdTargetEnum.AdTarget.Keyword)!, title));
+
+            if (createdBy != null)
+                targets.Add(
+                    (GetAdTargetStr(AdTargetEnum.AdTarget.CreatedBy)!, createdBy.ToString()!)
+                );
+
+            if (countrySlug != null)
+                targets.Add(
+                    (
+                        GetAdTargetStr(AdTargetEnum.AdTarget.Region)!,
+                        regionsService
+                            .GetRegionByCountryAndState(countrySlug, stateSlug)
+                            ?.Id.ToString() ?? ""
+                    )
+                );
+
+            if (budget != null)
+                targets.Add((GetAdTargetStr(AdTargetEnum.AdTarget.Budget)!, budget.ToString()!));
+
+            var ad = adsService.GetAdFeed(targets);
+
+            if (ad == null)
+                return Ok();
+
+            var adViewModel = adsService.GetAdById(ad.Id);
+
+            var images = await imagesService.GetImagesByIds([(int)ad.ImageId]);
+            if (!images.Any())
+                return NotFound(Messages.ImageNotFound);
+
+            var image = images.First();
+            adViewModel.Picture = image.Url;
+
+            return Ok(adViewModel);
         }
 
         /// <summary>
@@ -289,14 +349,47 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         /// Get a list of ad sub logs by ad id
         /// </summary>
         /// <param name="id">ad id</param>
+        /// <param name="cursor">pagination cursor</param>
+        /// <param name="limit">pagination limit</param>
         /// <returns>a list of ad sub logs</returns>
         [HttpGet]
         [Route("{id}/logs")]
         [IsOwner(Resource = Resources.ADS)]
-        public ActionResult<IEnumerable<AdSubLogViewModel>> GetAdSubLogs(int id)
+        public ActionResult<SearchResults<AdSubLogViewModel>> GetAdSubLogs(
+            int id,
+            [FromQuery] string? cursor = null,
+            int? limit = null
+        )
         {
-            var logs = adsService.GetAdSubLogsByAdId(id);
-            return Ok(logs);
+            limit ??= Global.AD_SUB_LOG_DEFAULT_LIMIT;
+
+            // decode cursor if provided
+            GeneralCursor? adSubLogCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                adSubLogCursor = DecodeCursor<GeneralCursor>(cursor);
+                if (adSubLogCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
+            var logs = adsService.GetAdSubLogsByAdIdWithCursor(id, adSubLogCursor, limit);
+
+            // encode cursor
+            var logHistory = logs.ToList();
+            string? newCursor = null;
+            if (logHistory.Count == limit)
+            {
+                var lastAdSubLog = logHistory.Last();
+                newCursor = EncodeCursor(new GeneralCursor { Id = lastAdSubLog.Id });
+            }
+
+            var result = new SearchResults<AdSubLogViewModel>
+            {
+                Results = logHistory,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         // subscription
@@ -325,17 +418,18 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
             try
             {
-                await adsService.UpdateAdSubscriptionStatus(
+                await stripeService.UpdateSubscriptionStatus(
                     ad.StripeSubscriptionId,
                     cancelSub: !renewSubscription
                 );
+                await adsService.UpdateAdSubscriptionRenewal(ad, renewSubscription);
                 return Ok();
             }
             catch (Exception)
             {
                 try
                 {
-                    await adsService.UpdateAdSubscriptionStatus(
+                    await stripeService.UpdateSubscriptionStatus(
                         ad.StripeSubscriptionId,
                         cancelSub: renewSubscription
                     );

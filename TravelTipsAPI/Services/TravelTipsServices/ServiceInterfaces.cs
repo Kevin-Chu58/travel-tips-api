@@ -7,6 +7,7 @@ using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_plan;
 using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
+using TravelTipsAPI.ViewModels.Stripe;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Constants.Enums.StripeEnum;
@@ -73,7 +74,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             User? GetUserByUserId(string userId);
             User? GetUserByStripeCustomerId(string stripeCustomerId);
-            Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
+            Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(
+                IEnumerable<User> users,
+                bool showPicture = true
+            );
             Task<UserViewModel> GetUserViewModelById(int id);
             Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel user);
             Task RemoveUserStripeCustomerId(int id);
@@ -248,7 +252,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             HereRoutingInput? GetHereRoutingInputByTaoId(int taoId, bool isRestricted = false);
             IEnumerable<HereRouting> GetAttractionRoutingsByDayId(
-                int dayIdbool,
+                int dayId,
                 bool isRestricted = false
             );
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
@@ -412,21 +416,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? businessId = null,
                 AdStatus? status = null
             );
+            Ad? GetAdFeed(List<(string TargetType, string TargetValue)> targets);
             Task<AdViewModel> PostNewAd(AdPostViewModel postViewModel, int userId, int businessId);
             Task<AdViewModel> UpdateAd(Ad ad, AdPatchViewModel adPatch);
             Task<string> UpdateAdActiveStatus(Ad ad, bool isActive);
             Task<string> UpdateAdStatus(Ad ad, AdStatus status, string? reason = null);
-            Task UpdateAdStripeSubId(Ad ad, string stripeSubId);
+            Task UpdateAdStripeSubInfo(Ad ad, string stripeSubId, string stripeItemId);
             Task UpdateAdStripeSubStatus(Ad ad, string subStatus);
 
             // ad sub logs
 
-            IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdId(int adId);
+            IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdIdWithCursor(
+                int adId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
             Task PostNewAdSubLog(int adId, string note, int? oldValue, int? newValue);
 
             // subscription status
 
-            Task UpdateAdSubscriptionStatus(string subId, bool cancelSub);
+            Task UpdateAdSubscriptionRenewal(Ad ad, bool renewSub);
         }
 
         public interface IAdTargetsService
@@ -434,11 +443,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             AdTarget? FindAdTargetById(int adTargetId);
             AdTarget? FindAdTargetByParams(int adId, string targetType, string? targetValue);
             IEnumerable<AdTargetViewModel> GetAdTargetsByAdId(int adId);
+            int GetWeightsByAdId(int adId);
+            AdTargetAnalytics GetAdTargetRanking(AdTarget adTarget);
             Task PostNewAdTarget(AdTargetPostViewModel postViewModel, int adId);
-            Task<int> IncreaseAdTargetWeight(AdTarget adTarget, int newWeight);
-            Task<int> DecreaseAdTargetWeight(AdTarget adTarget, int newWeight);
+            Task UpdateAdTarget(AdTarget adTarget, StripeAdWeightRequest request);
             Task<int> SetAdTargetAsPrimary(AdTarget adTarget);
-            Task CancelAdTarget(AdTarget adTarget);
+            Task DeleteAdTarget(AdTarget adTarget);
             Task UpdateAdTargetCycleByAdId(int adId);
         }
 
@@ -481,9 +491,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 SubscriptionPatchViewModel subscriptionPatch
             );
             Task ExpireActiveSubscriptionByUserId(int userId);
-
-            // subscription status
-            Task UpdateSubscriptionStatus(string subId, bool cancelSub);
         }
     }
 

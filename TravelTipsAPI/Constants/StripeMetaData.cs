@@ -59,5 +59,6 @@
         // - for Ad Weight product type
         //   and invoice.paid with "subscription_update" as the billing reason
         public static readonly string AdTargetId = "ad_target_id";
+        public static readonly string AdWeight = "ad_weight";
     }
 }

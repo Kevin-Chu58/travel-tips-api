@@ -9,8 +9,6 @@ namespace TravelTipsAPI.ViewModels.db_feed
         public required string TargetType { get; set; }
         public required string TargetValue { get; set; }
         public int Weight { get; set; }
-        public int? FutureWeight { get; set; }
-        public string? StripeItemId { get; set; }
         public bool IsPrimary { get; set; }
 
         public static explicit operator AdTargetViewModel(AdTarget adTarget)
@@ -22,8 +20,6 @@ namespace TravelTipsAPI.ViewModels.db_feed
                 TargetType = adTarget.TargetType,
                 TargetValue = adTarget.TargetValue,
                 Weight = adTarget.Weight,
-                FutureWeight = adTarget.FutureWeight,
-                StripeItemId = adTarget.StripeItemId,
                 IsPrimary = adTarget.IsPrimary,
             };
         }

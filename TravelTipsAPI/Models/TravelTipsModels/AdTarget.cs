@@ -15,10 +15,6 @@ public partial class AdTarget
 
     public int Weight { get; set; }
 
-    public int? FutureWeight { get; set; }
-
-    public string? StripeItemId { get; set; }
-
     public bool IsPrimary { get; set; }
 
     public virtual Ad Ad { get; set; } = null!;

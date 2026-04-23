@@ -4,6 +4,7 @@ using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
+using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
@@ -23,16 +24,46 @@ namespace TravelTipsAPI.Controllers.TravelTips
         IUsersService usersService,
         IUserExtendsService userExtendsService,
         IImagesService imagesService,
-        ISubscriptionsService subscriptionsService
+        ISubscriptionsService subscriptionsService,
+        IStripeService stripeService
     ) : TravelTipsControllerBase
     {
+        /// <summary>
+        /// Get user by id
+        /// </summary>
+        /// <param name="id">id</param>
+        /// <returns>user with the user id</returns>
+        [HttpGet]
+        [Route("{Id}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<UserViewModel>> GetUserById(
+            int id,
+            [FromQuery] bool showPicture = true
+        )
+        {
+            var user = usersService.GetUserById(id);
+
+            if (user is null)
+                return NotFound(Messages.UserNotFound);
+
+            try
+            {
+                var userSimples = await usersService.GetUserSimpleViewModels([user], showPicture);
+                return Ok(userSimples.First());
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         /// <summary>
         /// Get user by userId
         /// </summary>
         /// <param name="userId">user id</param>
         /// <returns>user with the user id</returns>
         [HttpGet]
-        [Route("{userId}")]
+        [Route("userId/{userId}")]
         [AllowAnonymous]
         public async Task<ActionResult<UserSimpleViewModel>> GetUserByUserId(string userId)
         {
@@ -362,7 +393,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 if (activeSubscription != null)
                 {
-                    await subscriptionsService.UpdateSubscriptionStatus(
+                    await stripeService.UpdateSubscriptionStatus(
                         activeSubscription.StripeSubscriptionId,
                         cancelSub: !renewSubscription
                     );
@@ -380,7 +411,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 {
                     if (activeSubscription != null)
                     {
-                        await subscriptionsService.UpdateSubscriptionStatus(
+                        await stripeService.UpdateSubscriptionStatus(
                             activeSubscription.StripeSubscriptionId,
                             cancelSub: renewSubscription
                         );

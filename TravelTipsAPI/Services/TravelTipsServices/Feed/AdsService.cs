@@ -1,15 +1,15 @@
-﻿using Stripe;
+﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
-using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Feed
 {
-    public class AdsService(TravelTipsContext context, IStripeService stripeService) : IAdsService
+    public class AdsService(TravelTipsContext context) : IAdsService
     {
         /// <summary>
         /// Find an ad by id
@@ -86,6 +86,64 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         }
 
         /// <summary>
+        /// Get a random ad based on target type and target value,
+        /// the ad with higher weight has higher chance to be returned.
+        /// Only ads with active status and sub status will be returned.
+        /// </summary>
+        /// <param name="targetType">target type</param>
+        /// <param name="targetValue">target value</param>
+        /// <returns>ad target, null if not found</returns>
+        public Ad? GetAdFeed(List<(string TargetType, string TargetValue)> targets)
+        {
+            var randomThreshold = Random.Shared.NextDouble();
+
+            // Build the WHERE conditions for each pair
+            var conditions = targets.Select(
+                (t, i) =>
+                    $@"(t.TargetType = {{{i * 2}}} AND (
+                        ({{{i * 2}}} = 'keyword' AND t.TargetValue LIKE {{{i * 2 + 1}}} + '%')
+                        OR
+                        ({{{i * 2}}} != 'keyword' AND t.TargetValue = {{{i * 2 + 1}}})
+                    ))"
+            );
+
+            var whereClause = string.Join(" OR ", conditions);
+
+            // Flatten params: [type0, value0, type1, value1, ..., randomThreshold]
+            var parameters = targets
+                .SelectMany(t => new object[] { t.TargetType, t.TargetValue })
+                .Append(randomThreshold)
+                .ToArray();
+
+            var thresholdIndex = targets.Count * 2;
+
+            var sql =
+                $@"
+                WITH TopTargets AS (
+                    SELECT TOP 1000 t.AdId, SUM(t.Weight) AS Weight
+                    FROM db_feed.AdTargets t
+                    INNER JOIN db_feed.Ads a ON t.AdId = a.Id
+                    WHERE a.SubStatus = 'active' AND a.Status = 'active'
+                      AND ({whereClause})
+                    GROUP BY t.AdId
+                    ORDER BY Weight DESC
+                ),
+                WeightedPool AS (
+                    SELECT AdId,
+                           SUM(Weight) OVER() AS TotalWeight,
+                           SUM(Weight) OVER(ORDER BY AdId) / CAST(NULLIF(SUM(Weight) OVER(), 0) AS FLOAT) AS CumulativeWeight
+                    FROM TopTargets
+                )
+                SELECT TOP 1 a.*
+                FROM db_feed.Ads a
+                INNER JOIN WeightedPool w ON a.Id = w.AdId
+                WHERE w.CumulativeWeight >= {{{thresholdIndex}}}
+                ORDER BY w.CumulativeWeight ASC";
+
+            return context.Ads.FromSqlRaw(sql, parameters).AsEnumerable().FirstOrDefault();
+        }
+
+        /// <summary>
         /// Create a new ad
         /// </summary>
         /// <param name="postViewModel">new ad</param>
@@ -112,6 +170,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
                 Link = postViewModel.Link,
                 TemplateId = postViewModel.TemplateId,
                 Status = GetAdStatusStr(AdStatus.Pending)!,
+                RenewSub = true,
             };
 
             context.Ads.Add(ad);
@@ -243,10 +302,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// </summary>
         /// <param name="ad">ad id</param>
         /// <param name="stripeSubId">stripe subscription id</param>
+        /// <pram name="stripeItemId">stripe item id</param>
         /// <returns></returns>
-        public async Task UpdateAdStripeSubId(Ad ad, string stripeSubId)
+        public async Task UpdateAdStripeSubInfo(Ad ad, string stripeSubId, string stripeItemId)
         {
             ad.StripeSubscriptionId = stripeSubId;
+            ad.StripeItemId = stripeItemId;
             await context.SaveChangesAsync();
         }
 
@@ -269,14 +330,30 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// Get a list of ad sub logs by ad id
         /// </summary>
         /// <param name="adId">ad id</param>
+        /// <param name="cursor">general cursor for pagination</param>
+        /// <param name="limit">limit for pagination</param>
         /// <returns>a list of ad sub logs under the ad</returns>
-        public IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdId(int adId)
+        public IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdIdWithCursor(
+            int adId,
+            GeneralCursor? cursor = null,
+            int? limit = null
+        )
         {
-            return context
-                .AdSubLogs.Where(log => log.AdId == adId)
-                .OrderByDescending(log => log.Time)
-                .Select(log => (AdSubLogViewModel)log)
-                .ToList();
+            var query = context.AdSubLogs.AsQueryable().Where(log => log.AdId == adId);
+
+            if (cursor != null)
+            {
+                query = query.Where(log => log.Id < cursor.Id);
+            }
+
+            query = query.OrderByDescending(log => log.Id);
+
+            if (limit != null)
+            {
+                query = query.Take(limit.Value);
+            }
+
+            return query.Select(log => (AdSubLogViewModel)log).ToList();
         }
 
         /// <summary>
@@ -304,18 +381,15 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         // subscription status
 
         /// <summary>
-        /// Update the subscription status (auto-renew or not) in Stripe
+        /// Update ad subscription renewal status
         /// </summary>
-        /// <param name="subId">subscription id</param>
-        /// <param name="cancelSub">cancel subscription status</param>
+        /// <param name="ad">ad</param>
+        /// <param name="renewSub">ad renew sub status</param>
         /// <returns></returns>
-        public async Task UpdateAdSubscriptionStatus(string subId, bool cancelSub)
+        public async Task UpdateAdSubscriptionRenewal(Ad ad, bool renewSub)
         {
-            var service = new SubscriptionService();
-            var serviceOptions = stripeService.GetRequestOptions();
-            var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelSub };
-
-            await service.UpdateAsync(subId, options, serviceOptions);
+            ad.RenewSub = renewSub;
+            await context.SaveChangesAsync();
         }
     }
 }

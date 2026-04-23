@@ -29,6 +29,10 @@ public partial class Ad
 
     public int TemplateId { get; set; }
 
+    public string? StripeItemId { get; set; }
+
+    public bool RenewSub { get; set; }
+
     public virtual ICollection<AdSubLog> AdSubLogs { get; set; } = new List<AdSubLog>();
 
     public virtual ICollection<AdTarget> AdTargets { get; set; } = new List<AdTarget>();

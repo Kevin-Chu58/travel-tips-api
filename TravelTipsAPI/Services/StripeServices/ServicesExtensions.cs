@@ -11,6 +11,7 @@ namespace TravelTipsAPI.Services.StripeServices
 
             services.AddScoped<IStripeService, StripeService>();
             services.AddScoped<IStripeWebhooksService, StripeWebhooksService>();
+            services.AddScoped<IStripeWebhooksFulfillService, StripeWebhooksFulfillService>();
 
             return services;
         }

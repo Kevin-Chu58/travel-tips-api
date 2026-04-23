@@ -1,8 +1,8 @@
-﻿using TravelTipsAPI.Constants;
-using TravelTipsAPI.Constants.Enums;
+﻿using Microsoft.EntityFrameworkCore;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_feed;
-using static TravelTipsAPI.Constants.Enums.AdTargetEnum;
+using TravelTipsAPI.ViewModels.Stripe;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Feed
@@ -18,7 +18,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// </summary>
         /// <param name="adTargetId">ad target id</param>
         /// <returns>an ad target with the id, if not found return null</returns>
-        public Models.TravelTipsModels.AdTarget? FindAdTargetById(int adTargetId)
+        public AdTarget? FindAdTargetById(int adTargetId)
         {
             return context.AdTargets.FirstOrDefault(at => at.Id == adTargetId);
         }
@@ -30,11 +30,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// <param name="targetType">target type</param>
         /// <param name="targetValue">target value</param>
         /// <returns>an ad target with the id, if not found return null</returns>
-        public Models.TravelTipsModels.AdTarget? FindAdTargetByParams(
-            int adId,
-            string targetType,
-            string? targetValue
-        )
+        public AdTarget? FindAdTargetByParams(int adId, string targetType, string? targetValue)
         {
             return context.AdTargets.FirstOrDefault(at =>
                 at.TargetType == targetType && at.TargetValue == targetValue && at.AdId == adId
@@ -55,6 +51,65 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         }
 
         /// <summary>
+        /// Get total weights by ad id
+        /// </summary>
+        /// <param name="adId">ad id</param>
+        /// <returns>total weights of the ad</returns>
+        public int GetWeightsByAdId(int adId)
+        {
+            return context.AdTargets.Where(at => at.AdId == adId).Sum(at => at.Weight);
+        }
+
+        /// <summary>
+        /// Get an ad target analytics of the same type and value
+        /// </summary>
+        /// <param name="adTarget">ad target</param>
+        /// <returns>ad target analytics</returns>
+        public AdTargetAnalytics GetAdTargetRanking(AdTarget adTarget)
+        {
+            // Create the search pattern first to avoid manual string concatenation in SQL
+            var keywordPattern = $"{adTarget.TargetValue}%";
+
+            var top1000targets = context
+                .Database.SqlQuery<AdTargetAnalyticsForSql>(
+                    $@"SELECT TOP 1000 
+                        t.Id, 
+                        ROW_NUMBER() OVER (
+                            ORDER BY t.Weight DESC
+                            ) AS Rank,
+                        (CAST (
+                            t.Weight AS FLOAT) / SUM(t.Weight) OVER()
+                            ) * 100 AS [Percent]
+                    FROM db_feed.AdTargets t
+                    INNER JOIN db_feed.Ads a ON t.AdId = a.Id
+                    WHERE a.SubStatus = 'active' AND a.Status = 'active'
+                      AND t.TargetType = {adTarget.TargetType}
+                      AND (
+                          ({adTarget.TargetType} = 'keyword' AND t.TargetValue LIKE {keywordPattern})
+                          OR
+                          ({adTarget.TargetType} != 'keyword' AND t.TargetValue = {adTarget.TargetValue})
+                    )"
+                )
+                .AsEnumerable()
+                .ToList();
+
+            var analytic = top1000targets.FirstOrDefault(t => t.Id == adTarget.Id);
+
+            if (analytic == null)
+            {
+                return new AdTargetAnalytics
+                {
+                    Id = adTarget.Id,
+                    Rank = "1000+",
+                    Percent = 0,
+                };
+            }
+
+            analytic.Percent = Math.Round(analytic.Percent, 2);
+            return (AdTargetAnalytics)analytic;
+        }
+
+        /// <summary>
         /// Create a new ad target
         /// </summary>
         /// <param name="postViewModel">new ad target</param>
@@ -70,12 +125,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
                 throw new Exception(Messages.AdTargetLimitReached);
             }
 
-            var adTarget = new Models.TravelTipsModels.AdTarget
+            var adTarget = new AdTarget
             {
                 AdId = adId,
                 TargetType = postViewModel.TargetType,
                 TargetValue = postViewModel.TargetValue,
-                StripeItemId = postViewModel.StripeItemId,
                 Weight = postViewModel.Weight,
             };
 
@@ -106,102 +160,69 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             );
             await adsService.PostNewAdSubLog(adId, message, null, null);
 
-            tx.Commit();
+            await tx.CommitAsync();
         }
 
-        /// <summary>
-        /// Add weight to an target's weight
-        /// </summary>
-        /// <param name="adTarget">ad target</param>
-        /// <param name="newWeight">new weight</param>
-        /// <returns>the new weight</returns>
-        public async Task<int> IncreaseAdTargetWeight(
-            Models.TravelTipsModels.AdTarget adTarget,
-            int newWeight
-        )
+        public async Task UpdateAdTarget(AdTarget adTarget, StripeAdWeightRequest request)
         {
-            var targetRule = targetRulesService.GetTargetRule(
-                adTarget.TargetType,
-                adTarget.TargetValue
-            );
-
-            // Check if the ad target meets the requirement of its target rule
-            if (targetRule != null && newWeight < targetRule.MinWeight)
-                throw new Exception(Messages.TargetRuleMinWeightNotMet);
-
-            if (newWeight <= adTarget.Weight)
-                throw new Exception(Messages.AdTargetNewWeightMustBeGreater);
-
             var tx = context.Database.BeginTransaction();
-
-            var weight = adTarget.Weight;
-            adTarget.Weight = newWeight;
-            adTarget.FutureWeight = null;
-            await context.SaveChangesAsync();
 
             // create a sub log for the ad target weight increase
-            var message = string.Format(
-                Messages.AdTargetWeightIncreased,
-                GetAdTargetDescription(adTarget)
-            );
-            await adsService.PostNewAdSubLog(adTarget.AdId, message, weight, adTarget.Weight);
-
-            tx.Commit();
-
-            return adTarget.Weight;
-        }
-
-        /// <summary>
-        /// Set the future weight of an ad target.
-        /// The future weight will be applied in the next round of ad serving.
-        /// This is to avoid the weight change takes effect immediately and cause instability of ad serving.
-        /// </summary>
-        /// <param name="adTarget">ad target</param>
-        /// <param name="newWeight">(future) new weight</param>
-        /// <returns>the future new weight</returns>
-        public async Task<int> DecreaseAdTargetWeight(
-            Models.TravelTipsModels.AdTarget adTarget,
-            int newWeight
-        )
-        {
-            var targetRule = targetRulesService.GetTargetRule(
-                adTarget.TargetType,
-                adTarget.TargetValue
-            );
-
-            // Check if the ad target meets the requirement of its target rule
-            if (targetRule != null && newWeight < targetRule.MinWeight)
-                throw new Exception(Messages.TargetRuleMinWeightNotMet);
-
-            if (newWeight >= adTarget.Weight)
-                throw new Exception(Messages.AdTargetNewWeightMustBeGreater);
-
-            var newFutureWeight = newWeight;
-            if (newFutureWeight <= 0)
+            if (request.Weight > adTarget.Weight)
             {
-                throw new Exception(Messages.AdTargetWeightZeroInvalid);
+                var message = string.Format(
+                    Messages.AdTargetWeightIncreased,
+                    GetAdTargetDescription(adTarget)
+                );
+                await adsService.PostNewAdSubLog(
+                    adTarget.AdId,
+                    message,
+                    adTarget.Weight,
+                    request.Weight
+                );
+            }
+            else if (request.Weight < adTarget.Weight)
+            {
+                var message = string.Format(
+                    Messages.AdTargetWeightDecreased,
+                    GetAdTargetDescription(adTarget)
+                );
+                await adsService.PostNewAdSubLog(
+                    adTarget.AdId,
+                    message,
+                    adTarget.Weight,
+                    request.Weight
+                );
             }
 
-            var tx = context.Database.BeginTransaction();
+            if (
+                request.TargetType != adTarget.TargetType
+                || request.TargetValue != adTarget.TargetValue
+            )
+            {
+                // create a sub log for the ad target update
+                var message = string.Format(
+                    Messages.AdTargetTypeValueUpdated,
+                    GetAdTargetDescription(adTarget),
+                    GetAdTargetDescription(
+                        new Models.TravelTipsModels.AdTarget
+                        {
+                            TargetType = request.TargetType,
+                            TargetValue = request.TargetValue,
+                        }
+                    )
+                );
+                await adsService.PostNewAdSubLog(adTarget.AdId, message, null, null);
+            }
 
-            adTarget.FutureWeight = newFutureWeight;
+            // update attributes of the ad target
+            adTarget.TargetType = request.TargetType;
+            adTarget.TargetValue = request.TargetValue;
+            adTarget.Weight = request.Weight;
+
             await context.SaveChangesAsync();
 
-            // create a sub log for the ad target weight decrease
-            var message = string.Format(
-                Messages.AdTargetWeightDecreased,
-                GetAdTargetDescription(adTarget)
-            );
-            await adsService.PostNewAdSubLog(
-                adTarget.AdId,
-                message,
-                adTarget.Weight,
-                adTarget.FutureWeight
-            );
-
-            tx.Commit();
-
-            return (int)adTarget.FutureWeight;
+            await tx.CommitAsync();
         }
 
         /// <summary>
@@ -211,8 +232,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// <returns>the ad target id</returns>
         public async Task<int> SetAdTargetAsPrimary(Models.TravelTipsModels.AdTarget adTarget)
         {
-            var adTargets = GetAdTargetsByAdId(adTarget.AdId);
-            var primaryAdTarget = adTargets.FirstOrDefault(at => at.IsPrimary);
+            var adTargets = context.AdTargets.Where(at => at.AdId == adTarget.AdId).ToList();
+            var primaryAdTarget = adTargets.FirstOrDefault(at => at.IsPrimary == true);
 
             if (primaryAdTarget != null)
             {
@@ -226,27 +247,24 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         }
 
         /// <summary>
-        /// Cancel/reinstate an ad target
+        /// delete an ad target
         /// </summary>
         /// <param name="adTarget">ad target</param>
         /// <returns></returns>
-        public async Task CancelAdTarget(Models.TravelTipsModels.AdTarget adTarget)
+        public async Task DeleteAdTarget(Models.TravelTipsModels.AdTarget adTarget)
         {
+            var oldWeight = adTarget.Weight;
+
             var tx = context.Database.BeginTransaction();
 
-            adTarget.FutureWeight = 0;
-            adTarget.StripeItemId = null;
-
+            context.AdTargets.Remove(adTarget);
             await context.SaveChangesAsync();
 
             // create a sub log for the ad target weight decrease
-            var message = string.Format(
-                Messages.AdTargetCanceled,
-                GetAdTargetDescription(adTarget)
-            );
+            var message = string.Format(Messages.AdTargetDeleted, GetAdTargetDescription(adTarget));
             await adsService.PostNewAdSubLog(adTarget.AdId, message, null, null);
 
-            tx.Commit();
+            await tx.CommitAsync();
         }
 
         /// <summary>
@@ -256,45 +274,12 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// <returns></returns>
         public async Task UpdateAdTargetCycleByAdId(int adId)
         {
-            var adTargets = context.AdTargets.Where(at => at.AdId == adId).ToList();
-
             var tx = context.Database.BeginTransaction();
 
-            var deletedAdTargets = new List<string>();
-
-            // Apply the future weight to the current weight, and remove the ad target if the future weight is 0
-            foreach (var adTarget in adTargets)
-            {
-                if (adTarget.FutureWeight.HasValue)
-                {
-                    adTarget.Weight = adTarget.FutureWeight.Value;
-                    adTarget.FutureWeight = null;
-                }
-                if (adTarget.FutureWeight == 0)
-                {
-                    deletedAdTargets.Add(GetAdTargetDescription(adTarget));
-                    context.AdTargets.Remove(adTarget);
-                }
-            }
-
-            // Set the first ad target as primary if there is no primary ad target after the update
-            var firstAdTarget = adTargets.FirstOrDefault();
-            if (firstAdTarget != null && !adTargets.Any(at => at.IsPrimary))
-            {
-                firstAdTarget.IsPrimary = true;
-            }
-
-            await context.SaveChangesAsync();
-
             // create a sub log for the new ad target cycle
-            var message = string.Format(
-                Messages.AdNewCycle,
-                adId,
-                string.Join(", ", deletedAdTargets)
-            );
-            await adsService.PostNewAdSubLog(adId, message, null, null);
+            await adsService.PostNewAdSubLog(adId, Messages.AdNewCycle, null, null);
 
-            tx.Commit();
+            await tx.CommitAsync();
         }
 
         private string GetAdTargetDescription(Models.TravelTipsModels.AdTarget adTarget)

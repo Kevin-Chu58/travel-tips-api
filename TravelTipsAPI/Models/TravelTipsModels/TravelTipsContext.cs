@@ -86,7 +86,9 @@ public partial class TravelTipsContext : DbContext
 
             entity.Property(e => e.Link).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.LinkLabel).HasMaxLength(50);
+            entity.Property(e => e.RenewSub).HasDefaultValue(true);
             entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.StripeItemId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.StripeSubscriptionId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.SubStatus).HasMaxLength(10).IsUnicode(false);
             entity.Property(e => e.Text).HasMaxLength(100);
@@ -121,10 +123,10 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("AdSubLogs", "db_feed");
 
             entity
-                .HasIndex(e => new { e.AdId, e.Time }, "idx_latest_ad_sub_log_by_adId")
+                .HasIndex(e => new { e.AdId, e.Id }, "idx_latest_ad_sub_log_by_adId")
                 .IsDescending(false, true);
 
-            entity.Property(e => e.Note).HasMaxLength(100).IsUnicode(false);
+            entity.Property(e => e.Note).HasMaxLength(200).IsUnicode(false);
 
             entity
                 .HasOne(d => d.Ad)
@@ -144,9 +146,8 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_ad_target_search");
 
-            entity.Property(e => e.StripeItemId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.TargetValue).HasMaxLength(100);
+            entity.Property(e => e.TargetValue).HasMaxLength(50);
 
             entity
                 .HasOne(d => d.Ad)
@@ -541,7 +542,7 @@ public partial class TravelTipsContext : DbContext
             entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_target_rules_filter");
 
             entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
-            entity.Property(e => e.TargetValue).HasMaxLength(100);
+            entity.Property(e => e.TargetValue).HasMaxLength(50);
         });
 
         modelBuilder.Entity<Trip>(entity =>

@@ -9,7 +9,7 @@ namespace TravelTipsAPI.Services.StripeServices
 {
     public class StripeWebhooksService(
         IStripeWebhookBackgroundTaskQueue taskQueue,
-        IServiceProvider serviceProvider,
+        IServiceScopeFactory scopeFactory,
         IProcessedStripeEventsService processedStripeEventsService,
         ILogger<StripeWebhooksService> logger
     ) : IStripeWebhooksService
@@ -35,7 +35,7 @@ namespace TravelTipsAPI.Services.StripeServices
                     )
                         taskQueue.Enqueue(async token =>
                         {
-                            using var scope = serviceProvider.CreateScope();
+                            using var scope = scopeFactory.CreateScope();
                             var fulfillment =
                                 scope.ServiceProvider.GetRequiredService<IStripeWebhooksFulfillService>();
 
@@ -45,6 +45,63 @@ namespace TravelTipsAPI.Services.StripeServices
                                 session!
                             );
                         });
+                    break;
+
+                case EventTypes.InvoicePaid:
+                    var invoice = stripeEvent.Data.Object as Invoice;
+
+                    taskQueue.Enqueue(async token =>
+                    {
+                        using var scope = scopeFactory.CreateScope();
+                        var fulfillment =
+                            scope.ServiceProvider.GetRequiredService<IStripeWebhooksFulfillService>();
+                        await fulfillment.FulfillInvoicePaidTaskAsync(stripeEvent.Id, invoice!);
+                    });
+                    break;
+
+                case EventTypes.CustomerSubscriptionUpdated:
+                    var subscription = stripeEvent.Data.Object as Subscription;
+
+                    taskQueue.Enqueue(async token =>
+                    {
+                        using var scope = scopeFactory.CreateScope();
+                        var fulfillment =
+                            scope.ServiceProvider.GetRequiredService<IStripeWebhooksFulfillService>();
+                        await fulfillment.FulfullCustomerSubscriptionUpdatedAsync(
+                            stripeEvent.Id,
+                            subscription!
+                        );
+                    });
+                    break;
+
+                case EventTypes.CustomerSubscriptionDeleted:
+                    var deletedSubscription = stripeEvent.Data.Object as Subscription;
+
+                    taskQueue.Enqueue(async token =>
+                    {
+                        using var scope = scopeFactory.CreateScope();
+                        var fulfillment =
+                            scope.ServiceProvider.GetRequiredService<IStripeWebhooksFulfillService>();
+                        await fulfillment.FulfillCustomerSubscriptionDeletedTaskAsync(
+                            stripeEvent.Id,
+                            deletedSubscription!
+                        );
+                    });
+                    break;
+
+                case EventTypes.CustomerDeleted:
+                    var customer = stripeEvent.Data.Object as Customer;
+
+                    taskQueue.Enqueue(async token =>
+                    {
+                        using var scope = scopeFactory.CreateScope();
+                        var fulfillment =
+                            scope.ServiceProvider.GetRequiredService<IStripeWebhooksFulfillService>();
+                        await fulfillment.FulfillCustomerDeletedTaskAsync(
+                            stripeEvent.Id,
+                            customer!
+                        );
+                    });
                     break;
             }
         }

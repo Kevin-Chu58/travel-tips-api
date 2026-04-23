@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
-using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using static TravelTipsAPI.Constants.Enums.AdEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;

@@ -1,4 +1,5 @@
-﻿using Stripe;
+﻿using System.Collections.Generic;
+using Stripe;
 using Stripe.Checkout;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
@@ -10,8 +11,11 @@ using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 
 namespace TravelTipsAPI.Services.StripeServices
 {
-    public class StripeService(IConfiguration config, ITargetRulesService targetRulesService)
-        : IStripeService
+    public class StripeService(
+        IConfiguration config,
+        TravelTipsContext context,
+        ITargetRulesService targetRulesService
+    ) : IStripeService
     {
         private readonly string _apiKey =
             config["Stripe:ApiKey"] ?? throw new ArgumentException("Stripe:ApiKey not configured");
@@ -155,7 +159,33 @@ namespace TravelTipsAPI.Services.StripeServices
             }
         }
 
-        // preview invoices - use this when want to add items and quantities to existing subscription
+        // preview invoices
+
+        public async Task<StripeBillingCyclePreviewInvoiceResponse> PreviewBillingCycleInvoiceOnAdWeights(
+            Ad ad
+        )
+        {
+            if (ad.StripeSubscriptionId == null)
+                throw new Exception(Messages.AdStripeSubIdMissing);
+
+            var client = new StripeClient(_apiKey);
+            var subscriptionService = new SubscriptionService(client);
+
+            var previewOptions = new InvoiceCreatePreviewOptions
+            {
+                Subscription = ad.StripeSubscriptionId,
+            };
+
+            var invoiceService = new InvoiceService(client);
+            Invoice previewInvoice = await invoiceService.CreatePreviewAsync(previewOptions);
+
+            return new StripeBillingCyclePreviewInvoiceResponse
+            {
+                Currency = previewInvoice.Currency,
+                NextBillingAmount = previewInvoice.AmountDue,
+                NextBillingDate = previewInvoice.PeriodEnd,
+            };
+        }
 
         /// <summary>
         /// Preview the invoice for more ad weights on an existing ad with sub id
@@ -167,16 +197,27 @@ namespace TravelTipsAPI.Services.StripeServices
         public async Task<StripePreviewInvoiceResponse> PreviewUpcomingInvoiceOnAdWeights(
             User user,
             Ad ad,
-            StripeAdWeightRequest request
+            StripeAdWeightRequest request,
+            AdTarget? adTarget
         )
         {
             if (user.StripeCustomerId == null)
                 throw new Exception(Messages.UserStripeCustomerIdNotFound);
 
-            var client = new StripeClient(_apiKey);
-            var invoiceService = new InvoiceService(client);
+            if (ad.StripeItemId == null || ad.StripeSubscriptionId == null)
+                throw new Exception(Messages.AdStripeSubIdMissing);
 
-            var startDate = DateTime.UtcNow;
+            var adTargets = context.AdTargets.Where(at => at.AdId == ad.Id).ToList();
+            var totalWeight =
+                adTargets.Sum(at => at.Weight) + request.Weight - (adTarget?.Weight ?? 0);
+
+            var client = new StripeClient(_apiKey);
+
+            var customerService = new CustomerService(client);
+            var customer = await customerService.GetAsync(user.StripeCustomerId);
+
+            // invoice
+            var invoiceService = new InvoiceService(client);
 
             var options = new InvoiceCreatePreviewOptions
             {
@@ -186,19 +227,27 @@ namespace TravelTipsAPI.Services.StripeServices
                 {
                     Items = new List<InvoiceSubscriptionDetailsItemOptions>
                     {
-                        new() { Price = Ad_Target_Weight_Unit_Price, Quantity = request.Weight },
+                        new() { Id = ad.StripeItemId, Quantity = totalWeight },
                     },
-                    StartDate = startDate,
+                    ProrationDate = DateTime.UtcNow,
+                    ProrationBehavior = "always_invoice",
                 },
             };
-
             Invoice preview = await invoiceService.CreatePreviewAsync(options);
+
+            // price
+            var priceService = new PriceService(client);
+            Price price = await priceService.GetAsync(Ad_Target_Weight_Unit_Price);
+
+            // Access the unit amount (e.g., 1000 for $10.00)
+            long unitAmount = price.UnitAmount ?? 0;
 
             return new StripePreviewInvoiceResponse
             {
-                AmountToPayNow = preview.AmountDue,
-                NextCycleTotal = preview.Total,
-                StartDate = startDate,
+                Currency = preview.Currency,
+                AmountToPayNow = preview.AmountDue, // Total for the upgrade TODAY
+                NextCycleTotal = unitAmount * totalWeight, // Total for the NEXT full month
+                StartDate = preview.Created,
             };
         }
 
@@ -217,45 +266,22 @@ namespace TravelTipsAPI.Services.StripeServices
             AdTarget? adTarget
         )
         {
-            if (ad.StripeSubscriptionId == null)
-                throw new Exception(Messages.AdStripeSubIdMissing);
-
-            if (adTarget?.FutureWeight == 0)
-                throw new Exception(Messages.AdTargetAlreadyCanceled);
-
-            // check target rule whether the new weight meets the min weight requirement
-            var targetRule = targetRulesService.GetTargetRule(
-                request.TargetType,
-                request.TargetValue
-            );
-            if (targetRule is null)
-                throw new Exception(Messages.TargetRuleNotFound);
-
-            if (request.Weight < targetRule.MinWeight)
-                throw new Exception(Messages.TargetRuleMinWeightNotMet);
-
-            var client = new StripeClient(_apiKey);
-            var subscriptionService = new SubscriptionService(client);
-
-            var existingQuantity = adTarget?.Weight ?? 0;
+            var totalWeight =
+                context.AdTargets.Where(at => at.AdId == ad.Id).Sum(at => at.Weight)
+                + request.Weight
+                - (adTarget?.Weight ?? 0);
 
             var itemOptions = new SubscriptionItemOptions
             {
-                Price = Ad_Target_Weight_Unit_Price,
-                Quantity = request.Weight,
+                Id = ad.StripeItemId,
+                Quantity = totalWeight,
             };
-
-            // if the ad target already has a Stripe item id, use that id;
-            // otherwise, add a new item to the subscription
-            if (!string.IsNullOrEmpty(adTarget?.StripeItemId))
-            {
-                itemOptions.Id = adTarget?.StripeItemId;
-            }
 
             var metaData = new Dictionary<string, string>
             {
                 { StripeMetaData.TargetType, request.TargetType },
                 { StripeMetaData.TargetValue, request.TargetValue },
+                { StripeMetaData.AdWeight, request.Weight.ToString() },
             };
 
             // this distinguishes the subscription_update on existing ad target
@@ -265,6 +291,8 @@ namespace TravelTipsAPI.Services.StripeServices
 
             // if weight increase, prorate and invoice immediately;
             // if weight decrease, do not prorate and do not invoice immediately
+            var existingQuantity = adTarget?.Weight ?? 0;
+
             var isWeightIncrease = existingQuantity < request.Weight;
             var isWeightDecrease = existingQuantity > request.Weight;
             if (isWeightDecrease)
@@ -279,8 +307,11 @@ namespace TravelTipsAPI.Services.StripeServices
             {
                 Items = new List<SubscriptionItemOptions> { itemOptions },
                 Metadata = metaData,
-                ProrationBehavior = isWeightIncrease ? "always_invoice" : "none",
+                ProrationBehavior = isWeightIncrease ? "always_invoice" : "create_prorations",
             };
+
+            var client = new StripeClient(_apiKey);
+            var subscriptionService = new SubscriptionService(client);
 
             await subscriptionService.UpdateAsync(ad.StripeSubscriptionId, options);
         }
@@ -296,27 +327,53 @@ namespace TravelTipsAPI.Services.StripeServices
             if (ad.StripeSubscriptionId == null)
                 throw new Exception(Messages.AdStripeSubIdMissing);
 
-            var client = new StripeClient(_apiKey);
-            var subscriptionService = new SubscriptionService(client);
+            var totalWeight =
+                context.AdTargets.Where(at => at.AdId == ad.Id).Sum(at => at.Weight)
+                - adTarget.Weight;
+
+            var itemOptions = new SubscriptionItemOptions
+            {
+                Id = ad.StripeItemId,
+                Quantity = totalWeight,
+            };
+
+            var metaData = new Dictionary<string, string>
+            {
+                { StripeMetaData.AdTargetId, adTarget.Id.ToString() },
+                {
+                    StripeMetaData.SubscriptionUpdateType,
+                    GetSubscriptionUpdateTypeStr(SubscriptionUpdateTypeEnum.AdTargetDelete)!
+                },
+            };
 
             var options = new SubscriptionUpdateOptions
             {
-                Items = new List<SubscriptionItemOptions>
-                {
-                    new() { Id = adTarget.StripeItemId, Deleted = true },
-                },
-                Metadata = new Dictionary<string, string>
-                {
-                    { StripeMetaData.AdTargetId, adTarget.Id.ToString() },
-                    {
-                        StripeMetaData.SubscriptionUpdateType,
-                        GetSubscriptionUpdateTypeStr(SubscriptionUpdateTypeEnum.AdTargetDelete)!
-                    },
-                },
+                Items = new List<SubscriptionItemOptions> { itemOptions },
+                Metadata = metaData,
                 ProrationBehavior = "none",
             };
 
+            var client = new StripeClient(_apiKey);
+            var subscriptionService = new SubscriptionService(client);
+
             await subscriptionService.UpdateAsync(ad.StripeSubscriptionId, options);
+        }
+
+        // subscription status
+
+        /// <summary>
+        /// Update the subscription status (auto-renew or not) in Stripe
+        /// </summary>
+        /// <param name="subId">subscription id</param>
+        /// <param name="cancelSub">cancel subscription status</param>
+        /// <returns></returns>
+        public async Task UpdateSubscriptionStatus(string subId, bool cancelSub)
+        {
+            var service = new SubscriptionService();
+            var serviceOptions = GetRequestOptions();
+            var options = new SubscriptionUpdateOptions { CancelAtPeriodEnd = cancelSub };
+
+            await service.UpdateAsync(subId, options, serviceOptions);
         }
     }
 }

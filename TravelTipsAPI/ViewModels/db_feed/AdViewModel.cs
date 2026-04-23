@@ -14,9 +14,11 @@ namespace TravelTipsAPI.ViewModels.db_feed
         public string? Link { get; set; }
         public string? Picture { get; set; }
         public string? StripeSubscriptionId { get; set; }
+        public string? StripeItemId { get; set; }
         public string? SubStatus { get; set; }
         public required string Status { get; set; }
         public int TemplateId { get; set; }
+        public bool RenewSub { get; set; }
 
         public static explicit operator AdViewModel(Ad ad)
         {
@@ -30,9 +32,11 @@ namespace TravelTipsAPI.ViewModels.db_feed
                 LinkLabel = ad.LinkLabel,
                 Link = ad.Link,
                 StripeSubscriptionId = ad.StripeSubscriptionId,
+                StripeItemId = ad.StripeItemId,
                 SubStatus = ad.SubStatus,
                 Status = ad.Status,
                 TemplateId = ad.TemplateId,
+                RenewSub = ad.RenewSub,
             };
         }
     }

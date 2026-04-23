@@ -1,5 +1,4 @@
-﻿using Castle.Core.Resource;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Stripe;
 using Stripe.Checkout;
 using TravelTipsAPI.Constants;
@@ -8,6 +7,7 @@ using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using TravelTipsAPI.ViewModels.db_plan;
+using TravelTipsAPI.ViewModels.Stripe;
 using static TravelTipsAPI.Constants.Enums.StripeEnum;
 using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
@@ -371,10 +371,7 @@ namespace TravelTipsAPI.Services.StripeServices
                 // cancel subscription at the end of current period if user does not want to renew subscription
 
                 if (!renewSubscription)
-                    await subscriptionsService.UpdateSubscriptionStatus(
-                        subscription.Id,
-                        cancelSub: true
-                    );
+                    await stripeService.UpdateSubscriptionStatus(subscription.Id, cancelSub: true);
 
                 // mark the Stripe event as processed
                 await processedStripeEventsService.AddProcessedEvent(eventId);
@@ -397,7 +394,7 @@ namespace TravelTipsAPI.Services.StripeServices
         )
         {
             // subscription-wide AdWeight metadata
-            var subscriptionMetadata = session.Subscription.Metadata;
+            var subscriptionMetadata = subscription.Metadata;
             subscriptionMetadata.TryGetValue(StripeMetaData.AdId, out var adIdStr);
 
             _ = int.TryParse(adIdStr, out int adId);
@@ -428,7 +425,6 @@ namespace TravelTipsAPI.Services.StripeServices
                 // create new ad target record
                 var adTarget = new AdTargetPostViewModel
                 {
-                    StripeItemId = subItem.Id,
                     TargetType = targetType!,
                     TargetValue = targetValue!,
                     Weight = quantity,
@@ -437,7 +433,7 @@ namespace TravelTipsAPI.Services.StripeServices
                 await adTargetsService.PostNewAdTarget(adTarget, adId);
 
                 // update the StripeSubscriptionId in the ad record to link the ad with the Stripe subscription
-                await adsService.UpdateAdStripeSubId(ad, subscription.Id);
+                await adsService.UpdateAdStripeSubInfo(ad, subscription.Id, subItem.Id);
 
                 // update user record with StripeCustomerId and stripeCurrency if cusomter id is not set
                 var user = usersService.GetUserById(userId);
@@ -453,6 +449,8 @@ namespace TravelTipsAPI.Services.StripeServices
                         }
                     );
                 }
+
+                await adsService.UpdateAdStripeSubStatus(ad, "active");
 
                 // mark the Stripe event as processed
                 await processedStripeEventsService.AddProcessedEvent(eventId);
@@ -599,6 +597,17 @@ namespace TravelTipsAPI.Services.StripeServices
             Stripe.Subscription subscription
         )
         {
+            // subscription-wide AdWeight metadata
+            var subscriptionMetadata = subscription.Metadata;
+            subscriptionMetadata.TryGetValue(StripeMetaData.AdId, out var adIdStr);
+
+            _ = int.TryParse(adIdStr, out int adId);
+
+            // ad with the subscription id
+            var ad = adsService.FindAdById(adId);
+            if (ad == null)
+                throw new Exception(Messages.AdNotFound);
+
             // ad target
             var adTarget = adTargetsService.FindAdTargetById(adTargetId);
             if (adTarget == null)
@@ -609,16 +618,24 @@ namespace TravelTipsAPI.Services.StripeServices
             //   if the ad target is canceled before, the stripe item id is set to null,
             //   and since the stripe item is also deleted on Stripe,
             //   the user can no longer update the ad target anymore.
-            var itemId = adTarget.StripeItemId;
+            var itemId = ad.StripeItemId;
             if (itemId == null)
                 throw new Exception(Messages.AdTargetStripeItemIdMissing);
 
-            // get the new weight from the invoice's subscription item quantity
-            var subItem = subscription.Items.FirstOrDefault(item => item.Id == itemId);
-            if (subItem == null)
-                throw new Exception(Messages.StripeSubscriptionItemNotFound);
+            // metadata
+            var metadata = subscription.Metadata;
+            metadata.TryGetValue(StripeMetaData.TargetType, out var targetType);
+            metadata.TryGetValue(StripeMetaData.TargetValue, out var targetValue);
 
-            var newWeight = (int)subItem.Quantity;
+            metadata.TryGetValue(StripeMetaData.AdWeight, out var adWeightStr);
+            _ = int.TryParse(adWeightStr, out int adWeight);
+
+            var request = new StripeAdWeightRequest
+            {
+                TargetType = targetType!,
+                TargetValue = targetValue!,
+                Weight = adWeight,
+            };
 
             // TX Begins
             var tx = await context.Database.BeginTransactionAsync();
@@ -626,7 +643,7 @@ namespace TravelTipsAPI.Services.StripeServices
             try
             {
                 // update the ad target weight with the new weight
-                await adTargetsService.IncreaseAdTargetWeight(adTarget, newWeight);
+                await adTargetsService.UpdateAdTarget(adTarget, request);
 
                 // mark the Stripe event as processed
                 await processedStripeEventsService.AddProcessedEvent(eventId);
@@ -659,22 +676,12 @@ namespace TravelTipsAPI.Services.StripeServices
                 throw new Exception(Messages.AdNotFound);
 
             // metadata
-            var metadata = invoice.Metadata;
+            var metadata = subscription.Metadata;
             metadata.TryGetValue(StripeMetaData.TargetType, out var targetType);
             metadata.TryGetValue(StripeMetaData.TargetValue, out var targetValue);
 
-            // find the line item that is prorated and charged immediately
-            // with the specific price id for ad weight
-            var newSubItem = invoice.Lines.FirstOrDefault(line =>
-                line.Parent.Type == "invoice_item_details"
-                && line.Parent.InvoiceItemDetails.Proration == true
-                && line.Pricing.PriceDetails.Price == StripeEnum.Ad_Target_Weight_Unit_Price
-            );
-
-            if (newSubItem == null)
-                throw new Exception(Messages.StripeSubscriptionItemNotFound);
-
-            var newWeight = (int)newSubItem.Quantity!;
+            metadata.TryGetValue(StripeMetaData.AdWeight, out var adWeightStr);
+            _ = int.TryParse(adWeightStr, out int adWeight);
 
             // TX Begins
             var tx = await context.Database.BeginTransactionAsync();
@@ -684,10 +691,9 @@ namespace TravelTipsAPI.Services.StripeServices
                 // create new ad target record
                 var adTarget = new AdTargetPostViewModel
                 {
-                    StripeItemId = newSubItem.Id,
                     TargetType = targetType!,
                     TargetValue = targetValue!,
-                    Weight = newWeight,
+                    Weight = adWeight,
                 };
 
                 await adTargetsService.PostNewAdTarget(adTarget, adId);
@@ -789,26 +795,36 @@ namespace TravelTipsAPI.Services.StripeServices
             Stripe.Subscription subscription
         )
         {
+            // subscription-wide AdWeight metadata
+            var subscriptionMetadata = subscription.Metadata;
+            subscriptionMetadata.TryGetValue(StripeMetaData.AdId, out var adIdStr);
+
+            _ = int.TryParse(adIdStr, out int adId);
+
+            // ad with the subscription id
+            var ad = adsService.FindAdById(adId);
+            if (ad == null)
+                throw new Exception(Messages.AdNotFound);
+
             // ad target
             var adTarget = adTargetsService.FindAdTargetById(adTargetId);
             if (adTarget == null)
                 throw new Exception(Messages.AdTargetNotFound);
 
-            // check
-            // - whether ad target is bound to a stripe item,
-            //   if the ad target is canceled before, the stripe item id is set to null,
-            //   and since the stripe item is also deleted on Stripe,
-            //   the user can no longer update the ad target anymore.
-            var itemId = adTarget.StripeItemId;
-            if (itemId == null)
-                throw new Exception(Messages.AdTargetStripeItemIdMissing);
+            // metadata
+            var metadata = subscription.Metadata;
+            metadata.TryGetValue(StripeMetaData.TargetType, out var targetType);
+            metadata.TryGetValue(StripeMetaData.TargetValue, out var targetValue);
 
-            // get the new weight from the invoice's subscription item quantity
-            var subItem = subscription.Items.FirstOrDefault(item => item.Id == itemId);
-            if (subItem == null)
-                throw new Exception(Messages.StripeSubscriptionItemNotFound);
+            metadata.TryGetValue(StripeMetaData.AdWeight, out var adWeightStr);
+            _ = int.TryParse(adWeightStr, out int adWeight);
 
-            var newWeight = (int)subItem.Quantity;
+            var request = new StripeAdWeightRequest
+            {
+                TargetType = targetType!,
+                TargetValue = targetValue!,
+                Weight = adWeight,
+            };
 
             // TX Begins
             var tx = await context.Database.BeginTransactionAsync();
@@ -816,7 +832,7 @@ namespace TravelTipsAPI.Services.StripeServices
             try
             {
                 // update the ad target weight with the new weight
-                await adTargetsService.DecreaseAdTargetWeight(adTarget, newWeight);
+                await adTargetsService.UpdateAdTarget(adTarget, request);
 
                 // mark the Stripe event as processed
                 await processedStripeEventsService.AddProcessedEvent(eventId);
@@ -838,22 +854,13 @@ namespace TravelTipsAPI.Services.StripeServices
             if (adTarget == null)
                 throw new Exception(Messages.AdTargetNotFound);
 
-            // check
-            // - whether ad target is bound to a stripe item,
-            //   if the ad target is canceled before, the stripe item id is set to null,
-            //   and since the stripe item is also deleted on Stripe,
-            //   the user can no longer update the ad target anymore.
-            var itemId = adTarget.StripeItemId;
-            if (itemId == null)
-                throw new Exception(Messages.AdTargetStripeItemIdMissing);
-
             // TX Begins
             var tx = await context.Database.BeginTransactionAsync();
 
             try
             {
                 // delete the ad target record
-                await adTargetsService.CancelAdTarget(adTarget);
+                await adTargetsService.DeleteAdTarget(adTarget);
 
                 // mark the Stripe event as processed
                 await processedStripeEventsService.AddProcessedEvent(eventId);
