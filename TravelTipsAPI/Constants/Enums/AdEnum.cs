@@ -4,9 +4,9 @@
     {
         public enum AdStatus
         {
+            Pending,
             Active,
             Inactive,
-            Pending,
             RequestChange,
             Denied,
         };
@@ -15,9 +15,9 @@
         {
             return status switch
             {
+                AdStatus.Pending => "pending",
                 AdStatus.Active => "active",
                 AdStatus.Inactive => "inactive",
-                AdStatus.Pending => "pending",
                 AdStatus.RequestChange => "request change",
                 AdStatus.Denied => "denied",
                 _ => null,

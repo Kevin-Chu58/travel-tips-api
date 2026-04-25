@@ -3,7 +3,7 @@
     public class Global
     {
         // User Agent
-        public static readonly string USER_AGENT = "TravelTips/v0.8";
+        public static readonly string USER_AGENT = "TravelTips/v1.0";
 
         // url
         public static readonly string URL_PRODUCTION =
@@ -19,6 +19,8 @@
         public static readonly int HIGHLIGHT_DEFAULT_LIMIT = 20;
         public static readonly int BANNER_DEFAULT_LIMIT = 20;
         public static readonly int SUBSCRIPTION_DEFAULT_LIMIT = 20;
+        public static readonly int BUSINESS_DEFAULT_LIMIT = 20;
+        public static readonly int AD_DEFAULT_LIMIT = 20;
         public static readonly int AD_SUB_LOG_DEFAULT_LIMIT = 20;
 
         // Max Limit Per Entity

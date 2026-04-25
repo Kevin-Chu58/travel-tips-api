@@ -1,14 +1,14 @@
 ﻿namespace TravelTipsAPI.ViewModels.db_feed
 {
-    public class AdTargetAnalytics
+    public class AdTargetAnalysis
     {
         public int Id { get; set; }
         public required string Rank { get; set; }
         public double Percent { get; set; }
 
-        public static explicit operator AdTargetAnalytics(AdTargetAnalyticsForSql analytics)
+        public static explicit operator AdTargetAnalysis(AdTargetAnalysisForSql analytics)
         {
-            return new AdTargetAnalytics
+            return new AdTargetAnalysis
             {
                 Id = analytics.Id,
                 Rank = analytics.Rank.ToString(),
@@ -17,7 +17,7 @@
         }
     }
 
-    public class AdTargetAnalyticsForSql
+    public class AdTargetAnalysisForSql
     {
         public int Id { get; set; }
         public long Rank { get; set; }

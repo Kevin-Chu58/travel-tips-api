@@ -65,13 +65,13 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         /// </summary>
         /// <param name="adTarget">ad target</param>
         /// <returns>ad target analytics</returns>
-        public AdTargetAnalytics GetAdTargetRanking(AdTarget adTarget)
+        public AdTargetAnalysis GetAdTargetRanking(AdTarget adTarget)
         {
             // Create the search pattern first to avoid manual string concatenation in SQL
             var keywordPattern = $"{adTarget.TargetValue}%";
 
             var top1000targets = context
-                .Database.SqlQuery<AdTargetAnalyticsForSql>(
+                .Database.SqlQuery<AdTargetAnalysisForSql>(
                     $@"SELECT TOP 1000 
                         t.Id, 
                         ROW_NUMBER() OVER (
@@ -97,7 +97,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
 
             if (analytic == null)
             {
-                return new AdTargetAnalytics
+                return new AdTargetAnalysis
                 {
                     Id = adTarget.Id,
                     Rank = "1000+",
@@ -106,7 +106,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             }
 
             analytic.Percent = Math.Round(analytic.Percent, 2);
-            return (AdTargetAnalytics)analytic;
+            return (AdTargetAnalysis)analytic;
         }
 
         /// <summary>

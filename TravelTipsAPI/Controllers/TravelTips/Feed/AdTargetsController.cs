@@ -24,14 +24,14 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         }
 
         /// <summary>
-        /// Get the analytics of an ad target
+        /// Get the analysis of an ad target
         /// </summary>
         /// <param name="id">ad id</param>
         /// <param name="targetId">ad target id</param>
-        /// <returns>the analytics</returns>
+        /// <returns>the analysis</returns>
         [HttpGet]
-        [Route("{id}/ad-target/{targetId}/analytics")]
-        public ActionResult<AdTargetAnalytics> GetAdTargetAnalytics(int id, int targetId)
+        [Route("{id}/ad-target/{targetId}/analysis")]
+        public ActionResult<AdTargetAnalysis> GetAdTargetAnalytics(int id, int targetId)
         {
             var adTarget = adTargetsService.FindAdTargetById(targetId);
 

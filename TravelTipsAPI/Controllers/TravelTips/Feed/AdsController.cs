@@ -22,7 +22,7 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
     [Route("api/[controller]")]
     public class AdsController(
         TravelTipsContext context,
-        IUsersService usersService,
+        //IUsersService usersService,
         IRegionsService regionsService,
         IBusinessesService businessesService,
         IAdsService adsService,
@@ -44,32 +44,8 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
             var ads = adsService.GetAdsByParams(userId, id);
 
-            return Ok(ads);
-        }
-
-        /// <summary>
-        /// Get a list of ads by params (user id, business id, ad status)
-        /// </summary>
-        /// <param name="userId">user id</param>
-        /// <param name="businessId">business id</param>
-        /// <param name="status">ad status</param>
-        /// <returns>a list of ads with that params</returns>
-        [HttpGet]
-        [Route("")]
-        [HasRole(Role = UserRoles.REVIEWER)]
-        public ActionResult<IEnumerable<AdViewModel>> GetAdsByParams(
-            [FromQuery] int? userId,
-            int? businessId,
-            int? status
-        )
-        {
-            AdStatus? statusEnum = status != null ? (AdStatus)status : null;
-            var ads = adsService.GetAdsByParams(userId, businessId, statusEnum);
-
             // get all image urls of the ads
-            //var imageIds = ads.Where(ad => ad.ImageId != null)
-            //    .Select(ad => (int)ad.ImageId!)
-            //    .ToArray();
+            //var imageIds = ads.Select(ad => ad.ImageId).ToArray();
             //var images = await imagesService.GetImagesByIds(imageIds);
 
             //var imageDict = images.ToDictionary(img => img.Id, img => img.Url);
@@ -84,6 +60,59 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
 
             return Ok(ads);
         }
+
+        [HttpGet]
+        [Route("pending")]
+        [HasRole(Role = UserRoles.REVIEWER)]
+        public ActionResult<IEnumerable<AdViewModel>> GetPendingAds()
+        {
+            var ads = adsService.GetAdsByParams(
+                null,
+                null,
+                AdStatus.Pending,
+                Global.AD_DEFAULT_LIMIT
+            );
+
+            return Ok(ads);
+        }
+
+        /// <summary>
+        /// Get a list of ads by params (user id, business id, ad status)
+        /// </summary>
+        /// <param name="userId">user id</param>
+        /// <param name="businessId">business id</param>
+        /// <param name="status">ad status</param>
+        /// <returns>a list of ads with that params</returns>
+        //[HttpGet]
+        //[Route("")]
+        //[HasRole(Role = UserRoles.REVIEWER)]
+        //public ActionResult<IEnumerable<AdViewModel>> GetAdsByParams(
+        //    [FromQuery] int? userId,
+        //    int? businessId,
+        //    int? status
+        //)
+        //{
+        //    AdStatus? statusEnum = status != null ? (AdStatus)status : null;
+        //    var ads = adsService.GetAdsByParams(userId, businessId, statusEnum);
+
+        //    // get all image urls of the ads
+        //    //var imageIds = ads.Where(ad => ad.ImageId != null)
+        //    //    .Select(ad => (int)ad.ImageId!)
+        //    //    .ToArray();
+        //    //var images = await imagesService.GetImagesByIds(imageIds);
+
+        //    //var imageDict = images.ToDictionary(img => img.Id, img => img.Url);
+
+        //    //foreach (var ad in ads)
+        //    //{
+        //    //    if (imageDict.TryGetValue((int)ad.ImageId, out var imageUrl))
+        //    //    {
+        //    //        ad.Picture = imageUrl;
+        //    //    }
+        //    //}
+
+        //    return Ok(ads);
+        //}
 
         /// <summary>
         /// Get ad by id

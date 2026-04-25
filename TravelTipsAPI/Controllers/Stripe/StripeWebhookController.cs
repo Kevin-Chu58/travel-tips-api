@@ -8,11 +8,14 @@ namespace TravelTipsAPI.Controllers.Stripe
 {
     [Route("api/[controller]")]
     [IgnoreAntiforgeryToken]
-    public class StripeWebhookController(IStripeWebhooksService stripeWebhooksService)
-        : TravelTipsControllerBase
+    public class StripeWebhookController(
+        IConfiguration config,
+        IStripeWebhooksService stripeWebhooksService
+    ) : TravelTipsControllerBase
     {
         private readonly string _webhookSecret =
-            "whsec_49e137f14230b4b38cd624c02adb05d8320b4a437ebd63ce35d9c60bf5af9dec";
+            config["Stripe:Webhook"]
+            ?? throw new ArgumentException("Stripe:Webhook not configured");
 
         [HttpPost]
         [AllowAnonymous]

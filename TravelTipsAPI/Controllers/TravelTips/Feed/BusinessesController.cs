@@ -32,25 +32,6 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
         }
 
         /// <summary>
-        /// Get my non-pending businesses
-        /// </summary>
-        /// <returns>my non-pending businesses</returns>
-        //[HttpGet]
-        //[Route("my/non-pending")]
-        //[IsOwner(Resource = Resources.NONE)]
-        //public ActionResult<IEnumerable<BusinessViewModel>> GetMyNonPendingBusinesses()
-        //{
-        //    var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
-        //    var businesses = businessesService.GetBusinessesByParams(
-        //        userId,
-        //        null,
-        //        AdStatus.Pending
-        //    );
-        //    return Ok(businesses);
-        //}
-
-        /// <summary>
         /// Get a business by id
         /// </summary>
         /// <param name="id">business id</param>
@@ -69,25 +50,41 @@ namespace TravelTipsAPI.Controllers.TravelTips.Feed
             return Ok(result.First());
         }
 
+        [HttpGet]
+        [Route("pending")]
+        [HasRole(Role = UserRoles.REVIEWER)]
+        public async Task<ActionResult<IEnumerable<BusinessViewModel>>> GetPendingBusinesses()
+        {
+            var result = businessesService.GetBusinessesByParams(
+                null,
+                AdStatus.Pending,
+                null,
+                Global.BUSINESS_DEFAULT_LIMIT
+            );
+            //result = await AppendImagesToBusinessesAsync(result);
+
+            return Ok(result);
+        }
+
         /// <summary>
         /// Get businesses by params
         /// </summary>
         /// <returns>a list of businesses fits the params</returns>
-        [HttpGet]
-        [Route("")]
-        [HasRole(Role = UserRoles.REVIEWER)]
-        public async Task<ActionResult<IEnumerable<BusinessViewModel>>> GetBusinessesByParams(
-            [FromQuery] int? userId,
-            [FromQuery] int? status
-        )
-        {
-            AdStatus? statusEnum = status != null ? (AdStatus)status : null;
+        //[HttpGet]
+        //[Route("")]
+        //[HasRole(Role = UserRoles.REVIEWER)]
+        //public async Task<ActionResult<IEnumerable<BusinessViewModel>>> GetBusinessesByParams(
+        //    [FromQuery] int? userId,
+        //    [FromQuery] int? status
+        //)
+        //{
+        //    AdStatus? statusEnum = status != null ? (AdStatus)status : null;
 
-            var businesses = businessesService.GetBusinessesByParams(userId, statusEnum);
-            var result = await AppendImagesToBusinessesAsync(businesses);
+        //    var businesses = businessesService.GetBusinessesByParams(userId, statusEnum);
+        //    var result = await AppendImagesToBusinessesAsync(businesses);
 
-            return Ok(result);
-        }
+        //    return Ok(result);
+        //}
 
         /// <summary>
         /// Create new business in pending status

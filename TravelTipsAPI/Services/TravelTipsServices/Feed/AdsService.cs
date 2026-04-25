@@ -48,7 +48,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         public IEnumerable<AdViewModel> GetAdsByParams(
             int? userId = null,
             int? businessId = null,
-            AdEnum.AdStatus? status = null
+            AdEnum.AdStatus? status = null,
+            int? limit = null
         )
         {
             if (userId == null && businessId == null && status == null)
@@ -70,6 +71,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             {
                 var statusStr = GetAdStatusStr(status);
                 query = query.Where(ad => ad.Status == statusStr);
+            }
+
+            if (limit.HasValue)
+            {
+                query = query.Take(limit.Value);
             }
 
             return query.Select(ad => (AdViewModel)ad).ToList();
@@ -200,6 +206,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             ad.LinkLabel = adPatch.LinkLabel ?? ad.LinkLabel;
             ad.Link = adPatch.Link ?? ad.Link;
             ad.TemplateId = adPatch.TemplateId ?? ad.TemplateId;
+            ad.Status = GetAdStatusStr(AdStatus.Pending)!;
 
             await context.SaveChangesAsync();
 

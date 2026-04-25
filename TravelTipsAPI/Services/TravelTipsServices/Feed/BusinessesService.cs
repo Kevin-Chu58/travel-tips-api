@@ -38,7 +38,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
         public IEnumerable<BusinessViewModel> GetBusinessesByParams(
             int? userId = null,
             AdStatus? status = null,
-            AdStatus? excludeStatus = null
+            AdStatus? excludeStatus = null,
+            int? limit = null
         )
         {
             if (userId == null && status == null)
@@ -62,6 +63,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Feed
             {
                 var excludeStatusStr = GetAdStatusStr(excludeStatus);
                 query = query.Where(b => b.Status != excludeStatusStr);
+            }
+
+            if (limit.HasValue)
+            {
+                query = query.Take(limit.Value);
             }
 
             return query.Select(b => (BusinessViewModel)b).ToList();

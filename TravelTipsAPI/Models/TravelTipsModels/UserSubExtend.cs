@@ -9,11 +9,11 @@ public partial class UserSubExtend
 
     public DateTimeOffset? CycleStart { get; set; }
 
+    public int? MonthIndex { get; set; }
+
     public int PdfDownloadCount { get; set; }
 
     public int TripCount { get; set; }
-
-    public int? MonthIndex { get; set; }
 
     public int MaxPdfDownloadCount { get; set; }
 

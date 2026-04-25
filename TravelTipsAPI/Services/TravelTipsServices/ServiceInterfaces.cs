@@ -391,7 +391,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<BusinessViewModel> GetBusinessesByParams(
                 int? userId = null,
                 AdStatus? status = null,
-                AdStatus? excludeStatus = null
+                AdStatus? excludeStatus = null,
+                int? limit = null
             );
             Task<BusinessViewModel> PostNewBusiness(
                 BusinessPostViewModel postViewModel,
@@ -414,7 +415,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             IEnumerable<AdViewModel> GetAdsByParams(
                 int? userId = null,
                 int? businessId = null,
-                AdStatus? status = null
+                AdStatus? status = null,
+                int? limit = null
             );
             Ad? GetAdFeed(List<(string TargetType, string TargetValue)> targets);
             Task<AdViewModel> PostNewAd(AdPostViewModel postViewModel, int userId, int businessId);
@@ -444,7 +446,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             AdTarget? FindAdTargetByParams(int adId, string targetType, string? targetValue);
             IEnumerable<AdTargetViewModel> GetAdTargetsByAdId(int adId);
             int GetWeightsByAdId(int adId);
-            AdTargetAnalytics GetAdTargetRanking(AdTarget adTarget);
+            AdTargetAnalysis GetAdTargetRanking(AdTarget adTarget);
             Task PostNewAdTarget(AdTargetPostViewModel postViewModel, int adId);
             Task UpdateAdTarget(AdTarget adTarget, StripeAdWeightRequest request);
             Task<int> SetAdTargetAsPrimary(AdTarget adTarget);
