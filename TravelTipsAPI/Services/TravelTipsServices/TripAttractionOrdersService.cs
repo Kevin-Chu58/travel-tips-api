@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.HereMap;
@@ -395,30 +396,6 @@ public class TripAttractionOrdersService(
     }
 
     /// <summary>
-    /// Delete a list of taos by day id
-    /// </summary>
-    /// <param name="dayId">day id</param>
-    /// <returns></returns>
-    public async Task<int> DeleteTaosByDayId(int dayId)
-    {
-        using var tx = await context.Database.BeginTransactionAsync();
-
-        var taos = context.TripAttractionOrders.Where(tao => tao.DayId == dayId).ToList();
-        var oldHighlightIds = taos.Select(tao => tao.HighlightId).ToList();
-
-        context.TripAttractionOrders.RemoveRange(taos);
-
-        oldHighlightIds.ForEach(async id =>
-            await highlightsService.UpdateHighlightUsageCountAsync(id, null)
-        );
-
-        await context.SaveChangesAsync();
-        await tx.CommitAsync();
-
-        return taos.Count;
-    }
-
-    /// <summary>
     /// Check if time is aligned to a 15-minute interval
     /// </summary>
     /// <param name="time">start/end time</param>
@@ -479,5 +456,29 @@ public class TripAttractionOrdersService(
             IsPrivate = tao.IsPrivate,
         };
         return taoViewModel;
+    }
+
+    // subscriptions
+
+    /// <summary>
+    /// Check if a user can modify an tao based on max trip count in their subscription
+    /// </summary>
+    /// <param name="taoId">tao id</param>
+    /// <param name="userId">user id</param>
+    /// <returns>whether user can modify the tao</returns>
+    public bool CanUserEditTao(int taoId, int userId)
+    {
+        var maxTripCount = context
+            .UserSubExtends.Where(use => use.UserId == userId)
+            .Select(use => use.MaxTripCount)
+            .FirstOrDefault();
+
+        // only check the most recent maxTripCount trips due to subsctipion status
+        return context
+            .Trips.Where(t => t.CreatedBy == userId)
+            .OrderByDescending(t => t.CreatedAt)
+            .ThenByDescending(t => t.Id)
+            .Take(maxTripCount)
+            .Any(t => t.Days.Any(d => d.TripAttractionOrders.Any(tao => tao.Id == taoId)));
     }
 }

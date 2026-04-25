@@ -3,14 +3,17 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using TravelTipsAPI.BackgroundServices;
+using TravelTipsAPI.BackgroundWorkers;
 using TravelTipsAPI.Clients;
+using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.HereMapServices;
 using TravelTipsAPI.Middleware;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Services.Auth0Services;
 using TravelTipsAPI.Services.AzureKeyVaultServices;
+using TravelTipsAPI.Services.BackgroundServices;
+using TravelTipsAPI.Services.StripeServices;
 using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.Services.WikiCommonsServices;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
@@ -26,7 +29,7 @@ builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
     //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
-// Add authentication to the container.
+// Add authentication to the container
 
 builder
     .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -44,7 +47,17 @@ builder
     });
 
 // Add Controllers
-builder.Services.AddControllers();
+builder
+    .Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System
+            .Text
+            .Json
+            .Serialization
+            .ReferenceHandler
+            .IgnoreCycles;
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -55,10 +68,11 @@ builder.Services.AddSwaggerGen(c =>
         new OpenApiInfo
         {
             Title = "TravelTips API",
-            Version = "v0.8",
+            Version = "v1.0",
             Description = "Updated version of TravelTips API",
         }
     );
+    c.CustomSchemaIds(type => type.FullName);
 });
 
 // Add Services
@@ -66,11 +80,14 @@ builder.Services.AddServices();
 builder.Services.AddAuth0Services();
 builder.Services.AddHereMapServices();
 builder.Services.AddWikiCommonsServices();
+builder.Services.AddStripeServices();
+builder.Services.AddBackgroundWorkerServices();
 
 // Add Background Services
-builder.Services.AddHostedService<HighlightUsageRebuildService>();
-builder.Services.AddHostedService<TripBookmarkRebuildService>();
-builder.Services.AddHostedService<UserFollowRebuildService>();
+builder.Services.AddHostedService<HighlightUsageRebuildWorker>();
+builder.Services.AddHostedService<TripBookmarkRebuildWorker>();
+builder.Services.AddHostedService<TripCountRebuildWorker>();
+builder.Services.AddHostedService<UserFollowRebuildWorker>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];
@@ -103,10 +120,7 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins(
-                    "https://travel-tips-ui-us-west-g2cxbjaydqejh0af.westus-01.azurewebsites.net",
-                    "http://localhost:5173"
-                )
+                .WithOrigins(Global.URL_PRODUCTION, Global.URL_LOCALHOST)
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }

@@ -1,11 +1,16 @@
-﻿using OpenAI.Batch;
+﻿using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_feed;
 using TravelTipsAPI.ViewModels.db_gospel;
 using TravelTipsAPI.ViewModels.db_image;
+using TravelTipsAPI.ViewModels.db_plan;
 using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
+using TravelTipsAPI.ViewModels.Stripe;
+using static TravelTipsAPI.Constants.Enums.AdEnum;
+using static TravelTipsAPI.Constants.Enums.ImageEnum;
+using static TravelTipsAPI.Constants.Enums.StripeEnum;
 using static TravelTipsAPI.Constants.OrderBy.HighlightOrderBy;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -18,6 +23,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             RegionViewModel GetRegionById(int id);
             RegionViewModel GetRegionByName(string name);
+            IEnumerable<int> GetRegionParentIds(int regionId);
             IEnumerable<RegionViewModel> GetRegionsByParams(
                 string type,
                 string? name = null,
@@ -67,9 +73,14 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? limit = null
             );
             User? GetUserByUserId(string userId);
-            Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(IEnumerable<User> users);
-            Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users);
-            Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel newUser);
+            User? GetUserByStripeCustomerId(string stripeCustomerId);
+            Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(
+                IEnumerable<User> users,
+                bool showPicture = true
+            );
+            Task<UserViewModel> GetUserViewModelById(int id);
+            Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel user);
+            Task RemoveUserStripeCustomerId(int id);
             Task<bool> AcceptUserAgreementAsync(int id);
 
             // user profile
@@ -83,16 +94,36 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task UnfollowAsync(int followedId, int followingId);
         }
 
+        public interface IUserExtendsService
+        {
+            UserSubExtend FindUserSubExtendByUserId(int userId);
+            Task<UserSubExtend> GetUpdatedUserSubExtendByUserId(int userId);
+            Task<UserSubExtend> UpdateSubExtendCycle(
+                UserSubExtend userSubExtend,
+                DateTimeOffset? subStart,
+                int? monthIndex,
+                SubscriptionEnum? subscription = null
+            );
+            Task UpdateSubExtendNewTripPdf(UserSubExtend userSubExtend);
+            Task UpdateSubExtendTripCount(UserSubExtend userSubExtend, int increment);
+        }
+
         public interface ITripsService
         {
             Trip? FindTripByParams(int? id = null, int? dayId = null, bool? isPublic = null);
-            Task<TripViewModel?> GetTripById(int id, int? userId = null, bool isRestricted = false);
+            Task<TripViewModel?> GetTripById(
+                int id,
+                int? userId = null,
+                bool isRestricted = false,
+                bool isMy = false
+            );
             Task<TripViewModel> GetTripViewModel(
                 Trip trip,
                 int? userId = null,
                 IEnumerable<UserSimpleViewModel>? users = null,
                 Dictionary<int, int>? dayCounts = null,
-                bool isRestricted = false
+                bool isRestricted = false,
+                IEnumerable<int>? editableTripIds = null
             );
             IEnumerable<int> GetMyTripIds(int id);
             Task<IEnumerable<TripViewModel>> GetTripsByParams(
@@ -107,7 +138,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 bool isRestricted = false,
                 TripCursor? cursor = null,
                 TripOrderByEnum? tripOrderByEnum = null,
-                int? limit = null
+                int? limit = null,
+                bool isMy = false
             );
             Task<TripViewModel> PostNewTripAsync(int createBy, string name);
             Task<TripPatchViewModel> PatchTripAsync(Trip trip, TripPatchViewModel tripPatch);
@@ -115,11 +147,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<List<int>> UpdateIsHiddenAsync(int[] tripIds, bool isHidden);
             Task<RegionCompleteViewModel> UpdateRegionAsync(Trip trip, int? regionId);
             Task<int> UpdateBudgetAsync(Trip trip, int? budget);
+            Task<int> DeleteTripAsync(Trip trip);
             bool IsOwnerList(int id, int[] tripIds);
 
             // bookmarks
             Task BookmarkAsync(int userId, int tripId);
             Task UnbookmarkAsync(int userId, int tripId);
+
+            // subscirptions
+            IEnumerable<int> GetEditableTripIds(int userId);
+            bool CanUserEditTrip(int tripId, int userId);
         }
 
         public interface ITripSharesService
@@ -142,6 +179,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<DayViewModel> PostNewDayAsync(int createdBy, int tripId);
             Task<DayViewModel> PatchDayAsync(Day day, DayPatchViewModel dayPatch);
             Task<DayViewModel> DeleteDay(Day day);
+
+            // subscriptions
+            bool CanUserEditDay(int dayId, int userId);
         }
 
         public interface IAttractionsService
@@ -212,7 +252,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             HereRoutingInput? GetHereRoutingInputByTaoId(int taoId, bool isRestricted = false);
             IEnumerable<HereRouting> GetAttractionRoutingsByDayId(
-                int dayIdbool,
+                int dayId,
                 bool isRestricted = false
             );
             Task<int> PostTao(TripAttractionOrderPostViewModel newTao, int userId);
@@ -220,9 +260,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task<int> PatchTaoDetachHighlight(TripAttractionOrder tao);
             Task<bool> PatchTaoSetPrivate(TripAttractionOrder tao, bool isPrivate);
             Task<int> DeleteTaoById(TripAttractionOrder tao);
-            Task<int> DeleteTaosByDayId(int dayId);
             void IsTimeValid(TimeOnly time);
             void IsTaoConflicted(TimeOnly start, TimeOnly end, int dayId, int taoId = 0);
+
+            // subscriptions
+            bool CanUserEditTao(int taoId, int userId);
         }
     }
 
@@ -233,6 +275,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             bool IsAdmin(int userId);
             bool IsWriter(int userId);
             bool IsBannerMan(int userId);
+            bool IsReviewer(int userId);
+
+            // subscriptions
+            bool IsUserMember(int userId);
         }
     }
 
@@ -242,17 +288,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             Image? FindImageById(int id);
             Image? FindImageAndBannerCountById(out int bannerCount, int id);
+            Image? FindImageAndBusinessCountById(out int businessCount, int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByTripId(int id);
             IEnumerable<int> GetImageIdsByUserId(int id);
             IEnumerable<int> GetBannerImageIds();
             Task<ImageViewModel> PostNewImageAsync(
-                Stream stream,
-                string contentType,
+                IFormFile file,
                 int userId,
                 string? name,
-                bool isBanner = false
+                ImageType? type
             );
+            Task<ImageViewModel> OverwriteImageAsync(Image image, IFormFile file);
             Task<byte[]> DownloadImageAsync(int userId, Guid guid);
             Task UpdateImageName(Image image, string newName);
             Task<ImageRelationViewModel> AttachImageToTrip(int imageId, int tripId);
@@ -335,6 +382,126 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 BannerStylingPatchViewModel bannerStylingPatch
             );
             bool ValidateStyling(string? styling);
+        }
+
+        public interface IBusinessesService
+        {
+            Business? FindBusinessById(int businessId);
+            IEnumerable<int> GetMyBusinesses(int userId);
+            IEnumerable<BusinessViewModel> GetBusinessesByParams(
+                int? userId = null,
+                AdStatus? status = null,
+                AdStatus? excludeStatus = null,
+                int? limit = null
+            );
+            Task<BusinessViewModel> PostNewBusiness(
+                BusinessPostViewModel postViewModel,
+                int userId
+            );
+            Task<BusinessViewModel> UpdateBusiness(
+                Business business,
+                BusinessPatchViewModel businessPatch
+            );
+            Task RemoveBusinessImage(Business business);
+            Task<string> UpdateBusinessActiveStatus(Business business, bool isActive);
+            Task<string> UpdateBusinessStatus(Business business, AdStatus status);
+        }
+
+        public interface IAdsService
+        {
+            Ad? FindAdById(int adId);
+            AdViewModel GetAdById(int adId);
+            IEnumerable<int> GetMyAds(int userId);
+            IEnumerable<AdViewModel> GetAdsByParams(
+                int? userId = null,
+                int? businessId = null,
+                AdStatus? status = null,
+                int? limit = null
+            );
+            Ad? GetAdFeed(List<(string TargetType, string TargetValue)> targets);
+            Task<AdViewModel> PostNewAd(AdPostViewModel postViewModel, int userId, int businessId);
+            Task<AdViewModel> UpdateAd(Ad ad, AdPatchViewModel adPatch);
+            Task<string> UpdateAdActiveStatus(Ad ad, bool isActive);
+            Task<string> UpdateAdStatus(Ad ad, AdStatus status, string? reason = null);
+            Task UpdateAdStripeSubInfo(Ad ad, string stripeSubId, string stripeItemId);
+            Task UpdateAdStripeSubStatus(Ad ad, string subStatus);
+
+            // ad sub logs
+
+            IEnumerable<AdSubLogViewModel> GetAdSubLogsByAdIdWithCursor(
+                int adId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            Task PostNewAdSubLog(int adId, string note, int? oldValue, int? newValue);
+
+            // subscription status
+
+            Task UpdateAdSubscriptionRenewal(Ad ad, bool renewSub);
+        }
+
+        public interface IAdTargetsService
+        {
+            AdTarget? FindAdTargetById(int adTargetId);
+            AdTarget? FindAdTargetByParams(int adId, string targetType, string? targetValue);
+            IEnumerable<AdTargetViewModel> GetAdTargetsByAdId(int adId);
+            int GetWeightsByAdId(int adId);
+            AdTargetAnalysis GetAdTargetRanking(AdTarget adTarget);
+            Task PostNewAdTarget(AdTargetPostViewModel postViewModel, int adId);
+            Task UpdateAdTarget(AdTarget adTarget, StripeAdWeightRequest request);
+            Task<int> SetAdTargetAsPrimary(AdTarget adTarget);
+            Task DeleteAdTarget(AdTarget adTarget);
+            Task UpdateAdTargetCycleByAdId(int adId);
+        }
+
+        public interface ITargetRulesService
+        {
+            TargetRule? FindTargetRuleById(int targetRuleId);
+            IEnumerable<TargetRuleViewModel> GetTargetRulesByType(AdTargetEnum.AdTarget targetType);
+            TargetRuleViewModel? GetTargetRule(string targetTypeStr, string? targetValue);
+            Task<TargetRuleViewModel> PostNewTargetRule(
+                AdTargetEnum.AdTarget targetType,
+                string? targetValue,
+                int MinWeight
+            );
+            Task<TargetRuleViewModel> UpdateTargetRule(
+                TargetRule targetRule,
+                AdTargetEnum.AdTarget? targetType = null,
+                string? targetValue = null,
+                int? minWeight = null
+            );
+            Task<int> DeleteTargetRule(TargetRule targetRule);
+        }
+    }
+
+    public class PlanSchema
+    {
+        public interface ISubscriptionsService
+        {
+            Subscription? FindLastSubscriptionByUserId(int userId);
+            Subscription? FindActiveSubscriptionByUserId(int userId);
+            Subscription? FindSubscriptionByStripeSubId(string stripeSubId);
+            SubscriptionViewModel? GetActiveSubscriptionByUserId(int userId);
+            IEnumerable<SubscriptionViewModel> GetSubscriptionsByUserIdWithCursor(
+                int userId,
+                GeneralCursor? cursor = null,
+                int? limit = null
+            );
+            Task AddSubscription(SubscriptionPostViewModel newSubscription);
+            Task UpdateSubscription(
+                Subscription subscription,
+                SubscriptionPatchViewModel subscriptionPatch
+            );
+            Task ExpireActiveSubscriptionByUserId(int userId);
+        }
+    }
+
+    public class RecordsSchema
+    {
+        public interface IProcessedStripeEventsService
+        {
+            bool DoesProcessedEventExist(string stripeEventId);
+            Task AddProcessedEvent(string stripeEventId);
         }
     }
 }

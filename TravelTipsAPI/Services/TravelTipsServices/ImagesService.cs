@@ -7,6 +7,7 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Firebase;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_image;
+using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 
@@ -38,6 +39,20 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 .FirstOrDefault();
 
             bannerCount = result?.Count ?? 0;
+
+            return result?.Image;
+        }
+
+        public Image? FindImageAndBusinessCountById(out int businessCount, int id)
+        {
+            var result = context
+                .Images.AsNoTracking()
+                .Include(i => i.Businesses)
+                .Where(i => i.Id == id)
+                .Select(i => new { Image = i, i.Businesses.Count })
+                .FirstOrDefault();
+
+            businessCount = result?.Count ?? 0;
 
             return result?.Image;
         }
@@ -123,7 +138,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         public IEnumerable<int> GetImageIdsByUserId(int id)
         {
             var imageIds = context
-                .Images.Where(i => i.CreatedBy == id && !i.IsBanner)
+                .Images.Where(i => i.CreatedBy == id && i.Type == null)
                 .Select(i => i.Id)
                 .ToList();
 
@@ -132,7 +147,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public IEnumerable<int> GetBannerImageIds()
         {
-            var imageIds = context.Images.Where(i => i.IsBanner).Select(i => i.Id).ToList();
+            var imageIds = context.Images.Where(i => i.Type == "banner").Select(i => i.Id).ToList();
             return imageIds;
         }
 
@@ -154,22 +169,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <summary>
         /// Post new image by uploading to Firebase storage and storing the file path
         /// </summary>
-        /// <param name="stream">image data stream</param>
-        /// <param name="contentType">image content type</param>
+        /// <param name="file">image blob file</param>
         /// <param name="userId">user id</param>
         /// <param name="name">image file name</param>
-        /// <param name="isBanner">whether the image is in banners</param>
+        /// <param name="type">image type</param>
         /// <returns>the posted image</returns>
         public async Task<ImageViewModel> PostNewImageAsync(
-            Stream stream,
-            string contentType,
+            IFormFile file,
             int userId,
             string? name,
-            bool isBanner = false
+            ImageType? type
         )
         {
+            if (file == null || file.Length == 0)
+                throw new Exception(Messages.ImageNoFileUpload);
+
             try
             {
+                using var stream = file.OpenReadStream();
+                var contentType = file.ContentType;
+
                 if (stream == null || stream.Length == 0)
                     throw new ArgumentException(Messages.ImageStreamEmpty);
 
@@ -189,7 +208,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     Guid = guid,
                     Name = name,
                     CreatedBy = userId,
-                    IsBanner = isBanner,
+                    Type = GetImageTypeStr(type),
                 };
 
                 context.Images.Add(newImage);
@@ -202,6 +221,45 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
+            }
+        }
+
+        public async Task<ImageViewModel> OverwriteImageAsync(Image image, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                throw new Exception(Messages.ImageNoFileUpload);
+
+            try
+            {
+                using var newStream = file.OpenReadStream();
+                var contentType = file.ContentType;
+
+                if (newStream == null || newStream.Length == 0)
+                    throw new ArgumentException(Messages.ImageStreamEmpty);
+
+                // Reconstruct the exact filename and path used in the original upload
+                string fileName = $"{image.Guid}{GetExtensionFromContentType(contentType)}";
+                string storagePath = $"{image.CreatedBy}/{fileName}";
+
+                // Uploading to the same path will overwrite the existing file in Firebase
+                await uploader.UploadFileAsync(
+                    newStream,
+                    contentType,
+                    config["Firebase:BucketName"]!,
+                    storagePath
+                );
+
+                // Invalidate the cache for this image
+                var cacheKey = GetImageUpstashKey(image.Id);
+                await cache.DeleteKeyAsync(cacheKey);
+
+                var newImageViewModel = await GenerateNewImageAsync(image: image);
+
+                return newImageViewModel;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Failed to overwrite image: {ex.Message}");
             }
         }
 
@@ -273,22 +331,21 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public async Task DeleteImageAsync(Image image)
         {
-            var tripImages = context
-                .TripImages.Where(tripImage => tripImage.ImageId == image.Id)
-                .ToList();
+            var imageId = image.Id;
+            Guid imageGuid = image.Guid;
+            var createdBy = image.CreatedBy;
 
-            context.TripImages.RemoveRange(tripImages);
             context.Images.Remove(image);
             await context.SaveChangesAsync();
 
-            string fileName = $"{image.Guid}{GetExtensionFromContentType("image/jpeg")}";
+            string fileName = $"{imageGuid}{GetExtensionFromContentType("image/jpeg")}";
 
             await uploader.DeleteFileAsync(
                 config["Firebase:BucketName"]!,
-                $"{image.CreatedBy}/{fileName}"
+                $"{createdBy}/{fileName}"
             );
 
-            var key = GetImageUpstashKey(image.Id);
+            var key = GetImageUpstashKey(imageId);
             await cache.DeleteKeyAsync(key);
         }
 

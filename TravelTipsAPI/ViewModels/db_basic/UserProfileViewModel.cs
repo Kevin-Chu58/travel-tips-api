@@ -10,6 +10,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public string? Picture { get; set; }
         public bool? IsAdmin { get; set; }
         public bool? IsWriter { get; set; }
+        public bool? IsBannerMan { get; set; }
 
         // stats
         public int FollowerCount { get; set; }

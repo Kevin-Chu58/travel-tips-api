@@ -1,5 +1,4 @@
-﻿using System.Reflection.Metadata.Ecma335;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
@@ -7,7 +6,6 @@ using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
-using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
@@ -20,7 +18,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
     public class UsersService(
         TravelTipsContext context,
         IFollowersService followersService,
-        IUserRolesService userRolesService,
         IImagesService imagesService
     ) : IUsersService
     {
@@ -98,13 +95,23 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             return user;
         }
 
+        public User? GetUserByStripeCustomerId(string stripeCustomerId)
+        {
+            var user = context.Users.FirstOrDefault(user =>
+                user.StripeCustomerId == stripeCustomerId
+            );
+            return user;
+        }
+
         /// <summary>
         /// Get a list of user simple view models
         /// </summary>
         /// <param name="users">users</param>
+        /// <param name="showPicture">whether to show picture</param>
         /// <returns>a list of user simple view models</returns>
         public async Task<IEnumerable<UserSimpleViewModel>> GetUserSimpleViewModels(
-            IEnumerable<User> users
+            IEnumerable<User> users,
+            bool showPicture = true
         )
         {
             var userList = users.ToList();
@@ -118,7 +125,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             // Fetch images in one call (important for performance)
             var images =
-                imageIds.Count != 0
+                showPicture && imageIds.Count != 0
                     ? (await imagesService.GetImagesByIds([.. imageIds])).ToDictionary(i => i.Id)
                     : [];
 
@@ -131,50 +138,65 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     Id = user.Id,
                     UserId = user.UserId,
                     Username = user.Username ?? "",
-                    Picture = image?.Url ?? user.ExternalImageUrl,
+                    Picture = showPicture ? (image?.Url ?? user.ExternalImageUrl) : null,
                 };
             });
         }
 
         /// <summary>
-        /// Get a list of user view models
+        /// Get a user view model by id
         /// </summary>
-        /// <param name="users">users</param>
-        /// <returns>a list of user view models</returns>
-        public async Task<IEnumerable<UserViewModel>> GetUserViewModels(IEnumerable<User> users)
+        /// <param name="id">user id</param>
+        /// <returns>the user view model with the id</returns>
+        public async Task<UserViewModel> GetUserViewModelById(int id)
         {
-            var userList = users.ToList();
-
-            // Collect all imageIds we need
-            var imageIds = userList
-                .Where(u => u.ImageId != null)
-                .Select(u => u.ImageId!.Value)
-                .Distinct()
-                .ToList();
-
-            // Fetch images in one call (important for performance)
-            var images =
-                imageIds.Count != 0
-                    ? (await imagesService.GetImagesByIds([.. imageIds])).ToDictionary(i => i.Id)
-                    : [];
-
-            return userList.Select(user =>
-            {
-                images.TryGetValue(user.ImageId ?? -1, out var image);
-
-                return new UserViewModel
+            var user = await context
+                .Users.Where(u => u.Id == id)
+                .Select(u => new
                 {
-                    Id = user.Id,
-                    UserId = user.UserId,
-                    Username = user.Username ?? "",
-                    Picture = image?.Url ?? user.ExternalImageUrl,
-                    Email = user.Email,
-                    UserAgreement = user.UserAgreement,
-                    EmailVerified = user.EmailVerified,
-                    IsAdmin = userRolesService.IsAdmin(user.Id),
-                    IsWriter = userRolesService.IsWriter(user.Id),
-                };
-            });
+                    u.Id,
+                    u.UserId,
+                    u.Username,
+                    u.Email,
+                    u.UserAgreement,
+                    u.EmailVerified,
+                    IsAdmin = u.Admin != null,
+                    IsWriter = u.Writer != null,
+                    IsBannerMan = u.BannerMan != null,
+                    IsReviewer = u.Reviewer != null,
+                    u.ImageId,
+                    u.ExternalImageUrl,
+                    u.RenewSubscription,
+                    u.StripeCustomerId,
+                    u.UserSubExtend,
+                })
+                .SingleAsync();
+
+            // Fetch image in one call (important for performance)
+            var image =
+                user.ImageId != null
+                    ? (await imagesService.GetImagesByIds([user.ImageId.Value])).FirstOrDefault()
+                    : null;
+
+            var picture = image?.Url ?? user.ExternalImageUrl;
+
+            return new UserViewModel
+            {
+                Id = user.Id,
+                UserId = user.UserId,
+                Username = user.Username ?? "",
+                Picture = image?.Url ?? user.ExternalImageUrl,
+                Email = user.Email,
+                UserAgreement = user.UserAgreement,
+                EmailVerified = user.EmailVerified,
+                IsAdmin = user.IsAdmin,
+                IsWriter = user.IsWriter,
+                IsBannerMan = user.IsBannerMan,
+                IsReviewer = user.IsReviewer,
+                RenewSubscription = user.RenewSubscription,
+                StripeCustomerId = user.StripeCustomerId,
+                UserSubExtend = (UserSubExtendViewModel)user.UserSubExtend,
+            };
         }
 
         /// <summary>
@@ -193,9 +215,27 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             user.Email = userPatchViewModel.Email ?? user.Email;
             user.Username = userPatchViewModel.Username ?? user.Username;
 
+            // stripe settings
+            user.RenewSubscription = userPatchViewModel.RenewSubscription ?? user.RenewSubscription;
+            user.StripeCustomerId = userPatchViewModel.StripeCustomerId ?? user.StripeCustomerId;
+            user.StripeCurrency = userPatchViewModel.StripeCurrency ?? user.StripeCurrency;
+
             await context.SaveChangesAsync();
 
-            return (UserViewModel)user;
+            return await GetUserViewModelById(id);
+        }
+
+        /// <summary>
+        /// Remove the user stripe customer id
+        /// </summary>
+        /// <param name="id">user id</param>
+        /// <returns></returns>
+        public async Task RemoveUserStripeCustomerId(int id)
+        {
+            var user = context.Users.Find(id) ?? throw new Exception(Messages.UserNotFound);
+
+            user.StripeCustomerId = null;
+            await context.SaveChangesAsync();
         }
 
         /// <summary>
@@ -230,6 +270,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     u.Username,
                     IsAdmin = u.Admin != null,
                     IsWriter = u.Writer != null,
+                    IsBannerMan = u.BannerMan != null,
                     NumTrips = u
                         .Trips.Where(t => t.IsPublic == true && t.IsHidden == false)
                         .Count(),

@@ -49,18 +49,22 @@ namespace TravelTipsAPI.Middleware
 
                     if (user == null)
                     {
-                        db.Users.Add(
-                            new User
-                            {
-                                UserId = auth0Id,
-                                Username = name ?? "",
-                                Email = email ?? "",
-                                ExternalImageUrl = picture ?? "",
-                                EmailVerified = emailVerified,
-                            }
-                        );
+                        var newUser = new User
+                        {
+                            UserId = auth0Id,
+                            Username = name ?? "",
+                            Email = email ?? "",
+                            ExternalImageUrl = picture ?? "",
+                            EmailVerified = emailVerified,
+                            UserSubExtend = new UserSubExtend(),
+                        };
+
+                        db.Users.Add(newUser);
 
                         await db.SaveChangesAsync();
+
+                        context.Items["user_id"] = user?.Id;
+                        context.Items["email_verified"] = emailVerified;
                     }
                     else
                     {

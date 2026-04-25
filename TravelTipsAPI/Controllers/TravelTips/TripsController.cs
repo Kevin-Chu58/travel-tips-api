@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
@@ -24,9 +25,11 @@ namespace TravelTipsAPI.Controllers.TravelTips
     /// <param name="taosService">trip attraction orders service</param>
     [Route("api/[controller]")]
     public class TripsController(
+        TravelTipsContext context,
         IRegionsService regionsService,
         IBookmarksService bookmarksService,
         IUsersService usersService,
+        IUserExtendsService userExtendsService,
         ITripsService tripsService,
         ITripSharesService tripSharesService,
         ITripAttractionOrdersService taosService,
@@ -150,7 +153,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}")]
         //[AllowAnonymous]
-        //
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
@@ -199,7 +201,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 userId,
                 createdBy: userId,
                 isHidden: false,
-                isRestricted: true
+                isRestricted: true,
+                isMy: true
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);
@@ -221,7 +224,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 createdBy: userId,
                 isPublic: false,
                 isHidden: true,
-                isRestricted: true
+                isRestricted: true,
+                isMy: true
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
             return Ok(myTripViewModels);
@@ -281,7 +285,6 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("{id}/day-overview")]
         //[AllowAnonymous]
-        //
         [IsOwner(Resource = Resources.NONE)] // requires login as personal project
         public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
         {
@@ -318,8 +321,32 @@ namespace TravelTipsAPI.Controllers.TravelTips
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip.Title);
-            return Ok(tripViewModel);
+            try
+            {
+                var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
+                    userId
+                );
+
+                if (userSubExtend.TripCount >= userSubExtend.MaxTripCount)
+                    return BadRequest(Messages.MembershipRequired);
+
+                var tx = await context.Database.BeginTransactionAsync();
+
+                // create the new trip if max trip count is not reached,
+                // and update the user's trip count in user sub extend
+                var tripViewModel = await tripsService.PostNewTripAsync(userId, newTrip.Title);
+                tripViewModel.IsReadonly = false;
+
+                await userExtendsService.UpdateSubExtendTripCount(userSubExtend, 1);
+
+                await tx.CommitAsync();
+
+                return Ok(tripViewModel);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         /// <summary>
@@ -336,10 +363,15 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] TripPatchViewModel tripPatch
         )
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var trip = tripsService.FindTripByParams(id);
 
             if (trip is null)
                 return NotFound(Messages.TripNotFound);
+
+            var isEditable = tripsService.CanUserEditTrip(trip.Id, userId);
+            if (!isEditable)
+                return BadRequest(Messages.MembershipRequired);
 
             var tripPatchViewModel = await tripsService.PatchTripAsync(trip, tripPatch);
             return Ok(tripPatchViewModel);
@@ -364,9 +396,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             // verify is the owner of all trip ids
             var isOwnerList = tripsService.IsOwnerList(userId, tripIds);
             if (!isOwnerList)
-            {
                 return BadRequest(Messages.TripUnauthorized);
-            }
 
             var _tripIds = await tripsService.UpdateIsPublicAsync(tripIds, isPublic);
             return Ok(_tripIds);
@@ -391,9 +421,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             // verify is the owner of all trip ids
             var isOwnerList = tripsService.IsOwnerList(userId, tripIds);
             if (!isOwnerList)
-            {
                 return BadRequest(Messages.TripUnauthorized);
-            }
 
             var _tripIds = await tripsService.UpdateIsHiddenAsync(tripIds, isHidden);
             return Ok(_tripIds);
@@ -413,11 +441,17 @@ namespace TravelTipsAPI.Controllers.TravelTips
             [FromBody] int? regionId
         )
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
             try
             {
                 var trip = tripsService.FindTripByParams(id);
                 if (trip is null)
                     return NotFound(Messages.TripNotFound);
+
+                var isEditable = tripsService.CanUserEditTrip(trip.Id, userId);
+                if (!isEditable)
+                    return BadRequest(Messages.MembershipRequired);
 
                 var regionComplete = await tripsService.UpdateRegionAsync(trip, regionId);
 
@@ -440,15 +474,51 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<int>> UpdateTripBudget(int id, [FromBody] int? budget)
         {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             try
             {
                 var trip = tripsService.FindTripByParams(id);
                 if (trip is null)
                     return NotFound(Messages.TripNotFound);
 
+                var isEditable = tripsService.CanUserEditTrip(trip.Id, userId);
+                if (!isEditable)
+                    return BadRequest(Messages.MembershipRequired);
+
                 var newBudget = await tripsService.UpdateBudgetAsync(trip, budget);
 
                 return Ok(newBudget);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        [IsOwner(Resource = Resources.TRIPS)]
+        public async Task<ActionResult<int>> DeleteTripAsync(int id)
+        {
+            var trip = tripsService.FindTripByParams(id);
+            if (trip is null)
+                return NotFound(Messages.TripNotFound);
+
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+                var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
+                    userId
+                );
+
+                var tx = await context.Database.BeginTransactionAsync();
+
+                // delete the trip, and update the user's trip count in user sub extend
+                var tripId = await tripsService.DeleteTripAsync(trip);
+                await userExtendsService.UpdateSubExtendTripCount(userSubExtend, -1);
+
+                await tx.CommitAsync();
+                return Ok(tripId);
             }
             catch (Exception ex)
             {
@@ -492,6 +562,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>shared user information</returns>
         [HttpPost]
         [Route("{id}/share/{userAuthId}")]
+        [HasRole(Role = UserRoles.MEMBER)]
         [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<UserSimpleViewModel>> ShareTripWithUserAsync(
             int id,
@@ -533,6 +604,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>unshared user information</returns>
         [HttpDelete]
         [Route("{id}/unshare/{userAuthId}")]
+        [HasRole(Role = UserRoles.MEMBER)]
         [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<UserSimpleViewModel>> UnshareTripWithUserAsync(
             int id,
@@ -570,6 +642,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>the number of shared users removed</returns>
         [HttpDelete]
         [Route("{id}/unshare")]
+        [HasRole(Role = UserRoles.MEMBER)]
         [IsOwner(Resource = Resources.TRIPS)]
         public async Task<ActionResult<int>> UnshareTripWithAllAsync(int id)
         {

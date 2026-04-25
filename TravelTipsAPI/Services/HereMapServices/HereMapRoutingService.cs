@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using TravelTipsAPI.Clients;
 using TravelTipsAPI.Constants;
+using TravelTipsAPI.Constants.Enums;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.HereMap;

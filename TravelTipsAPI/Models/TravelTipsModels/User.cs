@@ -25,11 +25,21 @@ public partial class User
 
     public bool EmailVerified { get; set; }
 
+    public bool RenewSubscription { get; set; }
+
+    public string? StripeCustomerId { get; set; }
+
+    public string? StripeCurrency { get; set; }
+
     public virtual Admin? Admin { get; set; }
+
+    public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();
 
     public virtual BannerMan? BannerMan { get; set; }
 
     public virtual ICollection<Bookmark> Bookmarks { get; set; } = new List<Bookmark>();
+
+    public virtual ICollection<Business> Businesses { get; set; } = new List<Business>();
 
     public virtual ICollection<Day> Days { get; set; } = new List<Day>();
 
@@ -43,11 +53,17 @@ public partial class User
 
     public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 
+    public virtual Reviewer? Reviewer { get; set; }
+
+    public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();
 
     public virtual ICollection<TripShare> TripShares { get; set; } = new List<TripShare>();
 
     public virtual ICollection<Trip> Trips { get; set; } = new List<Trip>();
+
+    public virtual UserSubExtend? UserSubExtend { get; set; }
 
     public virtual Writer? Writer { get; set; }
 

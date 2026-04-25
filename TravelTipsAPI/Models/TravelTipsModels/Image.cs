@@ -13,9 +13,13 @@ public partial class Image
 
     public int CreatedBy { get; set; }
 
-    public bool IsBanner { get; set; }
+    public string? Type { get; set; }
+
+    public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();
 
     public virtual ICollection<Banner> Banners { get; set; } = new List<Banner>();
+
+    public virtual ICollection<Business> Businesses { get; set; } = new List<Business>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;
 

@@ -4,9 +4,10 @@ using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_search;
+using static TravelTipsAPI.Services.StripeServices.StripeSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
-using static TravelTipsAPI.Services.TravelTipsServices.RoleSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.PlanSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.Utils.ObjectUtils;
 using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
@@ -21,17 +22,48 @@ namespace TravelTipsAPI.Controllers.TravelTips
     public class UsersController(
         IFollowersService followersService,
         IUsersService usersService,
-        IUserRolesService userRolesService,
-        IImagesService imagesService
+        IUserExtendsService userExtendsService,
+        IImagesService imagesService,
+        ISubscriptionsService subscriptionsService,
+        IStripeService stripeService
     ) : TravelTipsControllerBase
     {
+        /// <summary>
+        /// Get user by id
+        /// </summary>
+        /// <param name="id">id</param>
+        /// <returns>user with the user id</returns>
+        [HttpGet]
+        [Route("{Id}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<UserViewModel>> GetUserById(
+            int id,
+            [FromQuery] bool showPicture = true
+        )
+        {
+            var user = usersService.GetUserById(id);
+
+            if (user is null)
+                return NotFound(Messages.UserNotFound);
+
+            try
+            {
+                var userSimples = await usersService.GetUserSimpleViewModels([user], showPicture);
+                return Ok(userSimples.First());
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
+
         /// <summary>
         /// Get user by userId
         /// </summary>
         /// <param name="userId">user id</param>
         /// <returns>user with the user id</returns>
         [HttpGet]
-        [Route("{userId}")]
+        [Route("userId/{userId}")]
         [AllowAnonymous]
         public async Task<ActionResult<UserSimpleViewModel>> GetUserByUserId(string userId)
         {
@@ -123,11 +155,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
             {
                 var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-                var user = usersService.GetUserById(userId);
-                var userViewModel = (await usersService.GetUserViewModels([user])).First();
-
-                userViewModel.IsAdmin = userRolesService.IsAdmin(userId);
-                userViewModel.IsWriter = userRolesService.IsWriter(userId);
+                var userViewModel = await usersService.GetUserViewModelById(userId);
 
                 return Ok(userViewModel);
             }
@@ -348,6 +376,116 @@ namespace TravelTipsAPI.Controllers.TravelTips
             catch (Exception ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        // subscription
+
+        [HttpPatch]
+        [Route("renewSubscription")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult> UpdateRenewSubscription([FromQuery] bool renewSubscription)
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+            var activeSubscription = subscriptionsService.GetActiveSubscriptionByUserId(userId);
+
+            try
+            {
+                if (activeSubscription != null)
+                {
+                    await stripeService.UpdateSubscriptionStatus(
+                        activeSubscription.StripeSubscriptionId,
+                        cancelSub: !renewSubscription
+                    );
+                }
+
+                await usersService.UpdateUserAsync(
+                    userId,
+                    new UserPatchViewModel { RenewSubscription = renewSubscription }
+                );
+                return Ok();
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    if (activeSubscription != null)
+                    {
+                        await stripeService.UpdateSubscriptionStatus(
+                            activeSubscription.StripeSubscriptionId,
+                            cancelSub: renewSubscription
+                        );
+                    }
+                    return Ok();
+                }
+                catch (Exception rollbackEx)
+                {
+                    // Log the rollback failure
+                    Console.WriteLine(
+                        $"Stripe renew subscription status rollback failed: {rollbackEx.Message}"
+                    );
+                    return BadRequest(rollbackEx.Message);
+                }
+            }
+        }
+
+        // subscription features
+
+        //[HttpGet]
+        //[Route("user-sub-extension")]
+        //[IsOwner(Resource = Resources.NONE)]
+        //public async Task<ActionResult<UserSubExtendViewModel>> GetUpdatedUserSubExtend()
+        //{
+        //    var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+        //    try
+        //    {
+        //        var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
+        //            userId
+        //        );
+
+        //        return Ok(userSubExtend);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return BadRequest(e.Message);
+        //    }
+        //}
+
+        [HttpGet]
+        [Route("me/member")]
+        [HasRole(Role = UserRoles.MEMBER)]
+        public ActionResult IsMember()
+        {
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("generate-pdf")]
+        [HasRole(Role = UserRoles.MEMBER)]
+        public async Task<ActionResult> GeneratePdf()
+        {
+            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            try
+            {
+                var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
+                    userId
+                );
+
+                if (userSubExtend == null)
+                    return BadRequest(Messages.UserSubExtendNotFound);
+
+                if (userSubExtend.PdfDownloadCount >= userSubExtend.MaxPdfDownloadCount)
+                    return BadRequest(Messages.MonthlyPdfGenerationLimitReached);
+
+                await userExtendsService.UpdateSubExtendNewTripPdf(userSubExtend);
+
+                return Ok();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
     }

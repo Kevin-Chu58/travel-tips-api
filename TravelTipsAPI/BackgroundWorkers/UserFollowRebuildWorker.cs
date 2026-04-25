@@ -1,16 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TravelTipsAPI.Models.TravelTipsModels;
 
-namespace TravelTipsAPI.BackgroundServices
+namespace TravelTipsAPI.BackgroundWorkers
 {
-    public class UserFollowRebuildService : BackgroundService
+    public class UserFollowRebuildWorker : BackgroundService
     {
         private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<TripBookmarkRebuildService> _logger;
+        private readonly ILogger<TripBookmarkRebuildWorker> _logger;
 
-        public UserFollowRebuildService(
+        public UserFollowRebuildWorker(
             IServiceProvider serviceProvider,
-            ILogger<TripBookmarkRebuildService> logger
+            ILogger<TripBookmarkRebuildWorker> logger
         )
         {
             _serviceProvider = serviceProvider;

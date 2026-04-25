@@ -13,20 +13,10 @@ namespace TravelTipsAPI.ViewModels.db_basic
         public bool EmailVerified { get; set; }
         public bool? IsAdmin { get; set; }
         public bool? IsWriter { get; set; }
-
-        public static explicit operator UserViewModel(User user)
-        {
-            var userViewModel = new UserViewModel
-            {
-                Id = user.Id,
-                UserId = user.UserId,
-                Username = user.Username ?? "",
-                Email = user.Email,
-                UserAgreement = user.UserAgreement,
-                Picture = user.ExternalImageUrl,
-            };
-
-            return userViewModel;
-        }
+        public bool? IsBannerMan { get; set; }
+        public bool? IsReviewer { get; set; }
+        public bool RenewSubscription { get; set; }
+        public string? StripeCustomerId { get; set; }
+        public UserSubExtendViewModel? UserSubExtend { get; set; }
     }
 }

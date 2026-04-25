@@ -102,5 +102,29 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             return dayViewModel;
         }
+
+        // subscriptions
+
+        /// <summary>
+        /// Check if a user can modify a day based on max trip count in their subscription
+        /// </summary>
+        /// <param name="dayId">day id</param>
+        /// <param name="userId">user id</param>
+        /// <returns>whether user can modify the day</returns>
+        public bool CanUserEditDay(int dayId, int userId)
+        {
+            var maxTripCount = context
+                .UserSubExtends.Where(use => use.UserId == userId)
+                .Select(use => use.MaxTripCount)
+                .FirstOrDefault();
+
+            // only check the most recent maxTripCount trips due to subsctipion status
+            return context
+                .Trips.Where(t => t.CreatedBy == userId)
+                .OrderByDescending(t => t.CreatedAt)
+                .ThenByDescending(t => t.Id)
+                .Take(maxTripCount)
+                .Any(t => t.Days.Any(d => d.Id == dayId));
+        }
     }
 }

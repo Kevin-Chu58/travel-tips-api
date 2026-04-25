@@ -11,17 +11,25 @@ public partial class TravelTipsContext : DbContext
     public TravelTipsContext(DbContextOptions<TravelTipsContext> options)
         : base(options) { }
 
+    public virtual DbSet<Ad> Ads { get; set; }
+
+    public virtual DbSet<AdSubLog> AdSubLogs { get; set; }
+
+    public virtual DbSet<AdTarget> AdTargets { get; set; }
+
     public virtual DbSet<Admin> Admins { get; set; }
 
     public virtual DbSet<Attraction> Attractions { get; set; }
 
     public virtual DbSet<Banner> Banners { get; set; }
 
-    public virtual DbSet<BannerMan> BannerMans { get; set; }
+    public virtual DbSet<BannerMan> BannerMen { get; set; }
 
     public virtual DbSet<BannerStyling> BannerStylings { get; set; }
 
     public virtual DbSet<Bookmark> Bookmarks { get; set; }
+
+    public virtual DbSet<Business> Businesses { get; set; }
 
     public virtual DbSet<Day> Days { get; set; }
 
@@ -31,7 +39,17 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<Image> Images { get; set; }
 
+    public virtual DbSet<ProcessedStripeEvent> ProcessedStripeEvents { get; set; }
+
     public virtual DbSet<Region> Regions { get; set; }
+
+    public virtual DbSet<Reviewer> Reviewers { get; set; }
+
+    public virtual DbSet<Subscription> Subscriptions { get; set; }
+
+    public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+
+    public virtual DbSet<TargetRule> TargetRules { get; set; }
 
     public virtual DbSet<Trip> Trips { get; set; }
 
@@ -42,6 +60,8 @@ public partial class TravelTipsContext : DbContext
     public virtual DbSet<TripShare> TripShares { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
+
+    public virtual DbSet<UserSubExtend> UserSubExtends { get; set; }
 
     public virtual DbSet<Writer> Writers { get; set; }
 
@@ -54,6 +74,89 @@ public partial class TravelTipsContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Ad>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_ads");
+
+            entity.ToTable("Ads", "db_feed");
+
+            entity.HasIndex(e => new { e.SubStatus, e.Status }, "idx_ad_filter");
+
+            entity.HasIndex(e => new { e.CreatedBy, e.BusinessId }, "idx_ad_owner");
+
+            entity.Property(e => e.Link).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.LinkLabel).HasMaxLength(50);
+            entity.Property(e => e.RenewSub).HasDefaultValue(true);
+            entity.Property(e => e.Status).HasMaxLength(20).IsUnicode(false);
+            entity.Property(e => e.StripeItemId).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.StripeSubscriptionId).HasMaxLength(255).IsUnicode(false);
+            entity.Property(e => e.SubStatus).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.Text).HasMaxLength(100);
+            entity.Property(e => e.Title).HasMaxLength(50);
+
+            entity
+                .HasOne(d => d.Business)
+                .WithMany(p => p.Ads)
+                .HasForeignKey(d => d.BusinessId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_businesses_ads");
+
+            entity
+                .HasOne(d => d.CreatedByNavigation)
+                .WithMany(p => p.Ads)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_ads");
+
+            entity
+                .HasOne(d => d.Image)
+                .WithMany(p => p.Ads)
+                .HasForeignKey(d => d.ImageId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_images_ads");
+        });
+
+        modelBuilder.Entity<AdSubLog>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_ad_sub_logs");
+
+            entity.ToTable("AdSubLogs", "db_feed");
+
+            entity
+                .HasIndex(e => new { e.AdId, e.Id }, "idx_latest_ad_sub_log_by_adId")
+                .IsDescending(false, true);
+
+            entity.Property(e => e.Note).HasMaxLength(200).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.Ad)
+                .WithMany(p => p.AdSubLogs)
+                .HasForeignKey(d => d.AdId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_ads_ad_sub_logs");
+        });
+
+        modelBuilder.Entity<AdTarget>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_ad_targets");
+
+            entity.ToTable("AdTargets", "db_feed");
+
+            entity.HasIndex(e => e.AdId, "idx_ad_target_ad");
+
+            entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_ad_target_search");
+
+            entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.TargetValue).HasMaxLength(50);
+
+            entity
+                .HasOne(d => d.Ad)
+                .WithMany(p => p.AdTargets)
+                .HasForeignKey(d => d.AdId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_ads_ad_targets");
+        });
+
         modelBuilder.Entity<Admin>(entity =>
         {
             entity.HasKey(e => e.UserId).HasName("pk_admins");
@@ -138,11 +241,11 @@ public partial class TravelTipsContext : DbContext
 
         modelBuilder.Entity<BannerMan>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("pk_banner_mans");
+            entity.HasKey(e => e.UserId).HasName("pk_banner_men");
 
-            entity.ToTable("BannerMans", "db_role");
+            entity.ToTable("BannerMen", "db_role");
 
-            entity.HasIndex(e => e.UserId, "idx_banner_man_user_id");
+            entity.HasIndex(e => e.UserId, "idx_banner_men_user_id");
 
             entity.Property(e => e.UserId).ValueGeneratedNever();
 
@@ -151,7 +254,7 @@ public partial class TravelTipsContext : DbContext
                 .WithOne(p => p.BannerMan)
                 .HasForeignKey<BannerMan>(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("fk_users_banner_mans");
+                .HasConstraintName("fk_users_banner_men");
         });
 
         modelBuilder.Entity<BannerStyling>(entity =>
@@ -181,7 +284,6 @@ public partial class TravelTipsContext : DbContext
                 .HasOne(d => d.Trip)
                 .WithMany(p => p.Bookmarks)
                 .HasForeignKey(d => d.TripId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trips_bookmarks");
 
             entity
@@ -190,6 +292,33 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.UserId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_bookmarks");
+        });
+
+        modelBuilder.Entity<Business>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_businesses");
+
+            entity.ToTable("Businesses", "db_feed");
+
+            entity.HasIndex(e => new { e.CreatedBy, e.Status }, "idx_business_status");
+
+            entity.Property(e => e.Address).HasMaxLength(200);
+            entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.Website).HasMaxLength(100).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.CreatedByNavigation)
+                .WithMany(p => p.Businesses)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_businesses");
+
+            entity
+                .HasOne(d => d.Image)
+                .WithMany(p => p.Businesses)
+                .HasForeignKey(d => d.ImageId)
+                .HasConstraintName("fk_images_businesses");
         });
 
         modelBuilder.Entity<Day>(entity =>
@@ -213,7 +342,6 @@ public partial class TravelTipsContext : DbContext
                 .HasOne(d => d.Trip)
                 .WithMany(p => p.Days)
                 .HasForeignKey(d => d.TripId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trips_days");
         });
 
@@ -286,11 +414,12 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Images", "db_image");
 
-            entity.HasIndex(e => new { e.CreatedBy, e.IsBanner }, "idx_image_filter");
+            entity.HasIndex(e => new { e.CreatedBy, e.Type }, "idx_image_type");
 
             entity.HasIndex(e => e.CreatedBy, "idx_image_user_id");
 
             entity.Property(e => e.Name).HasMaxLength(50).IsUnicode(false);
+            entity.Property(e => e.Type).HasMaxLength(10).IsUnicode(false);
 
             entity
                 .HasOne(d => d.CreatedByNavigation)
@@ -298,6 +427,15 @@ public partial class TravelTipsContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_users_images");
+        });
+
+        modelBuilder.Entity<ProcessedStripeEvent>(entity =>
+        {
+            entity.HasKey(e => e.StripeEventId).HasName("pk_processed_stripe_events");
+
+            entity.ToTable("ProcessedStripeEvents", "db_record");
+
+            entity.Property(e => e.StripeEventId).HasMaxLength(255).IsUnicode(false);
         });
 
         modelBuilder.Entity<Region>(entity =>
@@ -323,6 +461,90 @@ public partial class TravelTipsContext : DbContext
                 .HasConstraintName("fk_regions_parent");
         });
 
+        modelBuilder.Entity<Reviewer>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_reviewers");
+
+            entity.ToTable("Reviewers", "db_role");
+
+            entity.HasIndex(e => e.UserId, "idx_reviewers_user_id");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+
+            entity
+                .HasOne(d => d.User)
+                .WithOne(p => p.Reviewer)
+                .HasForeignKey<Reviewer>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_reviewers");
+        });
+
+        modelBuilder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_subscriptions");
+
+            entity.ToTable("Subscriptions", "db_plan");
+
+            entity.HasIndex(e => e.StripeSubscriptionId, "idx_subscription_stripe_sub_id");
+
+            entity.HasIndex(e => new { e.UserId, e.Status }, "idx_subscription_user_active");
+
+            entity
+                .HasIndex(
+                    e => new
+                    {
+                        e.UserId,
+                        e.Start,
+                        e.End,
+                    },
+                    "idx_subscription_user_record"
+                )
+                .IsDescending(false, true, true);
+
+            entity
+                .HasIndex(e => new { e.UserId, e.PlanId }, "uidx_subscription_only_active")
+                .IsUnique()
+                .HasFilter("([Status]='active')");
+
+            entity.Property(e => e.Status).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.StripeSubscriptionId).HasMaxLength(255).IsUnicode(false);
+
+            entity
+                .HasOne(d => d.Plan)
+                .WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.PlanId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_subscriptions_subscription_plans");
+
+            entity
+                .HasOne(d => d.User)
+                .WithMany(p => p.Subscriptions)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_subscriptions");
+        });
+
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_subscription_plans");
+
+            entity.ToTable("SubscriptionPlans", "db_plan");
+
+            entity.Property(e => e.Description).HasMaxLength(100).IsUnicode(false);
+        });
+
+        modelBuilder.Entity<TargetRule>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_target_rules");
+
+            entity.ToTable("TargetRules", "db_feed");
+
+            entity.HasIndex(e => new { e.TargetType, e.TargetValue }, "idx_target_rules_filter");
+
+            entity.Property(e => e.TargetType).HasMaxLength(10).IsUnicode(false);
+            entity.Property(e => e.TargetValue).HasMaxLength(50);
+        });
+
         modelBuilder.Entity<Trip>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("pk_trips");
@@ -330,23 +552,44 @@ public partial class TravelTipsContext : DbContext
             entity.ToTable("Trips", "db_basic");
 
             entity
-                .HasIndex(e => new { e.BookmarkCount, e.Id }, "idx_trips_bookmarkCount_id")
-                .IsDescending();
+                .HasIndex(
+                    e => new
+                    {
+                        e.IsPublic,
+                        e.IsHidden,
+                        e.RegionId,
+                        e.CreatedAt,
+                        e.Id,
+                    },
+                    "idx_trips_filter_chronological"
+                )
+                .IsDescending(false, false, false, true, true);
 
             entity
-                .HasIndex(e => new { e.CreatedAt, e.Id }, "idx_trips_createdAt_id")
-                .IsDescending();
+                .HasIndex(
+                    e => new
+                    {
+                        e.IsPublic,
+                        e.IsHidden,
+                        e.RegionId,
+                        e.BookmarkCount,
+                        e.Id,
+                    },
+                    "idx_trips_filter_popularity"
+                )
+                .IsDescending(false, false, false, true, true);
 
-            entity.HasIndex(
-                e => new
-                {
-                    e.RegionId,
-                    e.Budget,
-                    e.IsPublic,
-                    e.IsHidden,
-                },
-                "idx_trips_filter"
-            );
+            entity
+                .HasIndex(
+                    e => new
+                    {
+                        e.CreatedBy,
+                        e.CreatedAt,
+                        e.Id,
+                    },
+                    "idx_trips_user_most_recent"
+                )
+                .IsDescending(false, true, true);
 
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Title).HasMaxLength(50);
@@ -401,7 +644,6 @@ public partial class TravelTipsContext : DbContext
                 .HasOne(d => d.Day)
                 .WithMany(p => p.TripAttractionOrders)
                 .HasForeignKey(d => d.DayId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_days_trip_attraction_orders");
 
             entity
@@ -425,14 +667,12 @@ public partial class TravelTipsContext : DbContext
                 .HasOne(d => d.Image)
                 .WithMany(p => p.TripImages)
                 .HasForeignKey(d => d.ImageId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_images_trip_images");
 
             entity
                 .HasOne(d => d.Trip)
                 .WithMany(p => p.TripImages)
                 .HasForeignKey(d => d.TripId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trips_trip_images");
         });
 
@@ -457,7 +697,6 @@ public partial class TravelTipsContext : DbContext
                 .HasOne(d => d.Trip)
                 .WithMany(p => p.TripShares)
                 .HasForeignKey(d => d.TripId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("fk_trip_shares_trip");
         });
 
@@ -477,10 +716,14 @@ public partial class TravelTipsContext : DbContext
                 .HasIndex(e => new { e.FollowingCount, e.Id }, "idx_users_followingCount_id")
                 .IsDescending();
 
+            entity.HasIndex(e => e.StripeCustomerId, "idx_users_stripe_customer_id");
+
             entity.HasIndex(e => new { e.Username, e.Id }, "idx_users_username_id");
 
             entity.Property(e => e.Email).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.ExternalImageUrl).IsUnicode(false);
+            entity.Property(e => e.StripeCurrency).HasMaxLength(3).IsUnicode(false).IsFixedLength();
+            entity.Property(e => e.StripeCustomerId).HasMaxLength(255).IsUnicode(false);
             entity.Property(e => e.UserId).HasMaxLength(50).IsUnicode(false);
             entity.Property(e => e.Username).HasMaxLength(50);
 
@@ -489,6 +732,23 @@ public partial class TravelTipsContext : DbContext
                 .WithMany(p => p.Users)
                 .HasForeignKey(d => d.ImageId)
                 .HasConstraintName("fk_images_users");
+        });
+
+        modelBuilder.Entity<UserSubExtend>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("pk_user_sub_extends");
+
+            entity.ToTable("UserSubExtends", "db_basic");
+
+            entity.Property(e => e.UserId).ValueGeneratedNever();
+            entity.Property(e => e.MaxTripCount).HasDefaultValue(3);
+
+            entity
+                .HasOne(d => d.User)
+                .WithOne(p => p.UserSubExtend)
+                .HasForeignKey<UserSubExtend>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("fk_users_user_sub_extends");
         });
 
         modelBuilder.Entity<Writer>(entity =>
