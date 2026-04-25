@@ -24,6 +24,25 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         {
             var userSubExtend = FindUserSubExtendByUserId(userId);
 
+            // if userSubExtend doesn't exist, create a new one with default values
+            if (userSubExtend == null)
+            {
+                var newUserSubExtend = new UserSubExtend
+                {
+                    UserId = userId,
+                    CycleStart = null,
+                    MonthIndex = null,
+                    PdfDownloadCount = 0,
+                    TripCount = 0,
+                    MaxPdfDownloadCount = Global.MAX_PDF_GENERATION_PER_MONTH, // default limit for non-subscribed users
+                    MaxTripCount = Global.MAX_TRIPS, // default limit for non-subscribed users
+                };
+                context.UserSubExtends.Add(newUserSubExtend);
+                await context.SaveChangesAsync();
+
+                userSubExtend = newUserSubExtend;
+            }
+
             var now = DateTimeOffset.UtcNow;
             var activeSub = subscriptionsService.FindActiveSubscriptionByUserId(userId);
 
