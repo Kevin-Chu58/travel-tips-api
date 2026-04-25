@@ -7,7 +7,7 @@
 
         // url
         public static readonly string URL_PRODUCTION =
-            "https://travel-tips-ui-us-west-g2cxbjaydqejh0af.westus-01.azurewebsites.net";
+            "https://green-bay-09f55a01e.7.azurestaticapps.net";
         public static readonly string URL_LOCALHOST = "http://localhost:5173";
 
         public static readonly bool IS_PRODUCTION = false;
