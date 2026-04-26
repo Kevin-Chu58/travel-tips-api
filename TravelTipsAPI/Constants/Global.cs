@@ -10,7 +10,7 @@
             "https://green-bay-09f55a01e.7.azurestaticapps.net";
         public static readonly string URL_LOCALHOST = "http://localhost:5173";
 
-        public static readonly bool IS_PRODUCTION = false;
+        public static readonly bool IS_PRODUCTION = true;
         public static readonly string URL = IS_PRODUCTION ? URL_PRODUCTION : URL_LOCALHOST;
 
         // Default Search Result Limit
