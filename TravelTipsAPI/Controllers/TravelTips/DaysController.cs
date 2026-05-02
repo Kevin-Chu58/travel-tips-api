@@ -57,7 +57,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpPost]
         [Route("{id}")]
         [IsOwner(Resource = Resources.TRIPS)]
-        public async Task<ActionResult> PostNewDay(int id)
+        public async Task<ActionResult<DayViewModel>> PostNewDay(int id)
         {
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
@@ -73,9 +73,9 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
             try
             {
-                await daysService.PostNewDayAsync(userId, id);
+                var newDay = await daysService.PostNewDayAsync(userId, id);
 
-                return Ok();
+                return Ok(newDay);
             }
             catch (Exception ex)
             {
