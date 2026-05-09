@@ -193,19 +193,52 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetMyTrips()
+        public async Task<ActionResult<SearchResults<TripViewModel>>> GetMyTrips(
+            [FromQuery] string? cursor = null
+        )
         {
+            var limit = Global.TRIP_DEFAULT_LIMIT;
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // decode cursor if provided
+            TripCursor? tripCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                tripCursor = DecodeCursor<TripCursor>(cursor);
+                if (tripCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
 
             var myTripViewModels = await tripsService.GetTripsByParams(
                 userId,
                 createdBy: userId,
                 isHidden: false,
                 isRestricted: true,
-                isMy: true
+                isMy: true,
+                tripOrderByEnum: TripOrderByEnum.Newest,
+                cursor: tripCursor,
+                limit: limit
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
-            return Ok(myTripViewModels);
+
+            // encode cursor
+            var tripList = myTripViewModels.ToList();
+            string? newCursor = null;
+            if (tripList.Count == limit)
+            {
+                var lastTrip = tripList.Last();
+                newCursor = EncodeCursor(
+                    new TripCursor { Id = lastTrip.Id, CreatedAt = lastTrip.CreatedAt }
+                );
+            }
+
+            var result = new SearchResults<TripViewModel>
+            {
+                Results = tripList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -215,9 +248,21 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my/hidden")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetMyHiddenTrips()
+        public async Task<ActionResult<SearchResults<TripViewModel>>> GetMyHiddenTrips(
+            [FromQuery] string? cursor
+        )
         {
+            var limit = Global.TRIP_DEFAULT_LIMIT;
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+            // decode cursor if provided
+            TripCursor? tripCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                tripCursor = DecodeCursor<TripCursor>(cursor);
+                if (tripCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
 
             var myTripViewModels = await tripsService.GetTripsByParams(
                 userId,
@@ -225,10 +270,31 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 isPublic: false,
                 isHidden: true,
                 isRestricted: true,
-                isMy: true
+                isMy: true,
+                tripOrderByEnum: TripOrderByEnum.Newest,
+                cursor: tripCursor,
+                limit: limit
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
-            return Ok(myTripViewModels);
+
+            // encode cursor
+            var tripList = myTripViewModels.ToList();
+            string? newCursor = null;
+            if (tripList.Count == limit)
+            {
+                var lastTrip = tripList.Last();
+                newCursor = EncodeCursor(
+                    new TripCursor { Id = lastTrip.Id, CreatedAt = lastTrip.CreatedAt }
+                );
+            }
+
+            var result = new SearchResults<TripViewModel>
+            {
+                Results = tripList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -238,20 +304,53 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my/shared")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetSharedTrips()
+        public async Task<ActionResult<SearchResults<TripViewModel>>> GetSharedTrips(
+            [FromQuery] string? cursor
+        )
         {
+            var limit = Global.TRIP_DEFAULT_LIMIT;
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var sharedTripIds = tripSharesService.GetSharedTripIdsByUserId(userId);
+            // decode cursor if provided
+            TripCursor? tripCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                tripCursor = DecodeCursor<TripCursor>(cursor);
+                if (tripCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
+            var sharedTripIds = tripSharesService.GetSharedTripIdsByUserId(
+                userId,
+                limit,
+                tripCursor
+            );
 
             var myTripViewModels = await tripsService.GetTripsByParams(
                 userId,
                 ids: sharedTripIds,
                 isHidden: false,
-                isRestricted: true
+                isRestricted: true,
+                tripOrderByEnum: TripOrderByEnum.Newest
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
-            return Ok(myTripViewModels);
+
+            // encode cursor
+            var tripList = myTripViewModels.ToList();
+            string? newCursor = null;
+            if (tripList.Count == limit)
+            {
+                var lastTrip = tripList.Last();
+                newCursor = EncodeCursor(new TripCursor { Id = lastTrip.Id });
+            }
+
+            var result = new SearchResults<TripViewModel>
+            {
+                Results = tripList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>
@@ -261,20 +360,53 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my/bookmarked")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetBookMarkedTrips()
+        public async Task<ActionResult<SearchResults<TripViewModel>>> GetBookMarkedTrips(
+            [FromQuery] string? cursor
+        )
         {
+            var limit = Global.TRIP_DEFAULT_LIMIT;
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var bookmarkedTripIds = bookmarksService.GetBookmarkTripIdsByUserId(userId);
+            // decode cursor if provided
+            TripCursor? tripCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                tripCursor = DecodeCursor<TripCursor>(cursor);
+                if (tripCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
+            var bookmarkedTripIds = bookmarksService.GetBookmarkTripIdsByUserId(
+                userId,
+                limit,
+                tripCursor
+            );
 
             var myTripViewModels = await tripsService.GetTripsByParams(
                 userId,
                 ids: bookmarkedTripIds,
                 isPublic: true,
-                isHidden: false
+                isHidden: false,
+                tripOrderByEnum: TripOrderByEnum.Newest
             );
             myTripViewModels = await AppendImagesToTripsAsync(myTripViewModels);
-            return Ok(myTripViewModels);
+
+            // encode cursor
+            var tripList = myTripViewModels.ToList();
+            string? newCursor = null;
+            if (tripList.Count == limit)
+            {
+                var lastTrip = tripList.Last();
+                newCursor = EncodeCursor(new TripCursor { Id = lastTrip.Id });
+            }
+
+            var result = new SearchResults<TripViewModel>
+            {
+                Results = tripList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>

@@ -2,6 +2,7 @@
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices.Search
 {
@@ -12,14 +13,29 @@ namespace TravelTipsAPI.Services.TravelTipsServices.Search
         /// </summary>
         /// <param name="userId">user id</param>
         /// <returns>a list of bookmarked trip ids</returns>
-        public IEnumerable<int> GetBookmarkTripIdsByUserId(int userId)
+        public IEnumerable<int> GetBookmarkTripIdsByUserId(
+            int userId,
+            int? limit,
+            TripCursor? cursor
+        )
         {
-            var bookmarkTripIds = context
+            var query = context
                 .Bookmarks.Where(bookmark => bookmark.UserId == userId)
-                .Select(bookmark => bookmark.TripId)
-                .ToList();
+                .Select(bookmark => bookmark.TripId);
 
-            return bookmarkTripIds;
+            query = query.OrderByDescending(tripId => tripId);
+
+            if (cursor != null)
+            {
+                query = query.Where(tripId => tripId < cursor.Id);
+            }
+
+            if (limit != null)
+            {
+                query = query.Take((int)limit);
+            }
+
+            return query.ToList();
         }
 
         /// <summary>

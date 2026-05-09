@@ -1,6 +1,7 @@
 ﻿using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -37,14 +38,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="userId">user id</param>
         /// <returns>a list of trip ids</returns>
-        public IEnumerable<int> GetSharedTripIdsByUserId(int userId)
+        public IEnumerable<int> GetSharedTripIdsByUserId(int userId, int? limit, TripCursor? cursor)
         {
-            var tripIds = context
+            var query = context
                 .TripShares.Where(ts => ts.ShareWith == userId)
                 .Select(ts => ts.TripId)
-                .Distinct()
-                .ToList();
-            return tripIds;
+                .Distinct();
+
+            query = query.OrderByDescending(tripId => tripId);
+
+            if (cursor != null)
+            {
+                query = query.Where(tripId => tripId < cursor.Id);
+            }
+
+            if (limit != null)
+            {
+                query = query.Take((int)limit);
+            }
+
+            return query.ToList();
         }
 
         /// <summary>

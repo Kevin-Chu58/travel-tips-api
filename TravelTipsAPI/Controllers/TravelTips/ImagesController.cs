@@ -3,12 +3,16 @@ using Microsoft.AspNetCore.Mvc;
 using TravelTipsAPI.Authorization;
 using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
+using TravelTipsAPI.ViewModels.db_basic;
 using TravelTipsAPI.ViewModels.db_image;
+using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.Utils.ObjectUtils;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -29,15 +33,44 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("my")]
         [IsOwner(Resource = Resources.NONE)]
-        public async Task<ActionResult<ImageViewModel>> GetImagesByUserId()
+        public async Task<ActionResult<SearchResults<ImageViewModel>>> GetImagesByUserId(
+            string? cursor
+        )
         {
+            var limit = Global.IMAGE_DEFAULT_LIMIT;
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
 
-            var imageIds = imagesService.GetImageIdsByUserId(userId).ToArray();
+            // decode cursor if provided
+            GeneralCursor? generalCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                generalCursor = DecodeCursor<GeneralCursor>(cursor);
+                if (generalCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
+            var imageIds = imagesService
+                .GetImageIdsByUserId(userId, limit, generalCursor)
+                .ToArray();
 
             var images = await imagesService.GetImagesByIds(imageIds);
 
-            return Ok(images);
+            // encode cursor
+            var imageList = images.ToList();
+            string? newCursor = null;
+            if (imageList.Count == limit)
+            {
+                var lastImage = imageList.Last();
+                newCursor = EncodeCursor(new GeneralCursor { Id = lastImage.Id });
+            }
+
+            var result = new SearchResults<ImageViewModel>
+            {
+                Results = imageList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>

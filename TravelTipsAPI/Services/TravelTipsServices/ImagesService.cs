@@ -10,6 +10,7 @@ using TravelTipsAPI.ViewModels.db_image;
 using static TravelTipsAPI.Constants.Enums.ImageEnum;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -67,7 +68,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             // keys of the image json
             var keys = ids.Select(id => GetImageUpstashKey(id)).ToArray();
 
-            // check cache first, if does not exist, send request to HereMap API
+            // check cache first, if does not exist, send request to DB
             var cachesJson = await cache.GetMultipleAsync(keys);
 
             List<ImageViewModel> imageViewModels = [];
@@ -135,14 +136,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// </summary>
         /// <param name="id">user id</param>
         /// <returns>a list of image ids</returns>
-        public IEnumerable<int> GetImageIdsByUserId(int id)
+        public IEnumerable<int> GetImageIdsByUserId(int id, int? limit, GeneralCursor? cursor)
         {
-            var imageIds = context
+            var query = context
                 .Images.Where(i => i.CreatedBy == id && i.Type == null)
-                .Select(i => i.Id)
-                .ToList();
+                .Select(images => images.Id)
+                .Distinct();
 
-            return imageIds;
+            query = query.OrderByDescending(i => i);
+
+            if (cursor != null)
+            {
+                query = query.Where(i => i < cursor.Id);
+            }
+
+            if (limit != null)
+            {
+                query = query.Take((int)limit);
+            }
+
+            return query.ToList();
         }
 
         public IEnumerable<int> GetBannerImageIds()

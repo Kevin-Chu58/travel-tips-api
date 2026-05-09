@@ -276,7 +276,9 @@ public partial class TravelTipsContext : DbContext
 
             entity.HasIndex(e => e.UserId, "idx_bookmarks_user_id");
 
-            entity.HasIndex(e => new { e.UserId, e.TripId }, "idx_bookmarks_user_id_trip_id");
+            entity
+                .HasIndex(e => new { e.UserId, e.TripId }, "idx_bookmarks_user_id_trip_id")
+                .IsDescending(false, true);
 
             entity.HasIndex(e => new { e.UserId, e.TripId }, "ux_user_id_trip_id").IsUnique();
 
@@ -414,7 +416,17 @@ public partial class TravelTipsContext : DbContext
 
             entity.ToTable("Images", "db_image");
 
-            entity.HasIndex(e => new { e.CreatedBy, e.Type }, "idx_image_type");
+            entity
+                .HasIndex(
+                    e => new
+                    {
+                        e.CreatedBy,
+                        e.Type,
+                        e.Id,
+                    },
+                    "idx_image_type"
+                )
+                .IsDescending(false, false, true);
 
             entity.HasIndex(e => e.CreatedBy, "idx_image_user_id");
 
@@ -681,6 +693,10 @@ public partial class TravelTipsContext : DbContext
             entity.HasKey(e => e.Id).HasName("pk_trip_shares");
 
             entity.ToTable("TripShares", "db_basic");
+
+            entity
+                .HasIndex(e => new { e.ShareWith, e.TripId }, "idx_trip_shares_cursor")
+                .IsDescending(false, true);
 
             entity.HasIndex(e => e.TripId, "idx_trip_shares_trip_id");
 

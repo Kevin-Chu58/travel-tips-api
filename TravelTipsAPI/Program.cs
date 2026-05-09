@@ -16,6 +16,7 @@ using TravelTipsAPI.Services.BackgroundServices;
 using TravelTipsAPI.Services.StripeServices;
 using TravelTipsAPI.Services.TravelTipsServices;
 using TravelTipsAPI.Services.WikiCommonsServices;
+using TravelTipsAPI.Services.YouTubeServices;
 using static TravelTipsAPI.Services.AzureKeyVaultServices.AzureKeyVaultSchema;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,8 +26,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
 {
     options.UseLazyLoadingProxies();
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
 // Add authentication to the container
@@ -81,13 +82,15 @@ builder.Services.AddAuth0Services();
 builder.Services.AddHereMapServices();
 builder.Services.AddWikiCommonsServices();
 builder.Services.AddStripeServices();
+builder.Services.AddYouTubeServices();
 builder.Services.AddBackgroundWorkerServices();
 
 // Add Background Services
-builder.Services.AddHostedService<HighlightUsageRebuildWorker>();
-builder.Services.AddHostedService<TripBookmarkRebuildWorker>();
-builder.Services.AddHostedService<TripCountRebuildWorker>();
-builder.Services.AddHostedService<UserFollowRebuildWorker>();
+// TODO - add these in Azure Functions
+//builder.Services.AddHostedService<HighlightUsageRebuildWorker>();
+//builder.Services.AddHostedService<TripBookmarkRebuildWorker>();
+//builder.Services.AddHostedService<TripCountRebuildWorker>();
+//builder.Services.AddHostedService<UserFollowRebuildWorker>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];

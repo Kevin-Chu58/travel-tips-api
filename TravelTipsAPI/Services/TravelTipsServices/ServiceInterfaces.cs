@@ -35,7 +35,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
         public interface IBookmarksService
         {
-            IEnumerable<int> GetBookmarkTripIdsByUserId(int userId);
+            IEnumerable<int> GetBookmarkTripIdsByUserId(int userId, int? limit, TripCursor? cursor);
             Task AddBookmarkAsync(int userId, int tripId);
             Task RemoveBookmarkAsync(int userId, int tripId);
         }
@@ -164,7 +164,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             TripShare? FindTripShare(int tripId, int userId);
             IEnumerable<TripShare> FindTripSharesByTripId(int tripId);
             IEnumerable<int> GetSharedUserIdsByTripId(int tripId);
-            IEnumerable<int> GetSharedTripIdsByUserId(int userId);
+            IEnumerable<int> GetSharedTripIdsByUserId(int userId, int? limit, TripCursor? cursor);
             bool IsTripSharedWithUser(int tripId, int userId);
             Task ShareTripWithUser(int tripId, int userId);
             Task UnshareTripWithUser(int tripId, int userId);
@@ -195,7 +195,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 string? City = null,
                 string? State = null,
                 string? Country = null,
-                int? ownerId = null
+                int? ownerId = null,
+                int? limit = null,
+                GeneralCursor? cursor = null
             );
             IEnumerable<int> GetMyHighlights(int id);
             Task<Attraction> PostNewAttractionAsync(Attraction newAttraction);
@@ -291,7 +293,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Image? FindImageAndBusinessCountById(out int businessCount, int id);
             Task<IEnumerable<ImageViewModel>> GetImagesByIds(int[] ids);
             IEnumerable<int> GetImageIdsByTripId(int id);
-            IEnumerable<int> GetImageIdsByUserId(int id);
+            IEnumerable<int> GetImageIdsByUserId(int id, int? limit, GeneralCursor? cursor);
             IEnumerable<int> GetBannerImageIds();
             Task<ImageViewModel> PostNewImageAsync(
                 IFormFile file,

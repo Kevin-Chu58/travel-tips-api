@@ -5,9 +5,12 @@ using TravelTipsAPI.Constants;
 using TravelTipsAPI.Models.TravelTipsModels;
 using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
+using TravelTipsAPI.ViewModels.db_search;
 using TravelTipsAPI.ViewModels.HereMap;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Utils.ObjectUtils;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
@@ -107,7 +110,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         [HttpGet]
         [Route("")]
         [AllowAnonymous]
-        public ActionResult<IEnumerable<AttractionViewModel>> GetAttractionsByParams(
+        public ActionResult<SearchResults<AttractionViewModel>> GetAttractionsByParams(
             [FromQuery] string? Title = null,
             string? Category = null,
             string? ResultType = null,
@@ -115,9 +118,22 @@ namespace TravelTipsAPI.Controllers.TravelTips
             string? City = null,
             string? State = null,
             string? Country = null,
-            int? ownerId = null
+            int? ownerId = null,
+            int? limit = null,
+            string? cursor = null
         )
         {
+            limit ??= Global.ATTRACTION_DEFAULT_LIMIT;
+
+            // decode cursor if provided
+            GeneralCursor? generalCursor = null;
+            if (!string.IsNullOrEmpty(cursor))
+            {
+                generalCursor = DecodeCursor<GeneralCursor>(cursor);
+                if (generalCursor is null)
+                    return BadRequest(Messages.CursorInvalid);
+            }
+
             var attractionViewModels = attractionsService.GetAttractionsByParams(
                 Title,
                 Category,
@@ -126,10 +142,27 @@ namespace TravelTipsAPI.Controllers.TravelTips
                 City,
                 State,
                 Country,
-                ownerId
+                ownerId,
+                limit,
+                generalCursor
             );
 
-            return Ok(attractionViewModels);
+            // encode cursor
+            var attractionList = attractionViewModels.ToList();
+            string? newCursor = null;
+            if (attractionList.Count == limit)
+            {
+                var lastAttraction = attractionList.Last();
+                newCursor = EncodeCursor(new TripCursor { Id = lastAttraction.Id });
+            }
+
+            var result = new SearchResults<AttractionViewModel>
+            {
+                Results = attractionList,
+                Cursor = newCursor,
+            };
+
+            return Ok(result);
         }
 
         /// <summary>

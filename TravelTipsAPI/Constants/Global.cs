@@ -16,7 +16,9 @@
         // Default Search Result Limit
         public static readonly int USER_DEFAULT_LIMIT = 20;
         public static readonly int TRIP_DEFAULT_LIMIT = 20;
+        public static readonly int ATTRACTION_DEFAULT_LIMIT = 20;
         public static readonly int HIGHLIGHT_DEFAULT_LIMIT = 20;
+        public static readonly int IMAGE_DEFAULT_LIMIT = 20;
         public static readonly int BANNER_DEFAULT_LIMIT = 20;
         public static readonly int SUBSCRIPTION_DEFAULT_LIMIT = 20;
         public static readonly int BUSINESS_DEFAULT_LIMIT = 20;

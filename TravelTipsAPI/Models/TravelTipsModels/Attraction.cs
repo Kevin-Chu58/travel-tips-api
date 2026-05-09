@@ -29,6 +29,8 @@ public partial class Attraction
 
     public string? Country { get; set; }
 
+    public int? ArchiveRedirect { get; set; }
+
     public virtual ICollection<Highlight> Highlights { get; set; } = new List<Highlight>();
 
     public virtual ICollection<TripAttractionOrder> TripAttractionOrders { get; set; } = new List<TripAttractionOrder>();

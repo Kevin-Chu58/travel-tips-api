@@ -5,6 +5,7 @@ using TravelTipsAPI.Utils;
 using TravelTipsAPI.ViewModels.db_basic;
 using static TravelTipsAPI.Services.HereMapServices.HereMapSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.ViewModels.db_search.SearchCursors;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -43,7 +44,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             string? City = null,
             string? State = null,
             string? Country = null,
-            int? ownerId = null
+            int? ownerId = null,
+            int? limit = null,
+            GeneralCursor? cursor = null
         )
         {
             var query = context.Attractions.AsQueryable();
@@ -86,6 +89,26 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             {
                 Country = Country.Trim().ToLower();
                 query = query.Where(a => a.Country != null && a.Country.ToLower() == Country);
+            }
+            if (ownerId > 0)
+            {
+                var ownedHighlights = context
+                    .Highlights.Where(h => h.CreatedBy == ownerId)
+                    .Select(h => h.AttractionId)
+                    .Distinct()
+                    .ToList();
+                query = query.Where(a => ownedHighlights.Contains(a.Id));
+            }
+
+            query = query.OrderBy(a => a.Id);
+
+            if (cursor != null)
+            {
+                query = query.Where(a => a.Id > cursor.Id);
+            }
+            if (limit != null)
+            {
+                query = query.Take((int)limit);
             }
 
             var attractions = query.ToList();
