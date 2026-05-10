@@ -33,8 +33,5 @@
 
         public static readonly int MAX_TRIPS = 3;
         public static readonly int MAX_TRIPS_MEMBER = 50;
-
-        public static readonly int MAX_PDF_GENERATION_PER_MONTH = 0;
-        public static readonly int MAX_PDF_GENERATION_PER_MONTH_MEMBER = 15;
     }
 }

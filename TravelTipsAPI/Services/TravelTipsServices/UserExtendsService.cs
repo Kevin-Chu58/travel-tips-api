@@ -86,8 +86,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     : null;
             userSubExtend.MonthIndex = monthIndex;
 
-            userSubExtend.PdfDownloadCount = 0; // reset pdf download count when new cycle starts
-
             if (subStart != null && subscription != null)
             {
                 switch (subscription)
@@ -96,27 +94,18 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                     case SubscriptionEnum.ThreeMonthMember:
                     case SubscriptionEnum.SixMonthMember:
                     case SubscriptionEnum.YearlyMember:
-                        userSubExtend.MaxPdfDownloadCount =
-                            Global.MAX_PDF_GENERATION_PER_MONTH_MEMBER;
                         userSubExtend.MaxTripCount = Global.MAX_TRIPS_MEMBER;
                         break;
                 }
             }
             else
             {
-                userSubExtend.MaxPdfDownloadCount = Global.MAX_PDF_GENERATION_PER_MONTH; // default limit for non-subscribed users
                 userSubExtend.MaxTripCount = Global.MAX_TRIPS; // default limit for non-subscribed users
             }
 
             await context.SaveChangesAsync();
 
             return userSubExtend;
-        }
-
-        public async Task UpdateSubExtendNewTripPdf(UserSubExtend userSubExtend)
-        {
-            userSubExtend.PdfDownloadCount += 1;
-            await context.SaveChangesAsync();
         }
 
         public async Task UpdateSubExtendTripCount(UserSubExtend userSubExtend, int increment)

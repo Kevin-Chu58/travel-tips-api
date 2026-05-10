@@ -431,62 +431,12 @@ namespace TravelTipsAPI.Controllers.TravelTips
 
         // subscription features
 
-        //[HttpGet]
-        //[Route("user-sub-extension")]
-        //[IsOwner(Resource = Resources.NONE)]
-        //public async Task<ActionResult<UserSubExtendViewModel>> GetUpdatedUserSubExtend()
-        //{
-        //    var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
-        //    try
-        //    {
-        //        var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
-        //            userId
-        //        );
-
-        //        return Ok(userSubExtend);
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        return BadRequest(e.Message);
-        //    }
-        //}
-
         [HttpGet]
         [Route("me/member")]
         [HasRole(Role = UserRoles.MEMBER)]
         public ActionResult IsMember()
         {
             return Ok();
-        }
-
-        [HttpPost]
-        [Route("generate-pdf")]
-        [HasRole(Role = UserRoles.MEMBER)]
-        public async Task<ActionResult> GeneratePdf()
-        {
-            var userId = (int)(HttpContext.Items["user_id"] ?? 0);
-
-            try
-            {
-                var userSubExtend = await userExtendsService.GetUpdatedUserSubExtendByUserId(
-                    userId
-                );
-
-                if (userSubExtend == null)
-                    return BadRequest(Messages.UserSubExtendNotFound);
-
-                if (userSubExtend.PdfDownloadCount >= userSubExtend.MaxPdfDownloadCount)
-                    return BadRequest(Messages.MonthlyPdfGenerationLimitReached);
-
-                await userExtendsService.UpdateSubExtendNewTripPdf(userSubExtend);
-
-                return Ok();
-            }
-            catch (Exception e)
-            {
-                return BadRequest(e.Message);
-            }
         }
     }
 }

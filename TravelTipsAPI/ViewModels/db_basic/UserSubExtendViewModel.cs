@@ -10,11 +10,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
 
         public int? MonthIndex { get; set; }
 
-        public int PdfDownloadCount { get; set; }
-
         public int TripCount { get; set; }
-
-        public int MaxPdfDownloadCount { get; set; }
 
         public int MaxTripCount { get; set; }
 
@@ -30,9 +26,7 @@ namespace TravelTipsAPI.ViewModels.db_basic
                 UserId = userSubExtend.UserId,
                 CycleStart = userSubExtend.CycleStart,
                 MonthIndex = userSubExtend.MonthIndex,
-                PdfDownloadCount = userSubExtend.PdfDownloadCount,
                 TripCount = userSubExtend.TripCount,
-                MaxPdfDownloadCount = userSubExtend.MaxPdfDownloadCount,
                 MaxTripCount = userSubExtend.MaxTripCount,
             };
         }

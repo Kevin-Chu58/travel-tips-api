@@ -104,7 +104,6 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 int? monthIndex,
                 SubscriptionEnum? subscription = null
             );
-            Task UpdateSubExtendNewTripPdf(UserSubExtend userSubExtend);
             Task UpdateSubExtendTripCount(UserSubExtend userSubExtend, int increment);
         }
 
