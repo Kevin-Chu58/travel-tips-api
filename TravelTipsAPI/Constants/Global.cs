@@ -6,8 +6,9 @@
         public static readonly string USER_AGENT = "TravelTips/v1.0";
 
         // url
-        public static readonly string URL_PRODUCTION =
+        public static readonly string URL_PRODUCTION_TEST =
             "https://green-bay-09f55a01e.7.azurestaticapps.net";
+        public static readonly string URL_PRODUCTION = "https://traveltipsgo.com";
         public static readonly string URL_LOCALHOST = "http://localhost:5173";
 
         public static readonly bool IS_PRODUCTION = true;

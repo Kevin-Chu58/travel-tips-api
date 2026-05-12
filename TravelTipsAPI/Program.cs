@@ -122,7 +122,11 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins(Global.URL_PRODUCTION, Global.URL_LOCALHOST)
+                .WithOrigins(
+                    Global.URL_PRODUCTION_TEST,
+                    Global.URL_PRODUCTION,
+                    Global.URL_LOCALHOST
+                )
                 .AllowAnyHeader()
                 .AllowAnyMethod();
         }
