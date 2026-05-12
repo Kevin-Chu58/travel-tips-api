@@ -6,7 +6,7 @@ name: Build and deploy ASP.Net Core app to Azure Web App - travel-tips-api-us-we
 on:
   push:
     branches:
-      - main
+      - Production
   workflow_dispatch:
 
 jobs:
@@ -51,9 +51,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_736B629C08B0489D952E688145166639 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D0A9277A323E4E8EBEE3CEF73B3F0A1B }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_74F71F3D2ACD4E128B009F4B74A0671D }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_6CE7663DD4D84D01B0A91D6ABB2AC11F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_547829E3258449839045053F0655DF2F }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_98057D932C5B4BD18DBECDD154CB9655 }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
