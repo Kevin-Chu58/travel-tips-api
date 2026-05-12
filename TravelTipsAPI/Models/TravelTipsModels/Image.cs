@@ -7,11 +7,11 @@ public partial class Image
 {
     public int Id { get; set; }
 
+    public Guid Guid { get; set; }
+
     public string? Name { get; set; }
 
     public int CreatedBy { get; set; }
-
-    public Guid Guid { get; set; }
 
     public string? Type { get; set; }
 

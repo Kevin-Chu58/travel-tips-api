@@ -26,8 +26,8 @@ builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContextFactory<TravelTipsContext>(options =>
 {
     options.UseLazyLoadingProxies();
-    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTips"));
+    //options.UseSqlServer(builder.Configuration.GetConnectionString("TravelTipsLocal"));
 });
 
 // Add authentication to the container
@@ -86,11 +86,10 @@ builder.Services.AddYouTubeServices();
 builder.Services.AddBackgroundWorkerServices();
 
 // Add Background Services
-// TODO - add these in Azure Functions
-//builder.Services.AddHostedService<HighlightUsageRebuildWorker>();
-//builder.Services.AddHostedService<TripBookmarkRebuildWorker>();
-//builder.Services.AddHostedService<TripCountRebuildWorker>();
-//builder.Services.AddHostedService<UserFollowRebuildWorker>();
+builder.Services.AddHostedService<HighlightUsageRebuildWorker>();
+builder.Services.AddHostedService<TripBookmarkRebuildWorker>();
+builder.Services.AddHostedService<TripCountRebuildWorker>();
+builder.Services.AddHostedService<UserFollowRebuildWorker>();
 
 // get the firebase config and register it
 var keyVaultUrl = builder.Configuration["AzureKeyVault:Domain"];

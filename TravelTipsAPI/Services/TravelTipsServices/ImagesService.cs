@@ -112,15 +112,17 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 key = $"image:{id}:v{CacheVersion.Image_Version}";
 
             if (image is null)
-            {
                 throw new Exception(Messages.ImageNotFound);
-            }
 
             var imageViewModel = (ImageViewModel)image;
 
+            string objectName = Global.IS_PRODUCTION
+                ? $"{imageViewModel.CreatedBy}/production/{image.Guid}.jpeg"
+                : $"{imageViewModel.CreatedBy}/{image.Guid}.jpeg";
+
             imageViewModel.Url = await GenerateSignedUrlAsync(
                 config["Firebase:BucketName"]!,
-                $"{imageViewModel.CreatedBy}/{image.Guid}.jpeg",
+                objectName,
                 TimeSpan.FromDays(7) // Firebase allows maximum 7 days expiration
             );
 
@@ -208,12 +210,16 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 Guid guid = Guid.NewGuid();
                 string fileName = $"{guid}{GetExtensionFromContentType(contentType)}";
 
+                string objectName = Global.IS_PRODUCTION
+                    ? $"{userId}/production/{fileName}"
+                    : $"{userId}/{fileName}";
+
                 // upload image to firebase, throws an exception if failed
                 await uploader.UploadFileAsync(
                     stream,
                     contentType,
                     config["Firebase:BucketName"]!,
-                    $"{userId}/{fileName}"
+                    objectName
                 );
 
                 Image newImage = new()
