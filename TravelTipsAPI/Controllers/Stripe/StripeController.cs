@@ -36,6 +36,8 @@ namespace TravelTipsAPI.Controllers.Stripe
             [FromBody] ViewModels.Stripe.StripeRequest request
         )
         {
+            return BadRequest("Paid Service is currently off.");
+
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var user = usersService.GetUserById(userId);
 
@@ -68,6 +70,8 @@ namespace TravelTipsAPI.Controllers.Stripe
             [FromBody] StripeAdWeightRequest request
         )
         {
+            return BadRequest("Paid Service is currently off.");
+
             var userId = (int)(HttpContext.Items["user_id"] ?? 0);
             var user = usersService.GetUserById(userId);
 
@@ -189,6 +193,8 @@ namespace TravelTipsAPI.Controllers.Stripe
             [FromBody] StripeAdWeightRequest request
         )
         {
+            return BadRequest("Paid Service is currently off.");
+
             if (request.Weight <= 0)
                 return BadRequest(Messages.AdTargetWeightZeroInvalid);
 
@@ -268,6 +274,8 @@ namespace TravelTipsAPI.Controllers.Stripe
             [FromQuery] int adTargetId
         )
         {
+            return BadRequest("Paid Service is currently off.");
+
             var ad = adsService.FindAdById(id);
             if (ad == null)
                 return NotFound(Messages.AdNotFound);

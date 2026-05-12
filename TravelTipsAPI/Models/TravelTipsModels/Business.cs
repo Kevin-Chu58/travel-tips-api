@@ -9,8 +9,6 @@ public partial class Business
 
     public int CreatedBy { get; set; }
 
-    public int? ImageId { get; set; }
-
     public string Name { get; set; } = null!;
 
     public string Website { get; set; } = null!;
@@ -18,6 +16,8 @@ public partial class Business
     public string Address { get; set; } = null!;
 
     public string Status { get; set; } = null!;
+
+    public int? ImageId { get; set; }
 
     public virtual ICollection<Ad> Ads { get; set; } = new List<Ad>();
 

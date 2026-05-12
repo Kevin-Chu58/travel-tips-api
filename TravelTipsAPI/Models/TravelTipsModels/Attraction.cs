@@ -11,8 +11,6 @@ public partial class Attraction
 
     public string Title { get; set; } = null!;
 
-    public string ResultType { get; set; } = null!;
-
     public string? Category { get; set; }
 
     public bool IsDeprecated { get; set; }
@@ -28,6 +26,8 @@ public partial class Attraction
     public string? State { get; set; }
 
     public string? Country { get; set; }
+
+    public string ResultType { get; set; } = null!;
 
     public int? ArchiveRedirect { get; set; }
 

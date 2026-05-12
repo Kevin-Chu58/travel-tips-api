@@ -7,13 +7,17 @@ public partial class Ad
 {
     public int Id { get; set; }
 
-    public int TemplateId { get; set; }
-
     public int CreatedBy { get; set; }
 
     public int BusinessId { get; set; }
 
     public int ImageId { get; set; }
+
+    public string? StripeSubscriptionId { get; set; }
+
+    public string? SubStatus { get; set; }
+
+    public string Status { get; set; } = null!;
 
     public string Title { get; set; } = null!;
 
@@ -23,15 +27,11 @@ public partial class Ad
 
     public string? Link { get; set; }
 
-    public string? StripeSubscriptionId { get; set; }
+    public int TemplateId { get; set; }
 
     public string? StripeItemId { get; set; }
 
-    public string? SubStatus { get; set; }
-
     public bool RenewSub { get; set; }
-
-    public string Status { get; set; } = null!;
 
     public virtual ICollection<AdSubLog> AdSubLogs { get; set; } = new List<AdSubLog>();
 

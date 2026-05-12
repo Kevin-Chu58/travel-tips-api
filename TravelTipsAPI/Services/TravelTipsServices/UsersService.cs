@@ -205,9 +205,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
         /// <param name="id">user id</param>
         /// <param name="userPatchViewModel">user information to update</param>
         /// <returns>the update user with rhe id</returns>
-        public async Task<UserViewModel> UpdateUserAsync(
+        public async Task<UserViewModel?> UpdateUserAsync(
             int id,
-            UserPatchViewModel userPatchViewModel
+            UserPatchViewModel userPatchViewModel,
+            bool returnViewModel = true
         )
         {
             var user = context.Users.Find(id) ?? throw new Exception(Messages.UserNotFound);
@@ -222,7 +223,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
             await context.SaveChangesAsync();
 
-            return await GetUserViewModelById(id);
+            return returnViewModel ? await GetUserViewModelById(id) : null;
         }
 
         /// <summary>

@@ -79,7 +79,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 bool showPicture = true
             );
             Task<UserViewModel> GetUserViewModelById(int id);
-            Task<UserViewModel> UpdateUserAsync(int id, UserPatchViewModel user);
+            Task<UserViewModel> UpdateUserAsync(
+                int id,
+                UserPatchViewModel user,
+                bool returnViewModel = true
+            );
             Task RemoveUserStripeCustomerId(int id);
             Task<bool> AcceptUserAgreementAsync(int id);
 

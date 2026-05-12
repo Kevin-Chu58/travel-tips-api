@@ -166,6 +166,34 @@ namespace TravelTipsAPI.Controllers.TravelTips
         }
 
         /// <summary>
+        /// Update username
+        /// </summary>
+        /// <param name="username">new username</param>
+        /// <returns></returns>
+        [HttpPatch]
+        [Route("me/username/{username}")]
+        [IsOwner(Resource = Resources.NONE)]
+        public async Task<ActionResult<string>> UpdateUsername(string username)
+        {
+            try
+            {
+                var userId = (int)(HttpContext.Items["user_id"] ?? 0);
+
+                var userViewModel = await usersService.UpdateUserAsync(
+                    userId,
+                    new UserPatchViewModel { Username = username },
+                    false
+                );
+
+                return Ok(username);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
         /// Accepts user agreement
         /// </summary>
         /// <returns>updated user agreement status</returns>

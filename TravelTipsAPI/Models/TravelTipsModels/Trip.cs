@@ -7,8 +7,6 @@ public partial class Trip
 {
     public int Id { get; set; }
 
-    public string Title { get; set; } = null!;
-
     public string? Description { get; set; }
 
     public int CreatedBy { get; set; }
@@ -18,6 +16,8 @@ public partial class Trip
     public bool IsPublic { get; set; }
 
     public bool IsHidden { get; set; }
+
+    public string Title { get; set; } = null!;
 
     public int? RegionId { get; set; }
 
