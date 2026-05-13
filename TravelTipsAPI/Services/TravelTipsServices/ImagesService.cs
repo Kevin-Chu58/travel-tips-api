@@ -358,11 +358,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             await context.SaveChangesAsync();
 
             string fileName = $"{imageGuid}{GetExtensionFromContentType("image/jpeg")}";
+            string objectName = Global.IS_PRODUCTION
+                ? $"{createdBy}/production/{fileName}"
+                : $"{createdBy}/{fileName}";
 
-            await uploader.DeleteFileAsync(
-                config["Firebase:BucketName"]!,
-                $"{createdBy}/{fileName}"
-            );
+            await uploader.DeleteFileAsync(config["Firebase:BucketName"]!, objectName);
 
             var key = GetImageUpstashKey(imageId);
             await cache.DeleteKeyAsync(key);
