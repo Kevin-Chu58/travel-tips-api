@@ -50,8 +50,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>research result of trips that fit the params with cursor optionally</returns>
         [HttpGet]
         [Route("")]
-        //[AllowAnonymous]
-        [IsOwner(Resource = Resources.NONE)] // requires login as personal project
+        [AllowAnonymous]
         public async Task<ActionResult<SearchResults<TripViewModel>>> GetTripsByParams(
             [FromQuery] string? title,
             string? createdByAuthId = null,
@@ -152,8 +151,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>a trip with that id, Not Found otherwise</returns>
         [HttpGet]
         [Route("{id}")]
-        //[AllowAnonymous]
-        [IsOwner(Resource = Resources.NONE)] // requires login as personal project
+        [AllowAnonymous]
         public async Task<ActionResult<TripViewModel>> GetTripById(int id)
         {
             var trip = tripsService.FindTripByParams(id);
@@ -416,8 +414,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         /// <returns>the TaoGeo trip list</returns>
         [HttpGet]
         [Route("{id}/day-overview")]
-        //[AllowAnonymous]
-        [IsOwner(Resource = Resources.NONE)] // requires login as personal project
+        [AllowAnonymous]
         public ActionResult<IEnumerable<TripAttractionOrderGeoViewModel>> GetTaoGeosById(int id)
         {
             // check the trip is either public or the user is the owner or shared user
