@@ -3,9 +3,16 @@ using Google.Cloud.Storage.V1;
 
 namespace TravelTipsAPI.Firebase
 {
-    public class FirebaseStorageUploader(string json)
+    public class FirebaseStorageUploader
     {
-        private readonly GoogleCredential credential = GoogleCredential.FromJson(json);
+        private readonly StorageClient _storageClient;
+
+        public FirebaseStorageUploader(string json)
+        {
+            var credential = GoogleCredential.FromJson(json);
+            // Create once, reuse forever
+            _storageClient = StorageClient.CreateAsync(credential).GetAwaiter().GetResult();
+        }
 
         public async Task UploadFileAsync(
             Stream fileStream,
@@ -16,9 +23,7 @@ namespace TravelTipsAPI.Firebase
         {
             try
             {
-                var storageClient = await StorageClient.CreateAsync(credential);
-
-                await storageClient.UploadObjectAsync(
+                await _storageClient.UploadObjectAsync(
                     bucketName,
                     objectName,
                     contentType,
@@ -27,7 +32,7 @@ namespace TravelTipsAPI.Firebase
             }
             catch (Exception ex)
             {
-                throw new Exception(ex.Message);
+                throw new Exception("Upload Failed", ex);
             }
         }
 
@@ -35,12 +40,11 @@ namespace TravelTipsAPI.Firebase
         {
             try
             {
-                var storageClient = await StorageClient.CreateAsync(credential);
-                await storageClient.DeleteObjectAsync(bucketName, objectName);
+                await _storageClient.DeleteObjectAsync(bucketName, objectName);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Failed to delete file: {ex.Message}");
+                throw new Exception($"Failed to delete file", ex);
             }
         }
     }

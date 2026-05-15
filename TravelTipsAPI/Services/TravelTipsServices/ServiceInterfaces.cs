@@ -477,6 +477,11 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             );
             Task<int> DeleteTargetRule(TargetRule targetRule);
         }
+
+        public interface ITripFeedsService
+        {
+            IEnumerable<int> GetTripIdsByCategory(string category);
+        }
     }
 
     public class PlanSchema

@@ -47,6 +47,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<IAdsService, AdsService>();
             services.AddScoped<IAdTargetsService, AdTargetsService>();
             services.AddScoped<ITargetRulesService, TargetRulesService>();
+            services.AddScoped<ITripFeedsService, TripFeedsService>();
             // plan schema
             services.AddScoped<ISubscriptionsService, SubscriptionsService>();
             // record schema

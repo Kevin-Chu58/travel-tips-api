@@ -8,6 +8,7 @@ using TravelTipsAPI.ViewModels.db_image;
 using TravelTipsAPI.ViewModels.db_search;
 using static TravelTipsAPI.Constants.OrderBy.TripOrderBy;
 using static TravelTipsAPI.Services.TravelTipsServices.BasicSchema;
+using static TravelTipsAPI.Services.TravelTipsServices.FeedSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.ImageSchema;
 using static TravelTipsAPI.Services.TravelTipsServices.SearchSchema;
 using static TravelTipsAPI.Utils.ObjectUtils;
@@ -33,7 +34,8 @@ namespace TravelTipsAPI.Controllers.TravelTips
         ITripsService tripsService,
         ITripSharesService tripSharesService,
         ITripAttractionOrdersService taosService,
-        IImagesService imagesService
+        IImagesService imagesService,
+        ITripFeedsService tripFeedsService
     ) : TravelTipsControllerBase
     {
         /// <summary>
@@ -142,6 +144,38 @@ namespace TravelTipsAPI.Controllers.TravelTips
             };
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Get trips based on trip feed category
+        /// </summary>
+        /// <param name="category">trip feed category</param>
+        /// <returns>a list of trips in the category</returns>
+        [HttpGet]
+        [Route("feed/{category}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<IEnumerable<TripViewModel>>> GetTripFeedsByCategory(
+            string category
+        )
+        {
+            try
+            {
+                var tripIds = tripFeedsService.GetTripIdsByCategory(category);
+                var tripViewModels = await tripsService.GetTripsByParams(
+                    userId: null,
+                    ids: tripIds,
+                    isPublic: true,
+                    isHidden: false
+                );
+
+                tripViewModels = await AppendImagesToTripsAsync(tripViewModels);
+
+                return Ok(tripViewModels);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         /// <summary>
