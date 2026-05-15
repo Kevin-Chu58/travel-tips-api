@@ -55,6 +55,8 @@ public partial class TravelTipsContext : DbContext
 
     public virtual DbSet<TripAttractionOrder> TripAttractionOrders { get; set; }
 
+    public virtual DbSet<TripFeed> TripFeeds { get; set; }
+
     public virtual DbSet<TripImage> TripImages { get; set; }
 
     public virtual DbSet<TripShare> TripShares { get; set; }
@@ -663,6 +665,23 @@ public partial class TravelTipsContext : DbContext
                 .WithMany(p => p.TripAttractionOrders)
                 .HasForeignKey(d => d.HighlightId)
                 .HasConstraintName("fk_trip_attraction_orders_highlights");
+        });
+
+        modelBuilder.Entity<TripFeed>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("pk_trip_feeds");
+
+            entity.ToTable("TripFeeds", "db_feed");
+
+            entity.HasIndex(e => e.Category, "idx_trip_feeds_category");
+
+            entity.Property(e => e.Category).HasMaxLength(50);
+
+            entity
+                .HasOne(d => d.Trip)
+                .WithMany(p => p.TripFeeds)
+                .HasForeignKey(d => d.TripId)
+                .HasConstraintName("fk_trips_trip_feeds");
         });
 
         modelBuilder.Entity<TripImage>(entity =>

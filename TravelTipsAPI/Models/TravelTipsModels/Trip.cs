@@ -33,6 +33,8 @@ public partial class Trip
 
     public virtual Region? Region { get; set; }
 
+    public virtual ICollection<TripFeed> TripFeeds { get; set; } = new List<TripFeed>();
+
     public virtual ICollection<TripImage> TripImages { get; set; } = new List<TripImage>();
 
     public virtual ICollection<TripShare> TripShares { get; set; } = new List<TripShare>();
