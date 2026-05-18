@@ -1,4 +1,5 @@
-﻿using TravelTipsAPI.Models.TravelTipsModels;
+﻿using System.Text;
+using TravelTipsAPI.Models.TravelTipsModels;
 
 namespace TravelTipsAPI.Services.TravelTipsServices
 {
@@ -13,28 +14,31 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 .Select(t => new { t.Id, t.CreatedAt })
                 .ToList();
 
-            var urls = publicTrips.Select(trip =>
-                $@"
-                    <url>
-                        <loc>https://traveltipsgo.com/trip/{trip.Id}</loc>
-                        <lastmod>{trip.CreatedAt:yyyy-MM-dd}</lastmod>
-                        <changefreq>weekly</changefreq>
-                        <priority>0.8</priority>
-                    </url>
-                "
-            );
+            var sb = new StringBuilder();
 
-            var sitemap =
-                $@"<?xml version=""1.0"" encoding=""UTF-8""?>
-                <urlset xmlns=""http://www.sitemaps.org/schemas/sitemap/0.2"">
-                    <url>
-                        <loc>https://traveltipsgo.com/</loc>
-                        <priority>1.0</priority>
-                    </url>
-                    {string.Join("", urls)}
-                </urlset>";
+            sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
 
-            return sitemap;
+            // Homepage
+            sb.Append("<url>");
+            sb.Append("<loc>https://traveltipsgo.com/</loc>");
+            sb.Append("<priority>1.0</priority>");
+            sb.Append("</url>");
+
+            // Public trips
+            foreach (var trip in publicTrips)
+            {
+                sb.Append("<url>");
+                sb.Append($"<loc>https://traveltipsgo.com/trip/{trip.Id}</loc>");
+                sb.Append($"<lastmod>{trip.CreatedAt:yyyy-MM-dd}</lastmod>");
+                sb.Append("<changefreq>weekly</changefreq>");
+                sb.Append("<priority>0.8</priority>");
+                sb.Append("</url>");
+            }
+
+            sb.Append("</urlset>");
+
+            return sb.ToString();
         }
 
         // html
