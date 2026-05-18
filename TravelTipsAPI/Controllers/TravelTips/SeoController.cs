@@ -6,6 +6,19 @@ namespace TravelTipsAPI.Controllers.TravelTips
 {
     public class SeoController(ISeoService seoService) : TravelTipsControllerBase
     {
+        // sitemap
+
+        [HttpGet]
+        [Route("sitemap.xml")]
+        [AllowAnonymous]
+        public IActionResult GetSitemap()
+        {
+            var sitemapXml = seoService.GenerateSitemapXml();
+            return Content(sitemapXml, "application/xml");
+        }
+
+        // html
+
         [HttpGet]
         [Route("seo")]
         [AllowAnonymous]

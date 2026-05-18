@@ -1,7 +1,43 @@
-﻿namespace TravelTipsAPI.Services.TravelTipsServices
+﻿using TravelTipsAPI.Models.TravelTipsModels;
+
+namespace TravelTipsAPI.Services.TravelTipsServices
 {
-    public class SeoService : ISeoService
+    public class SeoService(TravelTipsContext context) : ISeoService
     {
+        // sitemap
+
+        public string GenerateSitemapXml()
+        {
+            var publicTrips = context
+                .Trips.Where(t => t.IsPublic)
+                .Select(t => new { t.Id, t.CreatedAt })
+                .ToList();
+
+            var urls = publicTrips.Select(trip =>
+                $@"
+                    <url>
+                        <loc>https://traveltipsgo.com/trip/{trip.Id}</loc>
+                        <lastmod>{trip.CreatedAt}</lastmod>
+                        <changefreq>weekly</changefreq>
+                        <priority>0.8</priority>
+                    </url>
+                "
+            );
+
+            var sitemap =
+                $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+                <urlset xmlns=""http://www.sitemaps.org/schemas/sitemap/0.2"">
+                    <url>
+                        <loc>https://traveltipsgo.com/</loc>
+                        <priority>1.0</priority>
+                    </url>
+                    {string.Join("", urls)}
+                </urlset>";
+
+            return sitemap;
+        }
+
+        // html
         public string GenerateHomePageHtml()
         {
             var homeHtml =

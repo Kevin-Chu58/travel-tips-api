@@ -517,6 +517,10 @@ namespace TravelTipsAPI.Services.TravelTipsServices
 
     public interface ISeoService
     {
+        // sitemap
+        string GenerateSitemapXml();
+
+        // html
         string GenerateHomePageHtml();
     }
 }
