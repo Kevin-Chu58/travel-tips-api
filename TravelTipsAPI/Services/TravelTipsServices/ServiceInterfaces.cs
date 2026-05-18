@@ -514,4 +514,9 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             Task AddProcessedEvent(string stripeEventId);
         }
     }
+
+    public interface ISeoService
+    {
+        string GenerateHomePageHtml();
+    }
 }
