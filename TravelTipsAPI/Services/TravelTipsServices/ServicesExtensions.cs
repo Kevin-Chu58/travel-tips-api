@@ -52,6 +52,8 @@ namespace TravelTipsAPI.Services.TravelTipsServices
             services.AddScoped<ISubscriptionsService, SubscriptionsService>();
             // record schema
             services.AddScoped<IProcessedStripeEventsService, ProcessedStripeEventsService>();
+            // seo service
+            services.AddScoped<ISeoService, SeoService>();
 
             return services;
         }
