@@ -17,7 +17,7 @@ namespace TravelTipsAPI.Services.TravelTipsServices
                 $@"
                     <url>
                         <loc>https://traveltipsgo.com/trip/{trip.Id}</loc>
-                        <lastmod>{trip.CreatedAt}</lastmod>
+                        <lastmod>{trip.CreatedAt:yyyy-MM-dd}</lastmod>
                         <changefreq>weekly</changefreq>
                         <priority>0.8</priority>
                     </url>
