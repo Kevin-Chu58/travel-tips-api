@@ -4,6 +4,7 @@ using TravelTipsAPI.Services.TravelTipsServices;
 
 namespace TravelTipsAPI.Controllers.TravelTips
 {
+    [Route("api/[controller]")]
     public class SeoController(ISeoService seoService) : TravelTipsControllerBase
     {
         // sitemap
@@ -20,7 +21,7 @@ namespace TravelTipsAPI.Controllers.TravelTips
         // html
 
         [HttpGet]
-        [Route("seo")]
+        [Route("")]
         [AllowAnonymous]
         public IActionResult GetSeo()
         {
